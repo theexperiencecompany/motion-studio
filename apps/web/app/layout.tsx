@@ -3,10 +3,8 @@ import { Geist_Mono, Inter } from "next/font/google"
 import "@workspace/ui/globals.css"
 import "streamdown/styles.css"
 import { ThemeProvider } from "@/components/theme-provider"
-import { SidebarProvider } from "@workspace/ui/components/sidebar"
-import { TooltipProvider } from "@workspace/ui/components/tooltip"
 import { AppSidebar } from "@/components/app-sidebar"
-import { SidebarTrigger } from "@workspace/ui/components/sidebar"
+import { DocsHeader } from "@/components/docs-header"
 import { cn } from "@workspace/ui/lib/utils"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
@@ -27,19 +25,17 @@ export default function RootLayout({
       suppressHydrationWarning
       className={cn("antialiased", fontMono.variable, "font-sans", inter.variable)}
     >
-      <body>
+      <body className="min-h-screen bg-background text-foreground">
         <ThemeProvider>
-          <TooltipProvider>
-            <SidebarProvider>
+          <div className="mx-auto max-w-[1400px] border-x border-dashed border-border/60 min-h-screen">
+            <DocsHeader />
+            <div className="flex">
               <AppSidebar />
-              <div className="flex flex-1 flex-col overflow-hidden">
-                <header className="flex h-12 shrink-0 items-center px-3">
-                  <SidebarTrigger />
-                </header>
-                <main className="flex-1 overflow-hidden">{children}</main>
-              </div>
-            </SidebarProvider>
-          </TooltipProvider>
+              <main className="flex-1 min-w-0 border-l border-dashed border-border/60">
+                {children}
+              </main>
+            </div>
+          </div>
         </ThemeProvider>
       </body>
     </html>

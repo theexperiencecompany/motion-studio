@@ -2,77 +2,30 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { HugeiconsIcon } from "@hugeicons/react"
-import {
-  Home01Icon,
-  Settings01Icon,
-  UserCircleIcon,
-  Search01Icon,
-  PencilEdit01Icon,
-  Plug01Icon,
-  ImageAdd02Icon,
-} from "@hugeicons/core-free-icons"
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from "@workspace/ui/components/sidebar"
 
-const navItems = [
-  { title: "Home", href: "/", icon: Home01Icon },
-  { title: "Search", href: "/search", icon: Search01Icon },
-  { title: "Integrations", href: "/integrations", icon: Plug01Icon },
+const nav = [
   {
-    title: "New Post",
-    href: "/chat",
-    icon: ImageAdd02Icon,
-    highlight: true,
-  },
-]
-
-const secondaryItems = [
-  { title: "Settings", href: "/settings", icon: Settings01Icon },
-  { title: "Profile", href: "/profile", icon: UserCircleIcon },
-]
-
-const posts = [
-  {
-    id: "1",
-    title: "Why shipping fast matters",
-    preview: "The best way to learn is to build and iterate quickly...",
-    time: "2m ago",
+    section: "Getting Started",
+    items: [
+      { title: "Introduction", href: "/docs" },
+      { title: "Installation", href: "/docs/installation" },
+      { title: "Theming", href: "/docs/theming" },
+      { title: "Dark Mode", href: "/docs/dark-mode" },
+      { title: "CLI", href: "/docs/cli" },
+      { title: "Changelog", href: "/docs/changelog" },
+    ],
   },
   {
-    id: "2",
-    title: "Design systems at scale",
-    preview:
-      "Consistency across products starts with a single source of truth...",
-    time: "1h ago",
-  },
-  {
-    id: "3",
-    title: "Building in public",
-    preview: "Sharing your journey openly attracts the right audience...",
-    time: "3h ago",
-  },
-  {
-    id: "4",
-    title: "The indie maker mindset",
-    preview: "You don't need a team to build something people love...",
-    time: "Yesterday",
-  },
-  {
-    id: "5",
-    title: "Morning routines are overrated",
-    preview: "What actually moves the needle isn't your 5am wake-up...",
-    time: "2d ago",
+    section: "Components",
+    items: [
+      { title: "Button", href: "/docs/components/button" },
+      { title: "Card", href: "/docs/components/card" },
+      { title: "Dialog", href: "/docs/components/dialog" },
+      { title: "Input", href: "/docs/components/input" },
+      { title: "Select", href: "/docs/components/select" },
+      { title: "Tabs", href: "/docs/components/tabs" },
+      { title: "Toast", href: "/docs/components/toast" },
+    ],
   },
 ]
 
@@ -80,94 +33,35 @@ export function AppSidebar() {
   const pathname = usePathname()
 
   return (
-    <Sidebar collapsible="icon" className="">
-      <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <Link href="/">
-                <span className="font-semibold">PostCrow</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarHeader>
-
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === item.href}
-                    tooltip={item.title}
-                    className={
-                      item.highlight
-                        ? "bg-indigo-500/15 text-indigo-200 hover:bg-indigo-500/20"
-                        : ""
-                    }
-                  >
-                    <Link href={item.href}>
-                      <HugeiconsIcon icon={item.icon} size={18} />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-          <div className="flex items-center justify-between pr-2">
-            <SidebarGroupLabel>Posts</SidebarGroupLabel>
-            <button className="text-sidebar-foreground/40 transition-colors hover:text-sidebar-foreground">
-              <HugeiconsIcon icon={PencilEdit01Icon} size={13} />
-            </button>
-          </div>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {posts.map((post) => (
-                <SidebarMenuItem key={post.id}>
-                  <SidebarMenuButton asChild tooltip={post.title}>
+    <aside className="sticky top-14 h-[calc(100vh-3.5rem)] w-60 shrink-0 overflow-y-auto py-8 pl-8 pr-6">
+      <nav className="space-y-6">
+        {nav.map((group) => (
+          <div key={group.section}>
+            <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+              {group.section}
+            </p>
+            <ul className="space-y-0.5">
+              {group.items.map((item) => {
+                const active = pathname === item.href
+                return (
+                  <li key={item.href}>
                     <Link
-                      href={`/posts/${post.id}`}
-                      className="flex w-full items-center justify-between gap-2"
+                      href={item.href}
+                      className={`block rounded-md px-3 py-1.5 text-[13.5px] transition-colors ${
+                        active
+                          ? "bg-accent text-foreground font-medium"
+                          : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                      }`}
                     >
-                      <span className="truncate text-xs">{post.title}</span>
-                      <span className="shrink-0 text-[10px] text-sidebar-foreground/40">
-                        {post.time}
-                      </span>
+                      {item.title}
                     </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-
-      <SidebarFooter>
-        <SidebarMenu>
-          {secondaryItems.map((item) => (
-            <SidebarMenuItem key={item.href}>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname === item.href}
-                tooltip={item.title}
-              >
-                <Link href={item.href}>
-                  <HugeiconsIcon icon={item.icon} size={18} />
-                  <span>{item.title}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
-      </SidebarFooter>
-    </Sidebar>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        ))}
+      </nav>
+    </aside>
   )
 }
