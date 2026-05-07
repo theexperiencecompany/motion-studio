@@ -1,7 +1,6 @@
 "use client";
 import {
   AbsoluteFill,
-  Img,
   spring,
   useCurrentFrame,
   useVideoConfig,
@@ -9,26 +8,25 @@ import {
 
 export type CaptionTrackProps = {
   text: string;
-  backgroundImageUrl: string;
   backgroundColor: string;
   textColor: string;
-  outlineColor: string;
   wordsPerSecond: number;
 };
 
 export const CaptionTrack: React.FC<CaptionTrackProps> = ({
   text,
-  backgroundImageUrl,
   backgroundColor,
   textColor,
-  outlineColor,
   wordsPerSecond,
 }) => {
   const frame = useCurrentFrame();
-  const { fps, height } = useVideoConfig();
+  const { fps } = useVideoConfig();
 
   const words = text.trim().split(/\s+/).filter(Boolean);
-  const framesPerWord = Math.max(1, Math.round(fps / Math.max(0.5, wordsPerSecond)));
+  const framesPerWord = Math.max(
+    1,
+    Math.round(fps / Math.max(0.5, wordsPerSecond)),
+  );
   const startOffset = 8;
 
   const adjustedFrame = frame - startOffset;
@@ -46,65 +44,35 @@ export const CaptionTrack: React.FC<CaptionTrackProps> = ({
 
   const word = wordIndex >= 0 ? words[wordIndex] ?? "" : "";
 
-  const outline = `
-    -3px -3px 0 ${outlineColor},
-    3px -3px 0 ${outlineColor},
-    -3px 3px 0 ${outlineColor},
-    3px 3px 0 ${outlineColor},
-    -3px 0 0 ${outlineColor},
-    3px 0 0 ${outlineColor},
-    0 -3px 0 ${outlineColor},
-    0 3px 0 ${outlineColor},
-    0 8px 18px rgba(0,0,0,0.45)
-  `;
-
   return (
-    <AbsoluteFill style={{ background: backgroundColor }}>
-      {backgroundImageUrl.trim() && (
-        <Img
-          src={backgroundImageUrl}
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-          }}
-        />
-      )}
-
+    <AbsoluteFill
+      style={{
+        background: backgroundColor,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "0 80px",
+        fontFamily:
+          "-apple-system, BlinkMacSystemFont, 'SF Pro Display', Inter, sans-serif",
+      }}
+    >
       {word && (
-        <div
+        <span
           style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            top: height * 0.7,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "0 60px",
+            fontSize: 132,
+            fontWeight: 700,
+            letterSpacing: "-0.045em",
+            lineHeight: 1.05,
+            color: textColor,
+            textAlign: "center",
+            transform: `scale(${0.7 + wordPop * 0.3})`,
+            opacity: wordPop,
+            willChange: "transform, opacity",
+            display: "inline-block",
           }}
         >
-          <span
-            style={{
-              fontFamily:
-                "-apple-system, BlinkMacSystemFont, 'SF Pro Display', Inter, sans-serif",
-              fontSize: 132,
-              fontWeight: 900,
-              letterSpacing: "-0.025em",
-              color: textColor,
-              textTransform: "uppercase",
-              textAlign: "center",
-              lineHeight: 1.05,
-              textShadow: outline,
-              transform: `scale(${0.7 + wordPop * 0.3})`,
-              opacity: wordPop,
-              willChange: "transform, opacity",
-              display: "inline-block",
-            }}
-          >
-            {word}
-          </span>
-        </div>
+          {word}
+        </span>
       )}
     </AbsoluteFill>
   );

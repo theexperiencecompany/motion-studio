@@ -33,6 +33,12 @@ import TweetCardMDX, {
 import CursorWalkthroughMDX, {
   meta as cursorWalkthroughMeta,
 } from "@/content/docs/cursor-walkthrough.mdx"
+import BrowserWindowMDX, {
+  meta as browserWindowMeta,
+} from "@/content/docs/browser-window.mdx"
+import CaptionTrackMDX, {
+  meta as captionTrackMeta,
+} from "@/content/docs/caption-track.mdx"
 
 export type DocTocItem = { label: string; id: string }
 
@@ -103,6 +109,18 @@ export const docs: Doc[] = [
     href: "/docs/CursorWalkthrough",
     meta: cursorWalkthroughMeta,
     Content: CursorWalkthroughMDX,
+  },
+  {
+    slug: "BrowserWindow",
+    href: "/docs/BrowserWindow",
+    meta: browserWindowMeta,
+    Content: BrowserWindowMDX,
+  },
+  {
+    slug: "CaptionTrack",
+    href: "/docs/CaptionTrack",
+    meta: captionTrackMeta,
+    Content: CaptionTrackMDX,
   },
   {
     slug: "MessagePopup",

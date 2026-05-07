@@ -3,15 +3,13 @@ import type { CaptionTrackProps } from "./CaptionTrack";
 
 export const CAPTION_TRACK_DURATION = 240;
 export const CAPTION_TRACK_FPS = 60;
-export const CAPTION_TRACK_WIDTH = 1080;
-export const CAPTION_TRACK_HEIGHT = 1920;
+export const CAPTION_TRACK_WIDTH = 1920;
+export const CAPTION_TRACK_HEIGHT = 1080;
 
 export const captionTrackDefaultProps: CaptionTrackProps = {
   text: "this is the future of motion graphics",
-  backgroundImageUrl: "",
-  backgroundColor: "#0a0a0a",
-  textColor: "#ffffff",
-  outlineColor: "#000000",
+  backgroundColor: "#ffffff",
+  textColor: "#0f1014",
   wordsPerSecond: 3,
 };
 
@@ -19,7 +17,7 @@ export const captionTrackInfo: CompositionInfo<CaptionTrackProps> = {
   id: "CaptionTrack",
   title: "Caption Track",
   description:
-    "TikTok / Reels–style word-by-word captions for vertical video. Each word pops in over a background image or color.",
+    "Word-by-word caption track. Each word springs into place at the configured cadence — set the words-per-second to match your VO.",
   durationInFrames: CAPTION_TRACK_DURATION,
   fps: CAPTION_TRACK_FPS,
   width: CAPTION_TRACK_WIDTH,
@@ -27,10 +25,8 @@ export const captionTrackInfo: CompositionInfo<CaptionTrackProps> = {
   defaultProps: captionTrackDefaultProps,
   fields: [
     { kind: "textarea", key: "text", label: "Caption text", rows: 3 },
-    { kind: "text", key: "backgroundImageUrl", label: "Background image URL" },
     { kind: "text", key: "backgroundColor", label: "Background color" },
     { kind: "text", key: "textColor", label: "Text color" },
-    { kind: "text", key: "outlineColor", label: "Outline color" },
     {
       kind: "number",
       key: "wordsPerSecond",
