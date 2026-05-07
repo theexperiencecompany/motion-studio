@@ -1,7 +1,12 @@
 import Link from "next/link"
-import { ChevronRight } from "lucide-react"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { ListViewIcon } from "@hugeicons/core-free-icons"
+import {
+  ListViewIcon,
+  Copy01Icon,
+  ArrowDown01Icon,
+  ArrowLeft01Icon,
+  ArrowRight01Icon,
+} from "@hugeicons/core-free-icons"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -20,8 +25,9 @@ const toc = [
 export default function HomePage() {
   return (
     <div className="flex">
-      {/* Main content */}
-      <div className="max-w-3xl min-w-0 flex-1 px-12 py-10">
+      {/* Main content centered in available space */}
+      <div className="flex flex-1 justify-center">
+        <div className="min-w-0 w-full max-w-3xl px-12 py-10">
         <Breadcrumb className="mb-8">
           <BreadcrumbList>
             <BreadcrumbItem>
@@ -36,9 +42,30 @@ export default function HomePage() {
 
         <div className="space-y-12">
           <section id="introduction">
-            <h1 className="mb-4 text-4xl font-bold tracking-tight">
-              Introduction
-            </h1>
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <h1 className="text-4xl font-bold tracking-tight">
+                Introduction
+              </h1>
+              <div className="flex items-center gap-1 shrink-0">
+                <button className="flex items-center gap-1.5 rounded-md border border-border bg-muted/40 px-2.5 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors">
+                  <HugeiconsIcon icon={Copy01Icon} size={12} />
+                  <span>Copy Page</span>
+                  <HugeiconsIcon icon={ArrowDown01Icon} size={12} className="text-muted-foreground" />
+                </button>
+                <button
+                  aria-label="Previous page"
+                  className="flex items-center justify-center size-7 rounded-md border border-border bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                >
+                  <HugeiconsIcon icon={ArrowLeft01Icon} size={14} />
+                </button>
+                <button
+                  aria-label="Next page"
+                  className="flex items-center justify-center size-7 rounded-md border border-border bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                >
+                  <HugeiconsIcon icon={ArrowRight01Icon} size={14} />
+                </button>
+              </div>
+            </div>
             <p className="text-lg leading-relaxed text-muted-foreground">
               A collection of beautifully designed, accessible components built
               with{" "}
@@ -142,14 +169,15 @@ export default function HomePage() {
               className="flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               Installation
-              <ChevronRight size={14} />
+              <HugeiconsIcon icon={ArrowRight01Icon} size={14} />
             </Link>
           </div>
         </div>
       </div>
+      </div>
 
       {/* Right TOC */}
-      <aside className="hidden w-56 shrink-0 border-l border-dashed border-white/10 px-6 py-10 xl:block">
+      <aside className="hidden w-48 shrink-0 px-6 py-10 xl:block">
         <div className="sticky top-24">
           <div className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold tracking-wider text-muted-foreground/60 uppercase">
             <HugeiconsIcon icon={ListViewIcon} size={13} />
