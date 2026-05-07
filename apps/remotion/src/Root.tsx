@@ -1,13 +1,13 @@
 import "./index.css";
 import { Composition } from "remotion";
-import { MyComposition } from "./Composition";
+import { MyComposition } from "./compositions/Composition";
 import {
   HeroDemo,
   HERO_DEMO_DURATION,
   HERO_DEMO_FPS,
   HERO_DEMO_WIDTH,
   HERO_DEMO_HEIGHT,
-} from "./HeroDemo";
+} from "./compositions/HeroDemo";
 import {
   FollowerCelebration,
   FOLLOWER_DURATION,
@@ -15,32 +15,51 @@ import {
   FOLLOWER_WIDTH,
   FOLLOWER_HEIGHT,
   calculateFollowerMetadata,
-} from "./FollowerCelebration";
-import {
-  MessagePopup,
-  MESSAGE_POPUP_DURATION,
-  MESSAGE_POPUP_FPS,
-  MESSAGE_POPUP_WIDTH,
-  MESSAGE_POPUP_HEIGHT,
-} from "./MessagePopup";
-import {
-  MessageBubbles,
-  MESSAGE_BUBBLES_DURATION,
-  MESSAGE_BUBBLES_FPS,
-  MESSAGE_BUBBLES_WIDTH,
-  MESSAGE_BUBBLES_HEIGHT,
-} from "./MessageBubbles";
+} from "./compositions/FollowerCelebration";
 import {
   IntroText,
   INTRO_TEXT_DURATION,
   INTRO_TEXT_FPS,
   INTRO_TEXT_WIDTH,
   INTRO_TEXT_HEIGHT,
-} from "./IntroText";
+} from "./compositions/IntroText";
+import {
+  BrowserScroll,
+  BROWSER_SCROLL_DURATION,
+  BROWSER_SCROLL_FPS,
+  BROWSER_SCROLL_WIDTH,
+  BROWSER_SCROLL_HEIGHT,
+} from "./compositions/BrowserScroll";
+import { compositions } from "./registry";
+import { componentsById } from "./components";
 
 export const RemotionRoot: React.FC = () => {
   return (
     <>
+      {compositions.map((c) => (
+        <Composition
+          key={c.id}
+          id={c.id}
+          component={componentsById[c.id]!}
+          durationInFrames={c.durationInFrames}
+          fps={c.fps}
+          width={c.width}
+          height={c.height}
+          defaultProps={c.defaultProps}
+        />
+      ))}
+      <Composition
+        id="BrowserScroll"
+        component={BrowserScroll}
+        durationInFrames={BROWSER_SCROLL_DURATION}
+        fps={BROWSER_SCROLL_FPS}
+        width={BROWSER_SCROLL_WIDTH}
+        height={BROWSER_SCROLL_HEIGHT}
+        defaultProps={{
+          imageFile: "page.png",
+          pageHeight: 2400,
+        }}
+      />
       <Composition
         id="IntroText"
         component={IntroText}
@@ -48,22 +67,6 @@ export const RemotionRoot: React.FC = () => {
         fps={INTRO_TEXT_FPS}
         width={INTRO_TEXT_WIDTH}
         height={INTRO_TEXT_HEIGHT}
-      />
-      <Composition
-        id="MessageBubbles"
-        component={MessageBubbles}
-        durationInFrames={MESSAGE_BUBBLES_DURATION}
-        fps={MESSAGE_BUBBLES_FPS}
-        width={MESSAGE_BUBBLES_WIDTH}
-        height={MESSAGE_BUBBLES_HEIGHT}
-      />
-      <Composition
-        id="MessagePopup"
-        component={MessagePopup}
-        durationInFrames={MESSAGE_POPUP_DURATION}
-        fps={MESSAGE_POPUP_FPS}
-        width={MESSAGE_POPUP_WIDTH}
-        height={MESSAGE_POPUP_HEIGHT}
       />
       <Composition
         id="FollowerCelebration"

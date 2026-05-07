@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
+import { compositions } from "@workspace/compositions/registry"
 import {
   Book01Icon,
   Download01Icon,
@@ -17,6 +18,7 @@ import {
   ToggleOnIcon,
   MenuSquareIcon,
   Notification01Icon,
+  VideoReplayIcon,
 } from "@hugeicons/core-free-icons"
 
 const nav = [
@@ -42,6 +44,14 @@ const nav = [
       { title: "Tabs", href: "/docs/components/tabs", icon: MenuSquareIcon },
       { title: "Toast", href: "/docs/components/toast", icon: Notification01Icon },
     ],
+  },
+  {
+    section: "Templates",
+    items: compositions.map((c) => ({
+      title: c.title,
+      href: `/docs/${c.id}`,
+      icon: VideoReplayIcon,
+    })),
   },
 ]
 

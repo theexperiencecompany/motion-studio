@@ -1,25 +1,32 @@
 {
-  "name": "remotion",
+  "name": "@workspace/compositions",
   "version": "1.0.0",
   "description": "My Remotion video",
   "repository": {},
   "license": "UNLICENSED",
   "private": true,
+  "exports": {
+    "./*": "./src/*.tsx"
+  },
   "dependencies": {
-    "@remotion/cli": "4.0.457",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
-    "remotion": "4.0.457",
-    "@remotion/tailwind-v4": "4.0.457",
+    "@hugeicons/core-free-icons": "^4.1.1",
+    "@hugeicons/react": "^1.1.6",
+    "@remotion/cli": "^4.0.457",
+    "@remotion/tailwind-v4": "^4.0.457",
+    "puppeteer": "^24.43.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "remotion": "^4.0.457",
     "tailwindcss": "4.0.0"
   },
   "devDependencies": {
-    "@remotion/eslint-config-flat": "4.0.457",
-    "@types/react": "19.2.7",
+    "@remotion/eslint-config-flat": "^4.0.457",
+    "@types/node": "^25.6.0",
+    "@types/react": "^19.2.10",
     "@types/web": "0.0.166",
     "eslint": "9.19.0",
     "prettier": "3.8.1",
-    "typescript": "5.9.3"
+    "typescript": "^5.9.3"
   },
   "scripts": {
     "dev": "remotionb studio",
