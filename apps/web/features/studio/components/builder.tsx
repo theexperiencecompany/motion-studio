@@ -14,6 +14,7 @@ import {
 import { useExportRender } from "../hooks/use-export-render";
 import { PlayerProvider } from "../state/player-context";
 import { initialStudioState, studioReducer } from "../state/reducer";
+import { AgentPanel } from "./agent-panel";
 import { ExportProgressOverlay } from "./export-progress-overlay";
 import { Inspector } from "./inspector";
 import { LibraryPanel } from "./library-panel";
@@ -146,6 +147,12 @@ export function Builder() {
               onClose={() =>
                 dispatch({ type: "TOGGLE_PANEL", panel: "library" })
               }
+            />
+          )}
+
+          {state.openPanel === "agent" && (
+            <AgentPanel
+              onClose={() => dispatch({ type: "TOGGLE_PANEL", panel: "agent" })}
             />
           )}
 

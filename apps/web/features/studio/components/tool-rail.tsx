@@ -1,6 +1,6 @@
 "use client";
 
-import { FolderLibraryIcon } from "@hugeicons/core-free-icons";
+import { FolderLibraryIcon, SparklesIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Button } from "@workspace/ui/components/button";
 import type { StudioPanel } from "../state/reducer";
@@ -19,6 +19,13 @@ export function ToolRail({ openPanel, onToggle }: Props) {
         label="Library"
       >
         <HugeiconsIcon icon={FolderLibraryIcon} className="size-5" />
+      </ToolButton>
+      <ToolButton
+        active={openPanel === "agent"}
+        onClick={() => onToggle("agent")}
+        label="Agent"
+      >
+        <HugeiconsIcon icon={SparklesIcon} className="size-5" />
       </ToolButton>
     </aside>
   );

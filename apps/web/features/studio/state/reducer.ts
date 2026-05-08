@@ -5,7 +5,7 @@ import {
 } from "@workspace/compositions/project";
 import { compositionsById } from "@workspace/compositions/registry";
 
-export type StudioPanel = "library" | null;
+export type StudioPanel = "library" | "agent" | null;
 
 export type StudioState = {
   project: Project;
