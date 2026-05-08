@@ -7,7 +7,11 @@ import type { AnyCompositionInfo } from "@workspace/compositions/schema";
 import { Button } from "@workspace/ui/components/button";
 import { useMemo, useState } from "react";
 
-export function EditorView({ info }: { info: AnyCompositionInfo }) {
+export function EditorView({
+  info,
+}: {
+  info: Omit<AnyCompositionInfo, "calculateMetadata">;
+}) {
   const Component = componentsById[info.id];
   const [props, setProps] = useState<Record<string, unknown>>(
     () => structuredClone(info.defaultProps) as Record<string, unknown>,

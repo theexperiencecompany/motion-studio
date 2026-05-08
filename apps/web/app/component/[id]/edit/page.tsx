@@ -18,8 +18,12 @@ export default async function EditorPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const info = compositionsById[id];
-  if (!info) notFound();
+  const composition = compositionsById[id];
+  if (!composition) notFound();
+
+  // Strip non-serializable fields (calculateMetadata is a function)
+  // before passing to the "use client" EditorView.
+  const { calculateMetadata: _cm, ...info } = composition;
 
   return (
     <div className="flex min-h-screen flex-col lg:h-screen">
