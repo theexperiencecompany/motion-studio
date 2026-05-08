@@ -31,7 +31,7 @@ export function SortableClipBlock({
   const [resizing, setResizing] = useState<"left" | "right" | null>(null)
 
   const seconds = clip.durationInFrames / fps
-  const widthPx = Math.max(80, seconds * PX_PER_SECOND)
+  const widthPx = seconds * PX_PER_SECOND
   const colorClass = colorForCompositionId(clip.compositionId)
 
   const {
@@ -88,19 +88,19 @@ export function SortableClipBlock({
       ref={setNodeRef}
       style={style}
       onClick={onSelect}
-      className={`group relative shrink-0 select-none overflow-hidden rounded-md ring-offset-2 ring-offset-[#0d0d0f] transition-shadow ${
-        selected ? "ring-2 ring-blue-500" : "ring-0"
+      className={`group relative shrink-0 select-none overflow-hidden rounded-md transition-shadow ${
+        selected ? "z-10" : ""
       } ${resizing ? "cursor-ew-resize" : "cursor-grab active:cursor-grabbing"}`}
       {...attributes}
       {...listeners}
     >
       {/* Gradient body — top lighter, bottom richer */}
       <div
-        className={`bg-gradient-to-br ${colorClass} flex h-14 flex-col justify-between px-3 py-2`}
+        className={`bg-gradient-to-b ${colorClass} flex h-14 flex-col justify-between px-3 py-2`}
       >
-        {/* Inner top highlight + inner outline */}
+        {/* Inner top highlight + outline */}
         <div
-          className="pointer-events-none absolute inset-0 rounded-lg"
+          className="pointer-events-none absolute inset-0 rounded-md"
           style={{
             boxShadow:
               "inset 0 1px 0 rgba(255,255,255,0.32), inset 0 0 0 1px rgba(255,255,255,0.10)",
@@ -115,16 +115,18 @@ export function SortableClipBlock({
         </p>
       </div>
 
+      {selected && (
+        <div className="pointer-events-none absolute inset-0 z-20 rounded-md ring-2 ring-inset ring-blue-500" />
+      )}
+
       <ResizeHandle
         side="left"
         active={resizing === "left"}
-        visible={selected || resizing !== null}
         onPointerDown={(e) => startResize("left", e)}
       />
       <ResizeHandle
         side="right"
         active={resizing === "right"}
-        visible={selected || resizing !== null}
         onPointerDown={(e) => startResize("right", e)}
       />
 
@@ -135,9 +137,7 @@ export function SortableClipBlock({
         }}
         onPointerDown={(e) => e.stopPropagation()}
         title="Delete"
-        className={`absolute right-1 top-1 flex size-5 items-center justify-center rounded bg-black/30 text-[12px] leading-none text-white/80 backdrop-blur-sm transition-opacity hover:bg-red-500/50 hover:text-white ${
-          selected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-        }`}
+        className="absolute right-2 top-1 flex size-5 items-center justify-center rounded-full bg-black/30 text-[12px] leading-none text-white/80 opacity-0 backdrop-blur-sm transition-opacity hover:bg-black/50 hover:text-white group-hover:opacity-100"
       >
         ×
       </button>
@@ -148,12 +148,10 @@ export function SortableClipBlock({
 function ResizeHandle({
   side,
   active,
-  visible,
   onPointerDown,
 }: {
   side: "left" | "right"
   active: boolean
-  visible: boolean
   onPointerDown: (e: React.PointerEvent) => void
 }) {
   const ref = useRef<HTMLDivElement>(null)
@@ -167,8 +165,8 @@ function ResizeHandle({
       }`}
     >
       <span
-        className={`h-6 w-[3px] rounded-full bg-white/90 shadow-[0_0_0_1px_rgba(0,0,0,0.25)] transition-opacity ${
-          active || visible ? "opacity-100" : "opacity-0 group-hover:opacity-90"
+        className={`h-6 w-[3px] rounded-full bg-white/90 transition-opacity ${
+          active ? "opacity-100" : "opacity-0 group-hover:opacity-90"
         }`}
       />
     </div>

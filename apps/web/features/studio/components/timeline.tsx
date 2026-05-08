@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo } from "react"
+import { useEffect, useMemo, useRef } from "react"
 import {
   DndContext,
   PointerSensor,
@@ -21,28 +21,32 @@ import {
 import { PX_PER_SECOND } from "../lib/clip-colors"
 import { SortableClipBlock } from "./sortable-clip-block"
 
+const TRACK_PADDING_X = 12
+
 type Props = {
   project: Project
   selectedClipId: string | null
   currentFrame: number
-  onSeek: (frame: number) => void
   onSelect: (id: string) => void
   onReorder: (clipIds: string[]) => void
   onDelete: (id: string) => void
   onDurationChange: (id: string, durationInFrames: number) => void
+  onSeek: (frame: number) => void
+  onScrubStart: () => void
+  onScrubEnd: () => void
 }
-
-const TRACK_INSET = 12
 
 export function Timeline({
   project,
   selectedClipId,
   currentFrame,
-  onSeek,
   onSelect,
   onReorder,
   onDelete,
   onDurationChange,
+  onSeek,
+  onScrubStart,
+  onScrubEnd,
 }: Props) {
   const total = projectDuration(project)
   const totalSeconds = total / project.fps
@@ -59,6 +63,36 @@ export function Timeline({
   }, [totalSeconds, tickEvery])
 
   const trackWidth = Math.max(totalSeconds, 5) * PX_PER_SECOND
+  const playheadLeft = TRACK_PADDING_X + (currentFrame / project.fps) * PX_PER_SECOND
+
+  const scrubAreaRef = useRef<HTMLDivElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!selectedClipId) return
+    const container = scrollContainerRef.current
+    if (!container) return
+    let sum = 0
+    let target = 0
+    for (const c of project.clips) {
+      if (c.id === selectedClipId) {
+        target = TRACK_PADDING_X + (sum / project.fps) * PX_PER_SECOND
+        break
+      }
+      sum += c.durationInFrames
+    }
+    const left = container.scrollLeft
+    const right = left + container.clientWidth
+    const margin = 48
+    if (target < left + margin) {
+      container.scrollTo({ left: Math.max(0, target - margin), behavior: "smooth" })
+    } else if (target > right - margin) {
+      container.scrollTo({
+        left: target - container.clientWidth + margin,
+        behavior: "smooth",
+      })
+    }
+  }, [selectedClipId, project])
 
   function handleDragEnd(e: DragEndEvent) {
     const { active, over } = e
@@ -85,9 +119,39 @@ export function Timeline({
     return () => window.removeEventListener("keydown", onKey)
   }, [selectedClipId, onDelete])
 
+  function frameFromClientX(clientX: number): number {
+    const el = scrubAreaRef.current
+    if (!el) return 0
+    const rect = el.getBoundingClientRect()
+    const x = clientX - rect.left - TRACK_PADDING_X
+    const seconds = Math.max(0, x / PX_PER_SECOND)
+    const frame = Math.round(seconds * project.fps)
+    return Math.max(0, Math.min(total - 1, frame))
+  }
+
+  function startScrub(e: React.PointerEvent) {
+    if (e.button !== 0) return
+    e.preventDefault()
+    onScrubStart()
+    onSeek(frameFromClientX(e.clientX))
+
+    function onMove(ev: PointerEvent) {
+      onSeek(frameFromClientX(ev.clientX))
+    }
+    function onUp() {
+      window.removeEventListener("pointermove", onMove)
+      window.removeEventListener("pointerup", onUp)
+      window.removeEventListener("pointercancel", onUp)
+      onScrubEnd()
+    }
+    window.addEventListener("pointermove", onMove)
+    window.addEventListener("pointerup", onUp)
+    window.addEventListener("pointercancel", onUp)
+  }
+
   return (
-    <div className="shrink-0 border-t border-border bg-background">
-      <div className="flex items-center justify-between border-b border-border px-4 py-2">
+    <div className="shrink-0 bg-background">
+      <div className="flex items-center justify-between px-4 py-2">
         <p className="text-xs font-medium text-muted-foreground">
           Timeline
         </p>
@@ -97,17 +161,16 @@ export function Timeline({
         </p>
       </div>
 
-      <div className="overflow-x-auto">
+      <div ref={scrollContainerRef} className="overflow-x-auto">
         <div
+          ref={scrubAreaRef}
           style={{ minWidth: trackWidth + 32 }}
           className="relative w-full"
         >
           <TimeRuler
             ticks={ticks}
             pxPerSecond={PX_PER_SECOND}
-            totalSeconds={Math.max(totalSeconds, 5)}
-            fps={project.fps}
-            onSeek={onSeek}
+            onPointerDown={startScrub}
           />
 
           {project.clips.length === 0 ? (
@@ -124,7 +187,7 @@ export function Timeline({
                 items={project.clips.map((c) => c.id)}
                 strategy={horizontalListSortingStrategy}
               >
-                <div className="flex items-stretch gap-2 px-3 py-3">
+                <div className="flex items-stretch gap-0 px-3 py-3">
                   {project.clips.map((clip) => (
                     <SortableClipBlock
                       key={clip.id}
@@ -141,43 +204,9 @@ export function Timeline({
             </DndContext>
           )}
 
-          <Playhead
-            frame={currentFrame}
-            fps={project.fps}
-            pxPerSecond={PX_PER_SECOND}
-          />
+          <Playhead left={playheadLeft} />
         </div>
       </div>
-    </div>
-  )
-}
-
-function Playhead({
-  frame,
-  fps,
-  pxPerSecond,
-}: {
-  frame: number
-  fps: number
-  pxPerSecond: number
-}) {
-  const left = TRACK_INSET + (frame / fps) * pxPerSecond
-  return (
-    <div
-      aria-hidden
-      className="pointer-events-none absolute top-0 bottom-0 z-20"
-      style={{ left, transform: "translateX(-50%)" }}
-    >
-      <div className="absolute -top-px left-1/2 -translate-x-1/2">
-        <div
-          className="size-0 border-x-[6px] border-t-[8px] border-x-transparent"
-          style={{ borderTopColor: "rgb(239 68 68)" }}
-        />
-      </div>
-      <div
-        className="absolute top-0 bottom-0 left-1/2 w-px -translate-x-1/2"
-        style={{ background: "rgb(239 68 68)" }}
-      />
     </div>
   )
 }
@@ -185,33 +214,22 @@ function Playhead({
 function TimeRuler({
   ticks,
   pxPerSecond,
-  totalSeconds,
-  fps,
-  onSeek,
+  onPointerDown,
 }: {
   ticks: number[]
   pxPerSecond: number
-  totalSeconds: number
-  fps: number
-  onSeek: (frame: number) => void
+  onPointerDown: (e: React.PointerEvent) => void
 }) {
-  function handleSeek(e: React.MouseEvent<HTMLDivElement>) {
-    const rect = e.currentTarget.getBoundingClientRect()
-    const x = e.clientX - rect.left - TRACK_INSET
-    const seconds = Math.max(0, Math.min(x / pxPerSecond, totalSeconds))
-    onSeek(Math.round(seconds * fps))
-  }
-
   return (
     <div
-      className="relative h-7 cursor-pointer border-b border-border/60 px-3"
-      onMouseDown={handleSeek}
+      onPointerDown={onPointerDown}
+      className="relative h-7 cursor-ew-resize border-b border-border/60 px-3 select-none"
     >
       {ticks.map((t) => (
         <div
           key={t}
           className="pointer-events-none absolute top-0 flex h-full flex-col items-start gap-0.5"
-          style={{ left: TRACK_INSET + t * pxPerSecond }}
+          style={{ left: 12 + t * pxPerSecond }}
         >
           <span className="mt-1 text-[9px] tabular-nums text-muted-foreground">
             {formatTime(t)}
@@ -219,6 +237,17 @@ function TimeRuler({
           <span className="absolute bottom-0 h-1.5 w-px bg-border" />
         </div>
       ))}
+    </div>
+  )
+}
+
+function Playhead({ left }: { left: number }) {
+  return (
+    <div
+      className="pointer-events-none absolute top-0 bottom-0 z-20 -ml-px w-px bg-blue-500"
+      style={{ left }}
+    >
+      <span className="absolute -top-px -left-[5px] size-2.5 rotate-45 rounded-[2px] bg-blue-500 shadow-[0_0_0_1px_rgba(255,255,255,0.6)]" />
     </div>
   )
 }

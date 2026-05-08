@@ -25,11 +25,11 @@ Always run `bun run tsc --noEmit` (or `bun run --cwd <package> tsc --noEmit`) af
 
 `apps/remotion/src/components.ts` uses a two-level split to avoid circular dependencies:
 
-- **`leaf-components.ts`** — standalone compositions that do NOT import `componentsById` or `leafComponentsById`. Add new plain compositions here.
-- **`components.ts`** — spreads `leafComponentsById` and adds wrapper compositions (`PhoneFrame`, `SplitScene`) that need to look up other compositions at render time.
+- **`componentsBase.ts`** — standalone compositions that do NOT import `componentsById` or `componentsByIdBase`. Add new plain compositions here.
+- **`components.ts`** — spreads `componentsByIdBase` and adds wrapper compositions (`PhoneFrame`, `LaptopFrame`, `SplitScene`) that need to look up other compositions at render time.
 
-Wrapper compositions (any component that embeds other compositions via `componentsById`) must:
-1. Import from `leaf-components.ts`, never from `components.ts`
-2. Live in `components.ts` (not in `leaf-components.ts`)
+Wrapper compositions (any component that embeds other compositions via `componentsByIdBase`) must:
+1. Import from `componentsBase.ts`, never from `components.ts`
+2. Live in `components.ts` (not in `componentsBase.ts`)
 
 Violating this causes a circular-import TDZ crash at runtime.

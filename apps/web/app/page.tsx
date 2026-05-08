@@ -1,26 +1,38 @@
 import Link from "next/link"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { ArrowRight01Icon } from "@hugeicons/core-free-icons"
+import {
+  ArrowRight01Icon,
+  CodeIcon,
+  Copy01Icon,
+  FilmRoll02Icon,
+  PaintBrush02Icon,
+} from "@hugeicons/core-free-icons"
 import { compositions } from "@workspace/compositions/registry"
+import { Button } from "@workspace/ui/components/button"
 import { DocsHeader } from "@/components/docs-header"
+import { FeaturedComponents } from "@/components/featured-components"
 
 const features = [
   {
+    icon: Copy01Icon,
     title: "Copy & paste",
     description:
       "Composable Remotion primitives you own. No opaque framework, no lock-in.",
   },
   {
+    icon: CodeIcon,
     title: "Fully typed",
     description:
       "Strict TypeScript end-to-end — props, schemas, and registry entries.",
   },
   {
+    icon: PaintBrush02Icon,
     title: "Themeable",
     description:
       "Tailwind-friendly tokens with light & dark modes baked in.",
   },
   {
+    icon: FilmRoll02Icon,
     title: "Production-ready",
     description:
       "Render in the browser with the Remotion Player or ship to MP4 via the renderer.",
@@ -31,19 +43,11 @@ export default function LandingPage() {
   const featured = compositions.slice(0, 6)
 
   return (
-    <div className="mx-auto max-w-[1600px] border-x border-dashed border-white/10 min-h-screen">
+    <div className="mx-auto min-h-screen max-w-[1600px] border-x border-dashed border-border">
       <DocsHeader />
 
       {/* Hero */}
-      <section className="relative overflow-hidden border-b border-dashed border-white/10">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-60"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle at 50% 0%, rgba(120,120,255,0.15), transparent 60%)",
-          }}
-        />
+      <section className="relative overflow-hidden border-b border-dashed border-border">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 opacity-[0.07]"
@@ -57,16 +61,15 @@ export default function LandingPage() {
         />
         <div className="relative px-8 pt-24 pb-28 sm:pt-32 sm:pb-36">
           <div className="mx-auto max-w-3xl text-center">
-            <Link
-              href="/docs/changelog"
-              className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-muted/40 px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-border hover:text-foreground"
-            >
-              <span className="rounded-full bg-foreground px-2 py-0.5 text-[10px] font-medium text-background">
-                v1.0
-              </span>
-              <span>Initial release is out</span>
-              <HugeiconsIcon icon={ArrowRight01Icon} size={12} />
-            </Link>
+            <Button variant="outline" size="xs" asChild>
+              <Link href="/docs/changelog">
+                <span className="rounded-full bg-foreground px-2 py-0.5 text-[10px] font-medium text-background">
+                  v1.0
+                </span>
+                <span>Initial release is out</span>
+                <HugeiconsIcon icon={ArrowRight01Icon} data-icon="inline-end" />
+              </Link>
+            </Button>
 
             <h1 className="mt-6 text-balance text-5xl font-semibold tracking-tight sm:text-6xl">
               Beautifully designed motion components.
@@ -77,26 +80,22 @@ export default function LandingPage() {
             </p>
 
             <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-              <Link
-                href="/docs"
-                className="inline-flex items-center gap-2 rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background transition-opacity hover:opacity-90"
-              >
-                Get started
-                <HugeiconsIcon icon={ArrowRight01Icon} size={14} />
-              </Link>
-              <Link
-                href="/studio"
-                className="inline-flex items-center gap-2 rounded-md border border-border/60 bg-muted/40 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:border-border hover:bg-muted"
-              >
-                Open Studio
-              </Link>
+              <Button asChild>
+                <Link href="/docs">
+                  Get started
+                  <HugeiconsIcon icon={ArrowRight01Icon} data-icon="inline-end" />
+                </Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href="/studio">Open Studio</Link>
+              </Button>
             </div>
           </div>
         </div>
       </section>
 
       {/* Features */}
-      <section className="border-b border-dashed border-white/10 px-8 py-20">
+      <section className="border-b border-dashed border-border px-8 py-20">
         <div className="mx-auto max-w-5xl">
           <div className="mb-12 max-w-2xl">
             <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
@@ -107,10 +106,12 @@ export default function LandingPage() {
               Remotion and tuned for production rendering.
             </p>
           </div>
-          <div className="grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-dashed border-white/10 bg-white/5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-dashed border-border bg-border/50 sm:grid-cols-2 lg:grid-cols-4">
             {features.map((f) => (
               <div key={f.title} className="bg-background p-6">
-                <div className="mb-3 size-8 rounded-md border border-dashed border-white/10 bg-muted/30" />
+                <div className="mb-3 flex size-8 items-center justify-center rounded-md border border-dashed border-border bg-muted/30 text-foreground">
+                  <HugeiconsIcon icon={f.icon} className="size-4" />
+                </div>
                 <h3 className="text-sm font-medium">{f.title}</h3>
                 <p className="mt-2 text-sm text-muted-foreground">
                   {f.description}
@@ -122,7 +123,7 @@ export default function LandingPage() {
       </section>
 
       {/* Featured components */}
-      <section className="border-b border-dashed border-white/10 px-8 py-20">
+      <section className="border-b border-dashed border-border px-8 py-20">
         <div className="mx-auto max-w-5xl">
           <div className="mb-12 flex items-end justify-between gap-6">
             <div>
@@ -133,45 +134,21 @@ export default function LandingPage() {
                 A growing library of titles, overlays, and templates.
               </p>
             </div>
-            <Link
-              href="/docs"
-              className="hidden shrink-0 items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground sm:inline-flex"
-            >
-              View all
-              <HugeiconsIcon icon={ArrowRight01Icon} size={13} />
-            </Link>
+            <Button variant="ghost" size="sm" asChild className="hidden shrink-0 sm:inline-flex">
+              <Link href="/docs">
+                View all
+                <HugeiconsIcon icon={ArrowRight01Icon} data-icon="inline-end" />
+              </Link>
+            </Button>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {featured.map((c) => (
-              <Link
-                key={c.id}
-                href={`/docs/${c.id}`}
-                className="group relative overflow-hidden rounded-lg border border-border/60 bg-muted/20 p-5 transition-colors hover:border-border hover:bg-muted/40"
-              >
-                <div className="aspect-video w-full rounded-md border border-dashed border-white/10 bg-background" />
-                <div className="mt-4 flex items-center justify-between">
-                  <div>
-                    <div className="text-sm font-medium">{c.title}</div>
-                    <div className="mt-0.5 text-xs text-muted-foreground">
-                      {c.id}
-                    </div>
-                  </div>
-                  <HugeiconsIcon
-                    icon={ArrowRight01Icon}
-                    size={14}
-                    className="text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground"
-                  />
-                </div>
-              </Link>
-            ))}
-          </div>
+          <FeaturedComponents items={featured} />
         </div>
       </section>
 
       {/* CTA */}
       <section className="px-8 py-24">
-        <div className="mx-auto max-w-3xl rounded-xl border border-dashed border-white/10 bg-muted/20 px-8 py-14 text-center">
+        <div className="mx-auto max-w-3xl rounded-xl border border-dashed border-border bg-muted/20 px-8 py-14 text-center">
           <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
             Start shipping motion in minutes.
           </h2>
@@ -179,25 +156,21 @@ export default function LandingPage() {
             Read the docs, copy a component, render your first scene.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Link
-              href="/docs"
-              className="inline-flex items-center gap-2 rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background transition-opacity hover:opacity-90"
-            >
-              Read the docs
-              <HugeiconsIcon icon={ArrowRight01Icon} size={14} />
-            </Link>
-            <Link
-              href="https://github.com"
-              className="inline-flex items-center gap-2 rounded-md border border-border/60 bg-muted/40 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:border-border hover:bg-muted"
-            >
-              GitHub
-            </Link>
+            <Button asChild>
+              <Link href="/docs">
+                Read the docs
+                <HugeiconsIcon icon={ArrowRight01Icon} data-icon="inline-end" />
+              </Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href="https://github.com">GitHub</Link>
+            </Button>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-dashed border-white/10 px-8 py-10">
+      <footer className="border-t border-dashed border-border px-8 py-10">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-2">
             <div className="size-4 rounded bg-foreground" />

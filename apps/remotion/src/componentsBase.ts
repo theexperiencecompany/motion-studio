@@ -41,8 +41,11 @@ import { TextShortSlideRight } from "./compositions/TextShortSlideRight/TextShor
 import { TextKineticCenterBuild } from "./compositions/TextKineticCenterBuild/TextKineticCenterBuild";
 import { TextShortSlideDown } from "./compositions/TextShortSlideDown/TextShortSlideDown";
 
+// Wrapper compositions (PhoneFrame, LaptopFrame, SplitScene) import this
+// module to look up nested compositions. Keep them OUT of this file to avoid
+// circular-import TDZ errors. Add them in components.ts instead.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const leafComponentsById: Record<string, ComponentType<any>> = {
+export const componentsByIdBase: Record<string, ComponentType<any>> = {
   MessagePopup,
   MessageBubbles,
   TitleSlideUp,

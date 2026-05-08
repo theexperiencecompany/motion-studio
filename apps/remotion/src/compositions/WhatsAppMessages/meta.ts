@@ -8,6 +8,7 @@ export const WHATSAPP_MESSAGES_HEIGHT = 720;
 
 export const whatsappMessagesDefaultProps: WhatsAppMessagesProps = {
   contactName: "sanku",
+  contactAvatar: "https://github.com/aryanranderiya.png",
   messages: [
     { text: "hey, you up?", side: "left", typingFrames: 50, delay: 30 },
     { text: "yeah whats up", side: "right", typingFrames: 55, delay: 150 },
@@ -35,6 +36,7 @@ export const whatsappMessagesInfo: CompositionInfo<WhatsAppMessagesProps> = {
   defaultProps: whatsappMessagesDefaultProps,
   fields: [
     { kind: "text", key: "contactName", label: "Contact name" },
+    { kind: "text", key: "contactAvatar", label: "Avatar URL" },
     { kind: "chat", key: "messages", label: "Messages" },
     {
       kind: "select",

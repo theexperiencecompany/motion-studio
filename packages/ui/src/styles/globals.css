@@ -134,3 +134,65 @@
     @apply font-sans;
     }
 }
+
+/* iMessage-style chat bubbles (mirrors GAIA implementation) */
+.imessage-bubble {
+  position: relative;
+  border-radius: 20px;
+  word-wrap: break-word;
+}
+
+.imessage-bubble::before,
+.imessage-bubble::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  height: 18px;
+}
+
+.imessage-from-them {
+  background: #E9E9EB;
+  color: #0f1014;
+}
+
+.imessage-from-them::before {
+  left: -7px;
+  width: 20px;
+  background-color: #E9E9EB;
+  border-bottom-right-radius: 16px;
+}
+
+.imessage-from-them::after {
+  left: -26px;
+  width: 26px;
+  background-color: var(--imessage-bg);
+  border-bottom-right-radius: 10px;
+}
+
+.dark .imessage-from-them {
+  background: #3A3A3C;
+  color: #ffffff;
+}
+
+.dark .imessage-from-them::before {
+  background-color: #3A3A3C;
+}
+
+.imessage-from-me {
+  background: #007AFF;
+  color: #ffffff;
+}
+
+.imessage-from-me::before {
+  right: -7px;
+  width: 20px;
+  background-color: #007AFF;
+  border-bottom-left-radius: 16px 14px;
+}
+
+.imessage-from-me::after {
+  right: -26px;
+  width: 26px;
+  background-color: var(--imessage-bg);
+  border-bottom-left-radius: 10px;
+}

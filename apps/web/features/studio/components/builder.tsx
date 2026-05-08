@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useMemo, useReducer, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react"
 import type { PlayerRef } from "@remotion/player"
-import { projectDuration } from "@workspace/compositions/project"
+import { projectDuration, type Project } from "@workspace/compositions/project"
 import { compositionsById } from "@workspace/compositions/registry"
 import {
   initialStudioState,
@@ -13,6 +13,7 @@ import { TopBar } from "./top-bar"
 import { ToolRail } from "./tool-rail"
 import { LibraryPanel } from "./library-panel"
 import { PreviewStage } from "./preview-stage"
+import { PlaybackControls } from "./playback-controls"
 import { Inspector } from "./inspector"
 import { Timeline } from "./timeline"
 import { ExportProgressOverlay } from "./export-progress-overlay"
@@ -38,24 +39,93 @@ export function Builder() {
 
   const playerRef = useRef<PlayerRef>(null)
   const [currentFrame, setCurrentFrame] = useState(0)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const wasPlayingBeforeScrubRef = useRef(false)
 
   useEffect(() => {
+    if (!hasClips) {
+      setCurrentFrame(0)
+      setIsPlaying(false)
+      return
+    }
     const player = playerRef.current
     if (!player) return
-    const onFrame = (e: { detail: { frame: number } }) => {
-      setCurrentFrame(e.detail.frame)
+    const onFrame: Parameters<PlayerRef["addEventListener"]>[1] = (e) => {
+      setCurrentFrame((e as { detail: { frame: number } }).detail.frame)
     }
+    const onPlay = () => setIsPlaying(true)
+    const onPause = () => setIsPlaying(false)
     player.addEventListener("frameupdate", onFrame)
-    return () => player.removeEventListener("frameupdate", onFrame)
+    player.addEventListener("play", onPlay)
+    player.addEventListener("pause", onPause)
+    return () => {
+      player.removeEventListener("frameupdate", onFrame)
+      player.removeEventListener("play", onPlay)
+      player.removeEventListener("pause", onPause)
+    }
   }, [hasClips])
 
-  const seekToFrame = (frame: number) => {
-    const player = playerRef.current
-    if (!player) return
-    const clamped = Math.max(0, Math.min(frame, Math.max(0, totalDuration - 1)))
-    player.seekTo(clamped)
-    setCurrentFrame(clamped)
-  }
+  useEffect(() => {
+    if (!state.selectedClipId) return
+    const start = clipStartFrame(state.project, state.selectedClipId)
+    let cancelled = false
+    function attempt(retries: number) {
+      if (cancelled) return
+      const p = playerRef.current
+      if (p) {
+        p.seekTo(start)
+        return
+      }
+      if (retries > 0) requestAnimationFrame(() => attempt(retries - 1))
+    }
+    attempt(8)
+    return () => {
+      cancelled = true
+    }
+  }, [state.selectedClipId, state.project])
+
+  const handleSeek = useCallback((frame: number) => {
+    playerRef.current?.seekTo(frame)
+  }, [])
+
+  const handleScrubStart = useCallback(() => {
+    const p = playerRef.current
+    if (!p) return
+    wasPlayingBeforeScrubRef.current = p.isPlaying()
+    if (wasPlayingBeforeScrubRef.current) p.pause()
+  }, [])
+
+  const handleScrubEnd = useCallback(() => {
+    if (wasPlayingBeforeScrubRef.current) playerRef.current?.play()
+    wasPlayingBeforeScrubRef.current = false
+  }, [])
+
+  const handlePlayPause = useCallback(() => {
+    playerRef.current?.toggle()
+  }, [])
+
+  const handleSkipToStart = useCallback(() => {
+    playerRef.current?.seekTo(0)
+  }, [])
+
+  const handleSkipToEnd = useCallback(() => {
+    playerRef.current?.seekTo(Math.max(0, totalDuration - 1))
+  }, [totalDuration])
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== " " || !hasClips) return
+      const el = document.activeElement
+      if (el) {
+        const tag = el.tagName.toLowerCase()
+        if (tag === "input" || tag === "textarea" || (el as HTMLElement).isContentEditable) return
+      }
+      e.preventDefault()
+      handlePlayPause()
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [hasClips, handlePlayPause])
 
   return (
     <div className="flex h-screen flex-col bg-background text-foreground">
@@ -93,11 +163,21 @@ export function Builder() {
             playerRef={playerRef}
           />
 
+          <PlaybackControls
+            currentFrame={currentFrame}
+            totalDuration={totalDuration}
+            fps={state.project.fps}
+            isPlaying={isPlaying}
+            disabled={!hasClips}
+            onPlayPause={handlePlayPause}
+            onSkipToStart={handleSkipToStart}
+            onSkipToEnd={handleSkipToEnd}
+          />
+
           <Timeline
             project={state.project}
             selectedClipId={state.selectedClipId}
             currentFrame={currentFrame}
-            onSeek={seekToFrame}
             onSelect={(id) => dispatch({ type: "SELECT_CLIP", clipId: id })}
             onReorder={(clipIds) =>
               dispatch({ type: "REORDER_CLIPS", clipIds })
@@ -110,6 +190,9 @@ export function Builder() {
                 durationInFrames,
               })
             }
+            onSeek={handleSeek}
+            onScrubStart={handleScrubStart}
+            onScrubEnd={handleScrubEnd}
           />
         </main>
 
@@ -132,4 +215,13 @@ export function Builder() {
       <ExportProgressOverlay state={exportState} onClose={resetExport} />
     </div>
   )
+}
+
+function clipStartFrame(project: Project, clipId: string): number {
+  let sum = 0
+  for (const c of project.clips) {
+    if (c.id === clipId) return sum
+    sum += c.durationInFrames
+  }
+  return 0
 }

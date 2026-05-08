@@ -76,6 +76,14 @@ export function FieldsRenderer({ fields, value, onChange }: Props) {
       )}
       {chatField && chatField.kind === "chat" && (
         <div className="flex min-h-0 flex-1 flex-col">
+          <div className="shrink-0 px-5 py-3">
+            <p className="text-xs font-semibold text-foreground">
+              {chatField.label}
+            </p>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">
+              Preview of the conversation rendered in the video
+            </p>
+          </div>
           <ChatEditor
             value={(value[chatField.key] ?? []) as never}
             onChange={(v) => set(chatField.key, v)}

@@ -2,6 +2,7 @@
 import {
   AbsoluteFill,
   spring,
+  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
@@ -9,6 +10,7 @@ import type { ChatMessage } from "../../editors/types";
 
 export type WhatsAppMessagesProps = {
   contactName: string;
+  contactAvatar?: string;
   messages: ChatMessage[];
   theme: "light" | "dark";
 };
@@ -21,8 +23,6 @@ const SIDE_PADDING = 36;
 
 type Palette = {
   bg: string;
-  wallpaper: string;
-  wallpaperOpacity: number;
   headerBg: string;
   headerBorder: string;
   headerText: string;
@@ -47,8 +47,6 @@ function getPalette(theme: "light" | "dark"): Palette {
   if (theme === "dark") {
     return {
       bg: "#0B141A",
-      wallpaper: WALLPAPER_SVG("rgba(255,255,255,0.06)"),
-      wallpaperOpacity: 1,
       headerBg: "#202C33",
       headerBorder: "rgba(255,255,255,0.06)",
       headerText: "#E9EDEF",
@@ -71,8 +69,6 @@ function getPalette(theme: "light" | "dark"): Palette {
   }
   return {
     bg: "#EFE7DD",
-    wallpaper: WALLPAPER_SVG("rgba(0,0,0,0.05)"),
-    wallpaperOpacity: 1,
     headerBg: "#F0F2F5",
     headerBorder: "rgba(0,0,0,0.08)",
     headerText: "#111B21",
@@ -94,39 +90,19 @@ function getPalette(theme: "light" | "dark"): Palette {
   };
 }
 
-function WALLPAPER_SVG(fill: string) {
-  // Subtle doodle-style pattern reminiscent of WhatsApp's chat wallpaper.
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'><g fill='none' stroke='${fill}' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'>
-<path d='M22 28 q6 -10 14 0 q6 10 14 0'/>
-<circle cx='90' cy='34' r='8'/>
-<path d='M86 34 h8 M90 30 v8'/>
-<path d='M140 22 l10 14 l-20 0 z'/>
-<path d='M170 30 q10 4 0 12 q-10 -4 0 -12'/>
-<path d='M30 80 c0 -10 16 -10 16 0 c0 8 -16 14 -16 22'/>
-<rect x='70' y='72' width='22' height='14' rx='3'/>
-<path d='M120 72 q10 0 10 10 t-10 10 t-10 -10 t10 -10'/>
-<path d='M158 76 l10 10 M168 76 l-10 10'/>
-<path d='M20 130 q10 -10 20 0 q10 10 20 0'/>
-<circle cx='95' cy='128' r='9'/>
-<path d='M89 128 q6 6 12 0'/>
-<path d='M140 122 l4 12 l8 -2 l-4 -12 z'/>
-<path d='M174 130 q-6 -8 -12 0 q-6 8 -12 0'/>
-<path d='M28 174 c0 -8 12 -8 12 0 v6 h-12 z'/>
-<path d='M70 178 q10 -10 22 0'/>
-<circle cx='130' cy='176' r='6'/>
-<path d='M160 170 l8 12 l-16 0 z'/>
-</g></svg>`;
-  return `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")`;
-}
+
+const WALLPAPER_URL = staticFile("whatsapp-tile-dark.png");
 
 export const WhatsAppMessages: React.FC<WhatsAppMessagesProps> = ({
   contactName,
+  contactAvatar = "https://github.com/aryanranderiya.png",
   messages,
   theme,
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const palette = getPalette(theme);
+  const isDark = theme === "dark";
 
   return (
     <AbsoluteFill
@@ -140,9 +116,11 @@ export const WhatsAppMessages: React.FC<WhatsAppMessagesProps> = ({
     >
       <AbsoluteFill
         style={{
-          backgroundImage: palette.wallpaper,
-          backgroundSize: "200px 200px",
-          opacity: palette.wallpaperOpacity,
+          backgroundImage: `url(${WALLPAPER_URL})`,
+          backgroundSize: "540px 981px",
+          backgroundRepeat: "repeat",
+          opacity: isDark ? 0.6 : 0.15,
+          filter: isDark ? undefined : "invert(1)",
         }}
       />
 
@@ -156,6 +134,7 @@ export const WhatsAppMessages: React.FC<WhatsAppMessagesProps> = ({
       >
         <Header
           name={contactName}
+          avatar={contactAvatar}
           frame={frame}
           fps={fps}
           palette={palette}
@@ -174,11 +153,13 @@ export const WhatsAppMessages: React.FC<WhatsAppMessagesProps> = ({
 
 function Header({
   name,
+  avatar,
   frame,
   fps,
   palette,
 }: {
   name: string;
+  avatar: string;
   frame: number;
   fps: number;
   palette: Palette;
@@ -211,16 +192,13 @@ function Header({
           overflow: "hidden",
           background:
             "conic-gradient(from 210deg, #6e7c84 0deg, #2a3942 120deg, #6e7c84 240deg, #2a3942 360deg)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "rgba(255,255,255,0.85)",
-          fontSize: 24,
-          fontWeight: 600,
           flexShrink: 0,
         }}
       >
-        {name.slice(0, 1).toUpperCase()}
+        <img
+          src={avatar}
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+        />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
@@ -562,8 +540,8 @@ function TypingBubble({
         background: isRight ? palette.sentBg : palette.receivedBg,
         padding: "14px 18px",
         borderRadius: 8,
-        borderTopRightRadius: isRight ? 0 : 8,
-        borderTopLeftRadius: isRight ? 8 : 0,
+        borderBottomRightRadius: isRight ? 0 : 8,
+        borderBottomLeftRadius: isRight ? 8 : 0,
         display: "flex",
         gap: 8,
         alignItems: "center",
@@ -624,8 +602,8 @@ function MessageBubble({
         color: palette.bubbleText,
         padding: "8px 12px 10px",
         borderRadius: 8,
-        borderTopRightRadius: isRight ? 0 : 8,
-        borderTopLeftRadius: isRight ? 8 : 0,
+        borderBottomRightRadius: isRight ? 0 : 8,
+        borderBottomLeftRadius: isRight ? 8 : 0,
         maxWidth: 760,
         minWidth: 80,
         fontSize: 22,
@@ -675,23 +653,34 @@ function BubbleTail({
   palette: Palette;
 }) {
   const isRight = side === "right";
-  const fill = isRight ? palette.sentBg : palette.receivedBg;
+  const bubbleColor = isRight ? palette.sentBg : palette.receivedBg;
   return (
-    <svg
-      width="12"
-      height="14"
-      viewBox="0 0 12 14"
-      style={{
-        position: "absolute",
-        top: 0,
-        [isRight ? "right" : "left"]: -8,
-        transform: isRight ? "scaleX(-1)" : "none",
-        filter: `drop-shadow(${palette.bubbleShadow})`,
-        display: "block",
-      }}
-    >
-      <path d="M12 0 H4 Q4 8 0 8 Q8 8 12 4 Z" fill={fill} />
-    </svg>
+    <>
+      <div
+        style={{
+          position: "absolute",
+          bottom: 0,
+          height: 13,
+          width: 14,
+          backgroundColor: bubbleColor,
+          ...(isRight
+            ? { right: -5, borderBottomLeftRadius: "11px 10px" }
+            : { left: -5, borderBottomRightRadius: 11 }),
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          bottom: 0,
+          height: 13,
+          width: 18,
+          backgroundColor: palette.bg,
+          ...(isRight
+            ? { right: -18, borderBottomLeftRadius: 7 }
+            : { left: -18, borderBottomRightRadius: 7 }),
+        }}
+      />
+    </>
   );
 }
 

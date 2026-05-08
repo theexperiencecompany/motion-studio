@@ -34,7 +34,7 @@ export function PreviewStage({
   return (
     <div className="relative flex min-h-0 flex-1 items-center justify-center bg-background p-8">
       <div
-        className="relative max-h-full max-w-full overflow-hidden rounded-2xl border border-border bg-black shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]"
+        className="relative max-h-full max-w-full overflow-hidden bg-black ring-1 ring-border"
         style={{
           aspectRatio: `${project.width} / ${project.height}`,
           height: "100%",
@@ -52,7 +52,6 @@ export function PreviewStage({
           compositionWidth={project.width}
           compositionHeight={project.height}
           style={{ width: "100%", height: "100%" }}
-          controls
           loop
           initiallyMuted
           acknowledgeRemotionLicense

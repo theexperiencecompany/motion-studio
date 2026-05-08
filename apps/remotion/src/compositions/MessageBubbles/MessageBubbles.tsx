@@ -9,6 +9,7 @@ import type { ChatMessage } from "../../editors/types";
 
 export type MessageBubblesProps = {
   contactName: string;
+  contactAvatar?: string;
   messages: ChatMessage[];
   theme: "light" | "dark";
 };
@@ -51,6 +52,7 @@ function getPalette(theme: "light" | "dark"): Palette {
 
 export const MessageBubbles: React.FC<MessageBubblesProps> = ({
   contactName,
+  contactAvatar,
   messages,
   theme,
 }) => {
@@ -72,6 +74,7 @@ export const MessageBubbles: React.FC<MessageBubblesProps> = ({
     >
       <ChatHeader
         name={contactName}
+        avatar={contactAvatar}
         frame={frame}
         fps={fps}
         palette={palette}
@@ -88,11 +91,13 @@ export const MessageBubbles: React.FC<MessageBubblesProps> = ({
 
 function ChatHeader({
   name,
+  avatar,
   frame,
   fps,
   palette,
 }: {
   name: string;
+  avatar?: string;
   frame: number;
   fps: number;
   palette: Palette;
@@ -121,6 +126,7 @@ function ChatHeader({
           width: 88,
           height: 88,
           borderRadius: "50%",
+          overflow: "hidden",
           background: "linear-gradient(135deg, #818cf8 0%, #6366f1 100%)",
           color: "#fff",
           display: "flex",
@@ -131,7 +137,15 @@ function ChatHeader({
           letterSpacing: "-0.01em",
         }}
       >
-        {name.slice(0, 1).toUpperCase()}
+        {avatar ? (
+          <img
+            src={avatar}
+            alt={name}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
+        ) : (
+          name.slice(0, 1).toUpperCase()
+        )}
       </div>
       <div
         style={{
@@ -271,11 +285,10 @@ function TypingBubble({
   return (
     <div
       style={{
+        position: "relative",
         background: palette.receivedBg,
         padding: "22px 28px",
         borderRadius: 30,
-        borderBottomLeftRadius: side === "left" ? 8 : 30,
-        borderBottomRightRadius: side === "right" ? 8 : 30,
         display: "flex",
         gap: 12,
         alignItems: "center",
@@ -304,6 +317,7 @@ function TypingBubble({
           />
         );
       })}
+      <BubbleTail side={side} bubbleColor={palette.receivedBg} bgColor={palette.bg} />
     </div>
   );
 }
@@ -329,15 +343,16 @@ function MessageBubble({
 
   const isRight = side === "right";
 
+  const bubbleColor = isRight ? palette.sentBg : palette.receivedBg;
+
   return (
     <div
       style={{
-        background: isRight ? palette.sentBg : palette.receivedBg,
+        position: "relative",
+        background: bubbleColor,
         color: isRight ? palette.sentText : palette.receivedText,
         padding: "18px 26px",
         borderRadius: 30,
-        borderBottomLeftRadius: isRight ? 30 : 8,
-        borderBottomRightRadius: isRight ? 8 : 30,
         maxWidth: 720,
         fontSize: 32,
         fontWeight: 400,
@@ -351,6 +366,47 @@ function MessageBubble({
       }}
     >
       {text}
+      <BubbleTail side={side} bubbleColor={bubbleColor} bgColor={palette.bg} />
     </div>
+  );
+}
+
+function BubbleTail({
+  side,
+  bubbleColor,
+  bgColor,
+}: {
+  side: ChatMessage["side"];
+  bubbleColor: string;
+  bgColor: string;
+}) {
+  const isRight = side === "right";
+  return (
+    <>
+      <div
+        style={{
+          position: "absolute",
+          bottom: 0,
+          height: 27,
+          width: 30,
+          backgroundColor: bubbleColor,
+          ...(isRight
+            ? { right: -10, borderBottomLeftRadius: "24px 21px" }
+            : { left: -10, borderBottomRightRadius: 24 }),
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          bottom: 0,
+          height: 27,
+          width: 39,
+          backgroundColor: bgColor,
+          ...(isRight
+            ? { right: -39, borderBottomLeftRadius: 15 }
+            : { left: -39, borderBottomRightRadius: 15 }),
+        }}
+      />
+    </>
   );
 }

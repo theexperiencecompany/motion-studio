@@ -87,7 +87,10 @@ export function ChatEditor({ value, onChange }: EditorProps<ChatMessage[]>) {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-muted/20">
+    <div
+      className="flex h-full min-h-0 flex-col bg-background"
+      style={{ ["--imessage-bg" as string]: "var(--background)" }}
+    >
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
         {value.length === 0 ? (
           <EmptyState />
@@ -207,15 +210,13 @@ function BubbleBody({
         }
       }}
       title="Tap to flip side"
-      className={`relative max-w-[78%] cursor-pointer rounded-[22px] px-4 py-2 transition-[background-color,transform,box-shadow] duration-300 ease-out ${
-        isRight
-          ? "bg-blue-500 text-white shadow-sm shadow-blue-500/30"
-          : "bg-zinc-200 text-zinc-900 dark:bg-zinc-700/70 dark:text-zinc-50"
-      } ${flashing ? "ring-2 ring-offset-4 ring-offset-muted/20 ring-foreground scale-[1.04]" : ""}`}
-      style={{
-        borderBottomRightRadius: isRight ? 8 : 22,
-        borderBottomLeftRadius: !isRight ? 8 : 22,
-      }}
+      className={`imessage-bubble ${
+        isRight ? "imessage-from-me" : "imessage-from-them"
+      } max-w-[78%] cursor-pointer px-4 py-2 transition-[transform,box-shadow] duration-300 ease-out ${
+        flashing
+          ? "ring-2 ring-offset-4 ring-offset-background ring-foreground scale-[1.04]"
+          : ""
+      }`}
     >
       <textarea
         value={msg.text}
@@ -224,7 +225,7 @@ function BubbleBody({
         onMouseDown={(e) => e.stopPropagation()}
         rows={1}
         spellCheck={false}
-        className={`block w-full min-w-[40px] bg-transparent text-[14px] leading-snug outline-none cursor-text placeholder:opacity-60 ${
+        className={`relative z-[1] block w-full min-w-[40px] bg-transparent text-[14px] leading-snug outline-none cursor-text placeholder:opacity-60 ${
           isRight ? "placeholder:text-white/60" : ""
         }`}
         style={
@@ -288,7 +289,7 @@ function Composer({
           className={`flex size-10 shrink-0 items-center justify-center rounded-full text-white shadow-sm transition-all ${
             canSend
               ? nextSide === "right"
-                ? "bg-blue-500 hover:bg-blue-600 active:scale-95"
+                ? "bg-[#007AFF] hover:bg-[#0070E8] active:scale-95"
                 : "bg-zinc-500 hover:bg-zinc-600 active:scale-95"
               : "cursor-not-allowed bg-muted text-muted-foreground"
           }`}
