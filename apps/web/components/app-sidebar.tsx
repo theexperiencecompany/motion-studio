@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import {
   Book01Icon,
@@ -14,49 +14,49 @@ import {
   TextFontIcon,
   TwitterIcon,
   VideoAiIcon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { compositions } from "@workspace/compositions/registry";
+} from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { compositions } from "@workspace/compositions/registry"
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@workspace/ui/components/accordion";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+} from "@workspace/ui/components/accordion"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
 
 type NavItem = {
-  title: string;
-  href: string;
-  icon: Parameters<typeof HugeiconsIcon>[0]["icon"];
-  badge?: string;
-};
+  title: string
+  href: string
+  icon: Parameters<typeof HugeiconsIcon>[0]["icon"]
+  badge?: string
+}
 
-const TEXT_PREFIXES = ["Title", "Text"];
+const TEXT_PREFIXES = ["Title", "Text"]
 const CHAT_IDS = new Set([
   "MessagePopup",
   "MessageBubbles",
   "WhatsAppMessages",
   "SlackMessages",
   "DiscordMessages",
-]);
-const SOCIAL_IDS = new Set(["TweetCard", "TwitterFollow"]);
-const FRAME_IDS = new Set(["BrowserWindow", "LaptopFrame", "PhoneFrame"]);
+])
+const SOCIAL_IDS = new Set(["TweetCard", "TwitterFollow"])
+const FRAME_IDS = new Set(["BrowserWindow", "LaptopFrame", "PhoneFrame"])
 
 const textAnimations = compositions.filter((c) =>
-  TEXT_PREFIXES.some((p) => c.id.startsWith(p)),
-);
-const chatComponents = compositions.filter((c) => CHAT_IDS.has(c.id));
-const socialComponents = compositions.filter((c) => SOCIAL_IDS.has(c.id));
-const frameComponents = compositions.filter((c) => FRAME_IDS.has(c.id));
+  TEXT_PREFIXES.some((p) => c.id.startsWith(p))
+)
+const chatComponents = compositions.filter((c) => CHAT_IDS.has(c.id))
+const socialComponents = compositions.filter((c) => SOCIAL_IDS.has(c.id))
+const frameComponents = compositions.filter((c) => FRAME_IDS.has(c.id))
 const sceneComponents = compositions.filter(
   (c) =>
     !TEXT_PREFIXES.some((p) => c.id.startsWith(p)) &&
     !CHAT_IDS.has(c.id) &&
     !SOCIAL_IDS.has(c.id) &&
-    !FRAME_IDS.has(c.id),
-);
+    !FRAME_IDS.has(c.id)
+)
 
 const gettingStarted: NavItem[] = [
   { title: "Introduction", href: "/docs", icon: Book01Icon },
@@ -70,12 +70,12 @@ const gettingStarted: NavItem[] = [
     icon: Clock01Icon,
     badge: "v1.0",
   },
-];
+]
 
 const collapsibleGroups: Array<{
-  value: string;
-  section: string;
-  items: NavItem[];
+  value: string
+  section: string
+  items: NavItem[]
 }> = [
   {
     value: "text-animations",
@@ -122,24 +122,24 @@ const collapsibleGroups: Array<{
           ? Cursor02Icon
           : c.id === "CaptionTrack"
             ? VideoAiIcon
-            : ComputerVideoIcon;
-      return { title: c.title, href: `/docs/${c.id}`, icon };
+            : ComputerVideoIcon
+      return { title: c.title, href: `/docs/${c.id}`, icon }
     }),
   },
-];
+]
 
 export function AppSidebar() {
-  const pathname = usePathname();
+  const pathname = usePathname()
 
   const navLink = (item: NavItem) => {
-    const active = pathname === item.href;
+    const active = pathname === item.href
     return (
       <li key={item.href}>
         <Link
           href={item.href}
           className={`group relative flex h-8 items-center gap-2.5 rounded-md px-3 text-[13px] transition-all duration-150 ease-out ${
             active
-              ? "bg-accent text-foreground font-medium"
+              ? "bg-accent font-medium text-foreground"
               : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
           }`}
         >
@@ -160,14 +160,14 @@ export function AppSidebar() {
           )}
         </Link>
       </li>
-    );
-  };
+    )
+  }
 
-  const populatedGroups = collapsibleGroups.filter((g) => g.items.length > 0);
-  const defaultOpen = populatedGroups.map((g) => g.value);
+  const populatedGroups = collapsibleGroups.filter((g) => g.items.length > 0)
+  const defaultOpen = populatedGroups.map((g) => g.value)
 
   return (
-    <aside className="sticky top-14 h-[calc(100vh-3.5rem)] w-60 shrink-0 overflow-y-auto py-8 pl-8 pr-6">
+    <aside className="sticky top-14 h-[calc(100vh-3.5rem)] w-60 shrink-0 overflow-y-auto py-8 pr-6 pl-8">
       <nav className="space-y-7">
         <div>
           <p className="mb-2.5 px-3 text-[11px] font-semibold text-muted-foreground/70">
@@ -190,7 +190,7 @@ export function AppSidebar() {
               <AccordionTrigger className="mb-2.5 px-3 py-0 text-[11px] font-semibold text-muted-foreground/70 hover:no-underline [&>svg]:size-3">
                 {group.section}
               </AccordionTrigger>
-              <AccordionContent className="pb-0 pt-2">
+              <AccordionContent className="pt-2 pb-0">
                 <ul className="space-y-px">{group.items.map(navLink)}</ul>
               </AccordionContent>
             </AccordionItem>
@@ -198,5 +198,5 @@ export function AppSidebar() {
         </Accordion>
       </nav>
     </aside>
-  );
+  )
 }
