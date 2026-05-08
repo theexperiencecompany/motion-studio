@@ -2,14 +2,19 @@ import { browserWindowInfo } from "./compositions/BrowserWindow/meta";
 import { captionTrackInfo } from "./compositions/CaptionTrack/meta";
 import { cursorWalkthroughInfo } from "./compositions/CursorWalkthrough/meta";
 import { discordMessagesInfo } from "./compositions/DiscordMessages/meta";
+import { featureCardInfo } from "./compositions/FeatureCard/meta";
 import { gaiaScenarioInfo } from "./compositions/GaiaScenario/meta";
 import { laptopFrameInfo } from "./compositions/LaptopFrame/meta";
+import { logoCloudInfo } from "./compositions/LogoCloud/meta";
 import { messageBubblesInfo } from "./compositions/MessageBubbles/meta";
 import { messagePopupInfo } from "./compositions/MessagePopup/meta";
+import { metricCardInfo } from "./compositions/MetricCard/meta";
 import { phoneFrameInfo } from "./compositions/PhoneFrame/meta";
+import { pricingCardInfo } from "./compositions/PricingCard/meta";
 import { slackMessagesInfo } from "./compositions/SlackMessages/meta";
 import { splitSceneInfo } from "./compositions/SplitScene/meta";
 import { statCounterInfo } from "./compositions/StatCounter/meta";
+import { testimonialCardInfo } from "./compositions/TestimonialCard/meta";
 import { textBlurOutUpInfo } from "./compositions/TextBlurOutUp/meta";
 import { textBottomUpLettersInfo } from "./compositions/TextBottomUpLetters/meta";
 import { textDepthParallaxWordsInfo } from "./compositions/TextDepthParallaxWords/meta";
@@ -91,6 +96,11 @@ export const compositions: AnyCompositionInfo[] = [
   textShortSlideRightInfo,
   textKineticCenterBuildInfo,
   textShortSlideDownInfo,
+  featureCardInfo,
+  metricCardInfo,
+  testimonialCardInfo,
+  logoCloudInfo,
+  pricingCardInfo,
 ];
 
 export const compositionsById: Record<string, AnyCompositionInfo> =

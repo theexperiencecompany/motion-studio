@@ -2,6 +2,7 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { effectsById } from "@workspace/compositions/effects/registry";
 import type { Clip } from "@workspace/compositions/project";
 import { compositionsById } from "@workspace/compositions/registry";
 import { Button } from "@workspace/ui/components/button";
@@ -111,9 +112,29 @@ export function SortableClipBlock({
         <p className="truncate text-[11px] font-semibold leading-tight text-white drop-shadow-sm">
           {info?.title ?? clip.compositionId}
         </p>
-        <p className="text-[10px] tabular-nums text-white/75">
-          {seconds.toFixed(2)}s
-        </p>
+        <div className="flex items-center justify-between gap-1">
+          <p className="text-[10px] tabular-nums text-white/75">
+            {seconds.toFixed(2)}s
+          </p>
+          {clip.effects && clip.effects.length > 0 && (
+            <div className="flex flex-wrap items-center gap-0.5">
+              {clip.effects.slice(0, 3).map((e) => (
+                <span
+                  key={e.id}
+                  title={effectsById[e.effectId]?.title ?? e.effectId}
+                  className="rounded-sm bg-black/30 px-1 py-px text-[8px] font-semibold uppercase leading-none tracking-wider text-white/90 backdrop-blur-sm"
+                >
+                  {(effectsById[e.effectId]?.title ?? e.effectId).slice(0, 4)}
+                </span>
+              ))}
+              {clip.effects.length > 3 && (
+                <span className="rounded-sm bg-black/30 px-1 py-px text-[8px] font-semibold leading-none text-white/90">
+                  +{clip.effects.length - 3}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {selected && (

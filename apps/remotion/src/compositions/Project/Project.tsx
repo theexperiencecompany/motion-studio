@@ -1,6 +1,7 @@
 "use client";
 import { AbsoluteFill, Sequence } from "remotion";
 import { componentsById } from "../../components";
+import { EffectsWrap } from "../../effects/EffectsWrap";
 import type { Project } from "../../project";
 
 export const ProjectComposition: React.FC<Project> = ({ clips }) => {
@@ -11,17 +12,23 @@ export const ProjectComposition: React.FC<Project> = ({ clips }) => {
         const Component = componentsById[clip.compositionId];
         const from = cursor;
         cursor += clip.durationInFrames;
+        const inner = Component ? (
+          <Component {...clip.props} />
+        ) : (
+          <MissingClip compositionId={clip.compositionId} />
+        );
         return (
           <Sequence
             key={clip.id}
             from={from}
             durationInFrames={clip.durationInFrames}
           >
-            {Component ? (
-              <Component {...clip.props} />
-            ) : (
-              <MissingClip compositionId={clip.compositionId} />
-            )}
+            <EffectsWrap
+              effects={clip.effects}
+              clipDurationInFrames={clip.durationInFrames}
+            >
+              {inner}
+            </EffectsWrap>
           </Sequence>
         );
       })}

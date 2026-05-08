@@ -1,8 +1,11 @@
+import type { ClipEffect } from "./effects/schema";
+
 export type Clip = {
   id: string;
   compositionId: string;
   props: Record<string, unknown>;
   durationInFrames: number;
+  effects?: ClipEffect[];
 };
 
 export type Project = {

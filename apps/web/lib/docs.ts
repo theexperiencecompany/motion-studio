@@ -11,21 +11,33 @@ import CursorWalkthroughMDX, {
 import DiscordMessagesMDX, {
   meta as discordMessagesMeta,
 } from "@/content/docs/discord-messages.mdx";
+import FeatureCardMDX, {
+  meta as featureCardMeta,
+} from "@/content/docs/feature-card.mdx";
 import IntroductionMDX, {
   meta as introductionMeta,
 } from "@/content/docs/introduction.mdx";
 import LaptopFrameMDX, {
   meta as laptopFrameMeta,
 } from "@/content/docs/laptop-frame.mdx";
+import LogoCloudMDX, {
+  meta as logoCloudMeta,
+} from "@/content/docs/logo-cloud.mdx";
 import MessageBubblesMDX, {
   meta as messageBubblesMeta,
 } from "@/content/docs/message-bubbles.mdx";
 import MessagePopupMDX, {
   meta as messagePopupMeta,
 } from "@/content/docs/message-popup.mdx";
+import MetricCardMDX, {
+  meta as metricCardMeta,
+} from "@/content/docs/metric-card.mdx";
 import PhoneFrameMDX, {
   meta as phoneFrameMeta,
 } from "@/content/docs/phone-frame.mdx";
+import PricingCardMDX, {
+  meta as pricingCardMeta,
+} from "@/content/docs/pricing-card.mdx";
 import SlackMessagesMDX, {
   meta as slackMessagesMeta,
 } from "@/content/docs/slack-messages.mdx";
@@ -35,6 +47,9 @@ import SplitSceneMDX, {
 import StatCounterMDX, {
   meta as statCounterMeta,
 } from "@/content/docs/stat-counter.mdx";
+import TestimonialCardMDX, {
+  meta as testimonialCardMeta,
+} from "@/content/docs/testimonial-card.mdx";
 import TextBlurOutUpMDX, {
   meta as textBlurOutUpMeta,
 } from "@/content/docs/text-blur-out-up.mdx";
@@ -420,6 +435,36 @@ export const docs: Doc[] = [
     href: "/docs/SplitScene",
     meta: splitSceneMeta,
     Content: SplitSceneMDX,
+  },
+  {
+    slug: "FeatureCard",
+    href: "/docs/FeatureCard",
+    meta: featureCardMeta,
+    Content: FeatureCardMDX,
+  },
+  {
+    slug: "MetricCard",
+    href: "/docs/MetricCard",
+    meta: metricCardMeta,
+    Content: MetricCardMDX,
+  },
+  {
+    slug: "TestimonialCard",
+    href: "/docs/TestimonialCard",
+    meta: testimonialCardMeta,
+    Content: TestimonialCardMDX,
+  },
+  {
+    slug: "LogoCloud",
+    href: "/docs/LogoCloud",
+    meta: logoCloudMeta,
+    Content: LogoCloudMDX,
+  },
+  {
+    slug: "PricingCard",
+    href: "/docs/PricingCard",
+    meta: pricingCardMeta,
+    Content: PricingCardMDX,
   },
 ];
 

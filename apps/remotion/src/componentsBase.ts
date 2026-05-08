@@ -4,11 +4,16 @@ import { BrowserWindow } from "./compositions/BrowserWindow/BrowserWindow";
 import { CaptionTrack } from "./compositions/CaptionTrack/CaptionTrack";
 import { CursorWalkthrough } from "./compositions/CursorWalkthrough/CursorWalkthrough";
 import { DiscordMessages } from "./compositions/DiscordMessages/DiscordMessages";
+import { FeatureCard } from "./compositions/FeatureCard/FeatureCard";
 import { GaiaScenario } from "./compositions/GaiaScenario/GaiaScenario";
+import { LogoCloud } from "./compositions/LogoCloud/LogoCloud";
 import { MessageBubbles } from "./compositions/MessageBubbles/MessageBubbles";
 import { MessagePopup } from "./compositions/MessagePopup/MessagePopup";
+import { MetricCard } from "./compositions/MetricCard/MetricCard";
+import { PricingCard } from "./compositions/PricingCard/PricingCard";
 import { SlackMessages } from "./compositions/SlackMessages/SlackMessages";
 import { StatCounter } from "./compositions/StatCounter/StatCounter";
+import { TestimonialCard } from "./compositions/TestimonialCard/TestimonialCard";
 import { TextBlurOutUp } from "./compositions/TextBlurOutUp/TextBlurOutUp";
 import { TextBottomUpLetters } from "./compositions/TextBottomUpLetters/TextBottomUpLetters";
 import { TextDepthParallaxWords } from "./compositions/TextDepthParallaxWords/TextDepthParallaxWords";
@@ -90,4 +95,9 @@ export const componentsByIdBase: Record<string, ComponentType<any>> = {
   TextShortSlideRight,
   TextKineticCenterBuild,
   TextShortSlideDown,
+  FeatureCard,
+  MetricCard,
+  TestimonialCard,
+  LogoCloud,
+  PricingCard,
 };

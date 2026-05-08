@@ -49,7 +49,7 @@ export function FieldsRenderer({ fields, value, onChange }: Props) {
   const scenarioField = fields.find((f) => f.kind === "scenario");
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className={`flex min-h-0 flex-col ${hasChatField ? "h-full" : ""}`}>
       {flatFields.length > 0 && (
         <div
           className={`shrink-0 space-y-4 px-5 py-5 ${

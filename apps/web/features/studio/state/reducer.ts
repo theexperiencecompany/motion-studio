@@ -1,3 +1,5 @@
+import { effectsById } from "@workspace/compositions/effects/registry";
+import type { ClipEffect } from "@workspace/compositions/effects/schema";
 import {
   type Clip,
   DEFAULT_PROJECT,
@@ -23,6 +25,14 @@ export type StudioAction =
       props: Record<string, unknown>;
     }
   | { type: "UPDATE_CLIP_DURATION"; clipId: string; durationInFrames: number }
+  | { type: "ADD_EFFECT"; clipId: string; effectId: string }
+  | { type: "REMOVE_EFFECT"; clipId: string; effectInstanceId: string }
+  | {
+      type: "UPDATE_EFFECT_PROPS";
+      clipId: string;
+      effectInstanceId: string;
+      props: Record<string, unknown>;
+    }
   | { type: "SELECT_CLIP"; clipId: string | null }
   | { type: "TOGGLE_PANEL"; panel: StudioPanel }
   | { type: "LOAD_PROJECT"; project: Project };
@@ -79,6 +89,49 @@ export function studioReducer(
       const clips = state.project.clips.map((c) =>
         c.id === action.clipId
           ? { ...c, durationInFrames: Math.max(15, action.durationInFrames) }
+          : c,
+      );
+      return { ...state, project: { ...state.project, clips } };
+    }
+    case "ADD_EFFECT": {
+      const info = effectsById[action.effectId];
+      if (!info) return state;
+      const instance: ClipEffect = {
+        id: makeClipId(),
+        effectId: info.id,
+        props: structuredClone(info.defaultProps) as Record<string, unknown>,
+      };
+      const clips = state.project.clips.map((c) =>
+        c.id === action.clipId
+          ? { ...c, effects: [...(c.effects ?? []), instance] }
+          : c,
+      );
+      return { ...state, project: { ...state.project, clips } };
+    }
+    case "REMOVE_EFFECT": {
+      const clips = state.project.clips.map((c) =>
+        c.id === action.clipId
+          ? {
+              ...c,
+              effects: (c.effects ?? []).filter(
+                (e) => e.id !== action.effectInstanceId,
+              ),
+            }
+          : c,
+      );
+      return { ...state, project: { ...state.project, clips } };
+    }
+    case "UPDATE_EFFECT_PROPS": {
+      const clips = state.project.clips.map((c) =>
+        c.id === action.clipId
+          ? {
+              ...c,
+              effects: (c.effects ?? []).map((e) =>
+                e.id === action.effectInstanceId
+                  ? { ...e, props: action.props }
+                  : e,
+              ),
+            }
           : c,
       );
       return { ...state, project: { ...state.project, clips } };

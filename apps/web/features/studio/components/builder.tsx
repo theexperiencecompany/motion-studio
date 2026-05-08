@@ -108,6 +108,15 @@ export function Builder() {
           {openPanel === "library" && (
             <LibraryPanel
               onAdd={(id) => dispatch({ type: "ADD_CLIP", compositionId: id })}
+              onAddEffect={(effectId) => {
+                if (!selectedClipId) return;
+                dispatch({
+                  type: "ADD_EFFECT",
+                  clipId: selectedClipId,
+                  effectId,
+                });
+              }}
+              selectedClipId={selectedClipId}
               onClose={() =>
                 dispatch({ type: "TOGGLE_PANEL", panel: "library" })
               }
@@ -171,6 +180,21 @@ export function Builder() {
                   type: "UPDATE_CLIP_PROPS",
                   clipId: selectedClip.id,
                   props: next,
+                })
+              }
+              onUpdateEffect={(effectInstanceId, props) =>
+                dispatch({
+                  type: "UPDATE_EFFECT_PROPS",
+                  clipId: selectedClip.id,
+                  effectInstanceId,
+                  props,
+                })
+              }
+              onRemoveEffect={(effectInstanceId) =>
+                dispatch({
+                  type: "REMOVE_EFFECT",
+                  clipId: selectedClip.id,
+                  effectInstanceId,
                 })
               }
               onClose={() => dispatch({ type: "SELECT_CLIP", clipId: null })}

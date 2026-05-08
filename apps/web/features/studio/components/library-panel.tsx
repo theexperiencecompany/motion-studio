@@ -9,6 +9,8 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Player } from "@remotion/player";
 import { componentsById } from "@workspace/compositions/components";
+import { effects as allEffects } from "@workspace/compositions/effects/registry";
+import type { AnyEffectInfo } from "@workspace/compositions/effects/schema";
 import { compositions } from "@workspace/compositions/registry";
 import type { AnyCompositionInfo } from "@workspace/compositions/schema";
 import {
@@ -27,30 +29,25 @@ import {
 } from "@workspace/ui/components/tooltip";
 import { useState } from "react";
 
+type Tab = "components" | "effects";
+
 type Props = {
   onAdd: (compositionId: string) => void;
+  onAddEffect: (effectId: string) => void;
+  selectedClipId: string | null;
   onClose: () => void;
 };
 
-export function LibraryPanel({ onAdd, onClose }: Props) {
+export function LibraryPanel({
+  onAdd,
+  onAddEffect,
+  selectedClipId,
+  onClose,
+}: Props) {
+  const [tab, setTab] = useState<Tab>("components");
   const [query, setQuery] = useState("");
 
   const normalizedQuery = query.trim().toLowerCase();
-
-  const textAnimations = compositions.filter(
-    (c) => c.id.startsWith("Title") || c.id.startsWith("Text"),
-  );
-  const others = compositions.filter(
-    (c) => !c.id.startsWith("Title") && !c.id.startsWith("Text"),
-  );
-
-  const searchResults = normalizedQuery
-    ? compositions.filter(
-        (c) =>
-          c.title.toLowerCase().includes(normalizedQuery) ||
-          c.description.toLowerCase().includes(normalizedQuery),
-      )
-    : null;
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -59,7 +56,11 @@ export function LibraryPanel({ onAdd, onClose }: Props) {
           <div>
             <p className="text-sm font-medium text-foreground">Library</p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Click to add a scene
+              {tab === "components"
+                ? "Click to add a scene"
+                : selectedClipId
+                  ? "Click to apply to selected clip"
+                  : "Select a clip first"}
             </p>
           </div>
           <Button
@@ -72,6 +73,21 @@ export function LibraryPanel({ onAdd, onClose }: Props) {
           </Button>
         </div>
 
+        <div className="flex shrink-0 gap-1 border-b border-border px-3 py-2">
+          <TabButton
+            active={tab === "components"}
+            onClick={() => setTab("components")}
+          >
+            Components
+          </TabButton>
+          <TabButton
+            active={tab === "effects"}
+            onClick={() => setTab("effects")}
+          >
+            Effects
+          </TabButton>
+        </div>
+
         <div className="px-3 py-2">
           <div className="relative">
             <HugeiconsIcon
@@ -81,7 +97,11 @@ export function LibraryPanel({ onAdd, onClose }: Props) {
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search components..."
+              placeholder={
+                tab === "components"
+                  ? "Search components..."
+                  : "Search effects..."
+              }
               className="h-8 rounded-md pl-8 text-xs"
               style={{ paddingRight: query ? "2rem" : undefined }}
             />
@@ -101,44 +121,177 @@ export function LibraryPanel({ onAdd, onClose }: Props) {
           </div>
         </div>
 
-        {searchResults !== null ? (
-          <div className="px-3 pb-3">
-            {searchResults.length === 0 ? (
-              <p className="px-1 py-4 text-center text-xs text-muted-foreground">
-                No components match &ldquo;{query.trim()}&rdquo;
-              </p>
-            ) : (
-              <ul className="space-y-px">
-                {searchResults.map((c) => (
-                  <li key={c.id}>
-                    <PreviewTooltipItem info={c} onAdd={onAdd} />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+        {tab === "components" ? (
+          <ComponentsList query={normalizedQuery} onAdd={onAdd} />
         ) : (
-          <Accordion
-            type="multiple"
-            defaultValue={["text", "templates"]}
-            className="rounded-none border-none px-3"
-          >
-            <AccordionSection
-              value="text"
-              title="Text"
-              items={textAnimations}
-              onAdd={onAdd}
-            />
-            <AccordionSection
-              value="templates"
-              title="Templates"
-              items={others}
-              onAdd={onAdd}
-            />
-          </Accordion>
+          <EffectsList
+            query={normalizedQuery}
+            onAddEffect={onAddEffect}
+            disabled={!selectedClipId}
+          />
         )}
       </aside>
     </TooltipProvider>
+  );
+}
+
+function TabButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex-1 rounded-md px-3 py-1.5 text-[12px] font-medium transition-colors ${
+        active
+          ? "bg-accent text-foreground"
+          : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function ComponentsList({
+  query,
+  onAdd,
+}: {
+  query: string;
+  onAdd: (id: string) => void;
+}) {
+  const textAnimations = compositions.filter(
+    (c) => c.id.startsWith("Title") || c.id.startsWith("Text"),
+  );
+  const others = compositions.filter(
+    (c) => !c.id.startsWith("Title") && !c.id.startsWith("Text"),
+  );
+
+  const searchResults = query
+    ? compositions.filter(
+        (c) =>
+          c.title.toLowerCase().includes(query) ||
+          c.description.toLowerCase().includes(query),
+      )
+    : null;
+
+  if (searchResults !== null) {
+    return (
+      <div className="px-3 pb-3">
+        {searchResults.length === 0 ? (
+          <p className="px-1 py-4 text-center text-xs text-muted-foreground">
+            No components match
+          </p>
+        ) : (
+          <ul className="space-y-px">
+            {searchResults.map((c) => (
+              <li key={c.id}>
+                <PreviewTooltipItem info={c} onAdd={onAdd} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <Accordion
+      type="multiple"
+      defaultValue={["text", "templates"]}
+      className="rounded-none border-none px-3"
+    >
+      <AccordionSection
+        value="text"
+        title="Text"
+        items={textAnimations}
+        onAdd={onAdd}
+      />
+      <AccordionSection
+        value="templates"
+        title="Templates"
+        items={others}
+        onAdd={onAdd}
+      />
+    </Accordion>
+  );
+}
+
+function EffectsList({
+  query,
+  onAddEffect,
+  disabled,
+}: {
+  query: string;
+  onAddEffect: (id: string) => void;
+  disabled: boolean;
+}) {
+  const filtered = query
+    ? allEffects.filter(
+        (e) =>
+          e.title.toLowerCase().includes(query) ||
+          e.description.toLowerCase().includes(query),
+      )
+    : allEffects;
+
+  if (filtered.length === 0) {
+    return (
+      <p className="px-4 py-4 text-center text-xs text-muted-foreground">
+        No effects match
+      </p>
+    );
+  }
+
+  return (
+    <ul className="space-y-px px-3 pb-3">
+      {filtered.map((e) => (
+        <li key={e.id}>
+          <EffectItem info={e} onAddEffect={onAddEffect} disabled={disabled} />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function EffectItem({
+  info,
+  onAddEffect,
+  disabled,
+}: {
+  info: AnyEffectInfo;
+  onAddEffect: (id: string) => void;
+  disabled: boolean;
+}) {
+  return (
+    <Button
+      variant="ghost"
+      onClick={() => onAddEffect(info.id)}
+      disabled={disabled}
+      className="group h-auto w-full justify-start gap-2 rounded-lg px-2.5 py-2 text-left disabled:opacity-40"
+    >
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className="truncate text-[13px] font-medium text-foreground/85 group-hover:text-foreground">
+            {info.title}
+          </span>
+          <span className="rounded-sm bg-muted px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-muted-foreground">
+            {info.trigger}
+          </span>
+        </div>
+        <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+          {info.description}
+        </p>
+      </div>
+      <span className="flex size-5 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-all group-hover:bg-accent group-hover:text-foreground group-hover:opacity-100">
+        <HugeiconsIcon icon={PlusSignIcon} className="size-3.5" />
+      </span>
+    </Button>
   );
 }
 
