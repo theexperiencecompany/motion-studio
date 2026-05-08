@@ -202,16 +202,14 @@ function AddStateButton({
         setOpen(false);
       }}
     >
-      <SelectTrigger asChild>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="h-7 shrink-0 gap-1 px-2 text-[11px]"
-        >
+      <SelectTrigger
+        size="sm"
+        className="h-7 w-auto shrink-0 gap-1 px-2 text-[11px] [&>svg:last-child]:hidden"
+      >
+        <span className="flex items-center gap-1">
           <HugeiconsIcon icon={PlusSignIcon} size={12} />
           Add state
-        </Button>
+        </span>
       </SelectTrigger>
       <SelectContent align="end">
         {STATE_TYPE_META.map((meta) => (
