@@ -41,6 +41,11 @@ import { TextDepthParallaxWords } from "./compositions/TextDepthParallaxWords/Te
 import { TextShortSlideRight } from "./compositions/TextShortSlideRight/TextShortSlideRight";
 import { TextKineticCenterBuild } from "./compositions/TextKineticCenterBuild/TextKineticCenterBuild";
 import { TextShortSlideDown } from "./compositions/TextShortSlideDown/TextShortSlideDown";
+import { FeatureCard } from "./compositions/FeatureCard/FeatureCard";
+import { MetricCard } from "./compositions/MetricCard/MetricCard";
+import { TestimonialCard } from "./compositions/TestimonialCard/TestimonialCard";
+import { LogoCloud } from "./compositions/LogoCloud/LogoCloud";
+import { PricingCard } from "./compositions/PricingCard/PricingCard";
 
 // Wrapper compositions (PhoneFrame, LaptopFrame, SplitScene) import this
 // module to look up nested compositions. Keep them OUT of this file to avoid
@@ -88,4 +93,9 @@ export const componentsByIdBase: Record<string, ComponentType<any>> = {
   TextShortSlideRight,
   TextKineticCenterBuild,
   TextShortSlideDown,
+  FeatureCard,
+  MetricCard,
+  TestimonialCard,
+  LogoCloud,
+  PricingCard,
 };

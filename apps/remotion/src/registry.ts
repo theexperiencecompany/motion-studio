@@ -43,6 +43,11 @@ import { textDepthParallaxWordsInfo } from "./compositions/TextDepthParallaxWord
 import { textShortSlideRightInfo } from "./compositions/TextShortSlideRight/meta";
 import { textKineticCenterBuildInfo } from "./compositions/TextKineticCenterBuild/meta";
 import { textShortSlideDownInfo } from "./compositions/TextShortSlideDown/meta";
+import { featureCardInfo } from "./compositions/FeatureCard/meta";
+import { metricCardInfo } from "./compositions/MetricCard/meta";
+import { testimonialCardInfo } from "./compositions/TestimonialCard/meta";
+import { logoCloudInfo } from "./compositions/LogoCloud/meta";
+import { pricingCardInfo } from "./compositions/PricingCard/meta";
 
 export const compositions: AnyCompositionInfo[] = [
   titleSlideUpInfo,
@@ -89,6 +94,11 @@ export const compositions: AnyCompositionInfo[] = [
   textShortSlideRightInfo,
   textKineticCenterBuildInfo,
   textShortSlideDownInfo,
+  featureCardInfo,
+  metricCardInfo,
+  testimonialCardInfo,
+  logoCloudInfo,
+  pricingCardInfo,
 ];
 
 export const compositionsById: Record<string, AnyCompositionInfo> =
