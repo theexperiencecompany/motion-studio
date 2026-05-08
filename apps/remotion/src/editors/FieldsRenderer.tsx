@@ -90,6 +90,31 @@ export function FieldsRenderer({ fields, value, onChange }: Props) {
           })}
         </div>
       )}
+      {chatField && chatField.kind === "chat" && (
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="shrink-0 px-5 py-3">
+            <p className="text-xs font-semibold text-foreground">
+              {chatField.label}
+            </p>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">
+              Preview of the conversation rendered in the video
+            </p>
+          </div>
+          <ChatEditor
+            value={(value[chatField.key] ?? []) as never}
+            onChange={(v) => set(chatField.key, v)}
+          />
+        </div>
+      )}
+      {scenarioField && scenarioField.kind === "scenario" && (
+        <ScenarioEditor
+          label={scenarioField.label}
+          value={(value[scenarioField.key] ?? "") as string}
+          onChange={(v) => set(scenarioField.key, v)}
+        />
+      )}
+      {/* Advanced sections render LAST so per-state editing is the primary
+          surface and rarely-used JSON / config sits at the bottom. */}
       {sectionFields.length > 0 && (
         <div className="shrink-0 px-5 py-3">
           <Accordion
@@ -126,39 +151,6 @@ export function FieldsRenderer({ fields, value, onChange }: Props) {
               </AccordionItem>
             ))}
           </Accordion>
-        </div>
-      )}
-      {chatField && chatField.kind === "chat" && (
-        <div className="flex min-h-0 flex-1 flex-col">
-          <div className="shrink-0 px-5 py-3">
-            <p className="text-xs font-semibold text-foreground">
-              {chatField.label}
-            </p>
-            <p className="mt-0.5 text-[11px] text-muted-foreground">
-              Preview of the conversation rendered in the video
-            </p>
-          </div>
-          <ChatEditor
-            value={(value[chatField.key] ?? []) as never}
-            onChange={(v) => set(chatField.key, v)}
-          />
-        </div>
-      )}
-      {scenarioField && scenarioField.kind === "scenario" && (
-        <div className="flex flex-col">
-          <div className="px-5 py-3">
-            <p className="text-xs font-semibold text-foreground">
-              {scenarioField.label}
-            </p>
-            <p className="mt-0.5 text-[11px] text-muted-foreground">
-              Each state plays back in order. Add, reorder, or edit per-state
-              fields below.
-            </p>
-          </div>
-          <ScenarioEditor
-            value={(value[scenarioField.key] ?? "") as string}
-            onChange={(v) => set(scenarioField.key, v)}
-          />
         </div>
       )}
     </div>

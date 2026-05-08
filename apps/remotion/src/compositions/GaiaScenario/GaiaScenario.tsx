@@ -7,7 +7,7 @@ import {
   ToolCallsSection,
 } from "@heygaia/chat-ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 import "@heygaia/chat-ui/styles.css";
 import { computeWindows, contentProgress, type StateWindow } from "./timing";
@@ -116,9 +116,11 @@ export const GaiaScenario: React.FC<GaiaScenarioProps> = ({
   const { fps } = useVideoConfig();
 
   // Wire avatar overrides into our next/image shim so the chat-ui bundle's
-  // hardcoded image paths get swapped at render time. No need to fork
-  // @heygaia/chat-ui to expose avatar props.
-  useEffect(() => {
+  // hardcoded image paths get swapped at render time. Set synchronously
+  // during render (not in useEffect) so the first frame's <img> already
+  // sees the override — Remotion's frame screenshots may capture before
+  // effects flush.
+  if (typeof window !== "undefined") {
     const w = window as unknown as {
       __remotionImageOverrides?: Record<string, string>;
     };
@@ -126,10 +128,7 @@ export const GaiaScenario: React.FC<GaiaScenarioProps> = ({
     if (botAvatarUrl) next["/images/logos/logo.webp"] = botAvatarUrl;
     if (userAvatarUrl) next["/images/avatars/default.webp"] = userAvatarUrl;
     w.__remotionImageOverrides = next;
-    return () => {
-      w.__remotionImageOverrides = {};
-    };
-  }, [userAvatarUrl, botAvatarUrl]);
+  }
 
   const scenario = useMemo(
     () => safeParseScenario(scenarioJson),
@@ -235,15 +234,12 @@ export const GaiaScenario: React.FC<GaiaScenarioProps> = ({
               gap: 12,
             }}
           >
-            {visible.map((window) => (
-              <StateRenderer
-                key={window.index}
-                window={window}
-                frame={frame}
-                isActiveLoading={activeLoading?.index === window.index}
-                isActiveThinking={activeThinking?.index === window.index}
-              />
-            ))}
+            {renderVisible(
+              visible,
+              frame,
+              activeLoading?.index ?? null,
+              activeThinking?.index ?? null,
+            )}
           </div>
         </div>
       </AbsoluteFill>
@@ -251,52 +247,91 @@ export const GaiaScenario: React.FC<GaiaScenarioProps> = ({
   );
 };
 
-type StateRendererProps = {
-  window: StateWindow;
-  frame: number;
-  isActiveLoading: boolean;
-  isActiveThinking: boolean;
-};
+/**
+ * Render the visible windows, bundling consecutive tool_calls states into
+ * a SINGLE ToolCallsSection so the chat shows "Used N tools" with all
+ * stacked icons — matching the real GAIA UI's behavior of attaching
+ * multiple tool results to one block.
+ */
+function renderVisible(
+  visible: StateWindow[],
+  frame: number,
+  activeLoadingIdx: number | null,
+  activeThinkingIdx: number | null,
+): React.ReactNode[] {
+  const out: React.ReactNode[] = [];
+  let toolCallsBuf: ScenarioToolEntry[] = [];
+  let toolCallsKey: number | null = null;
 
-function StateRenderer({
-  window,
-  frame,
-  isActiveLoading,
-  isActiveThinking,
-}: StateRendererProps) {
-  const progress = contentProgress(window, frame);
+  const flushToolCalls = () => {
+    if (toolCallsBuf.length > 0 && toolCallsKey !== null) {
+      out.push(
+        <ToolCallsView key={`tc-${toolCallsKey}`} entries={toolCallsBuf} />,
+      );
+      toolCallsBuf = [];
+      toolCallsKey = null;
+    }
+  };
 
-  switch (window.state.type) {
-    case "user_message":
-      return (
-        <UserMessageView
-          state={window.state}
-          progress={progress}
-          index={window.index}
-        />
-      );
-    case "bot_message":
-      return (
-        <BotMessageView
-          state={window.state}
-          progress={progress}
-          index={window.index}
-        />
-      );
-    case "loading":
-      if (!isActiveLoading) return null;
-      return <LoadingView state={window.state} index={window.index} />;
-    case "thinking":
-      if (!isActiveThinking) return null;
-      return <ThinkingView state={window.state} />;
-    case "tool_calls":
-      return <ToolCallsView state={window.state} />;
-    case "todo_data":
-    case "image":
-    case "pause":
-      return null;
+  for (const window of visible) {
+    if (window.state.type === "tool_calls") {
+      if (toolCallsKey === null) toolCallsKey = window.index;
+      for (const entry of window.state.entries) {
+        for (const d of entry.data) toolCallsBuf.push(d);
+      }
+      continue;
+    }
+
+    flushToolCalls();
+    const progress = contentProgress(window, frame);
+    switch (window.state.type) {
+      case "user_message":
+        out.push(
+          <UserMessageView
+            key={window.index}
+            state={window.state}
+            progress={progress}
+            index={window.index}
+          />,
+        );
+        break;
+      case "bot_message":
+        out.push(
+          <BotMessageView
+            key={window.index}
+            state={window.state}
+            progress={progress}
+            index={window.index}
+          />,
+        );
+        break;
+      case "loading":
+        if (activeLoadingIdx === window.index) {
+          out.push(
+            <LoadingView
+              key={window.index}
+              state={window.state}
+              index={window.index}
+            />,
+          );
+        }
+        break;
+      case "thinking":
+        if (activeThinkingIdx === window.index) {
+          out.push(<ThinkingView key={window.index} state={window.state} />);
+        }
+        break;
+      case "todo_data":
+      case "image":
+      case "pause":
+        break;
+    }
   }
+  flushToolCalls();
+  return out;
 }
+
+type ScenarioToolEntry = ToolCallsState["entries"][number]["data"][number];
 
 // Static rendering doesn't have live React state for image dialogs etc.
 // Pass no-op dispatchers to satisfy the chat-ui prop contract.
@@ -390,17 +425,9 @@ function ThinkingView({ state }: { state: ThinkingState }) {
   return <ThinkingBubble thinkingContent={state.content} />;
 }
 
-function ToolCallsView({ state }: { state: ToolCallsState }) {
-  // Flatten the scenario's nested entries into the tool_calls_data shape
-  // the chat-ui ToolCallsSection expects.
-  const tool_calls_data = state.entries.flatMap((entry) =>
-    entry.data.map((d) => ({
-      tool_name: d.tool_name,
-      tool_category: d.tool_category,
-      message: d.message,
-      inputs: d.inputs,
-      output: d.output,
-    })),
-  );
-  return <ToolCallsSection tool_calls_data={tool_calls_data as never} />;
+function ToolCallsView({ entries }: { entries: ScenarioToolEntry[] }) {
+  // Pass ALL accumulated tool entries (across multiple consecutive
+  // tool_calls scenario states) as one tool_calls_data array — chat-ui
+  // renders a single "Used N tools" accordion with stacked icons.
+  return <ToolCallsSection tool_calls_data={entries as never} />;
 }

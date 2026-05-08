@@ -9,6 +9,7 @@ import {
   Delete02Icon,
   Loading03Icon,
   PauseIcon,
+  PlusSignIcon,
   ToolsIcon,
   UserIcon,
 } from "@hugeicons/core-free-icons";
@@ -30,6 +31,7 @@ import {
   SelectValue,
 } from "@workspace/ui/components/select";
 import { Textarea } from "@workspace/ui/components/textarea";
+import { useState } from "react";
 import type {
   BotMessageState,
   LoadingState,
@@ -46,8 +48,14 @@ import type { EditorProps } from "../schema";
 
 // The editor accepts and emits the full scenario JSON string so it can plug
 // into the existing scenarioJson prop without schema rewiring on consumers.
-export function ScenarioEditor({ value, onChange }: EditorProps<string>) {
+export function ScenarioEditor({
+  label,
+  value,
+  onChange,
+}: EditorProps<string> & { label?: string }) {
   const scenario = parseScenario(value);
+  const allKeys = scenario.states.map((_, i) => `s-${i}`);
+  const [openKeys, setOpenKeys] = useState<string[]>(allKeys);
 
   function patch(next: Partial<Scenario>) {
     const merged: Scenario = { ...scenario, ...next };
@@ -61,8 +69,10 @@ export function ScenarioEditor({ value, onChange }: EditorProps<string>) {
   }
 
   function addState(type: ScenarioStateType) {
+    const newIndex = scenario.states.length;
     const states = [...scenario.states, defaultState(type)];
     patch({ states });
+    setOpenKeys((prev) => [...prev, `s-${newIndex}`]);
   }
 
   function removeState(i: number) {
@@ -79,12 +89,40 @@ export function ScenarioEditor({ value, onChange }: EditorProps<string>) {
     patch({ states });
   }
 
+  const allOpen = openKeys.length === allKeys.length && allKeys.length > 0;
+
   return (
     <div className="bg-background">
-      <div className="space-y-4 px-5 py-4">
+      <div className="space-y-3 px-5 py-4">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-foreground">
+              {label ?? "States"}
+            </p>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">
+              Each state plays back in order. Add, reorder, or edit per-state
+              fields below.
+            </p>
+          </div>
+          <AddStateButton onAdd={addState} />
+        </div>
+
+        {scenario.states.length > 0 && (
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => setOpenKeys(allOpen ? [] : allKeys)}
+              className="text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+            >
+              {allOpen ? "Collapse all" : "Expand all"}
+            </button>
+          </div>
+        )}
+
         <Accordion
           type="multiple"
-          defaultValue={scenario.states.map((_, i) => `s-${i}`)}
+          value={openKeys}
+          onValueChange={setOpenKeys}
           className="space-y-2"
         >
           {scenario.states.map((state, i) => (
@@ -141,10 +179,55 @@ export function ScenarioEditor({ value, onChange }: EditorProps<string>) {
             </AccordionItem>
           ))}
         </Accordion>
-
-        <AddStateMenu onAdd={addState} />
       </div>
     </div>
+  );
+}
+
+// Compact "+ Add state" button at the top-right of the header that opens a
+// menu of state types via Select. Select isn't a real dropdown menu but it
+// gives us free positioning + outside-click handling.
+function AddStateButton({
+  onAdd,
+}: {
+  onAdd: (type: ScenarioStateType) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Select
+      open={open}
+      onOpenChange={setOpen}
+      onValueChange={(v) => {
+        onAdd(v as ScenarioStateType);
+        setOpen(false);
+      }}
+    >
+      <SelectTrigger asChild>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="h-7 shrink-0 gap-1 px-2 text-[11px]"
+        >
+          <HugeiconsIcon icon={PlusSignIcon} size={12} />
+          Add state
+        </Button>
+      </SelectTrigger>
+      <SelectContent align="end">
+        {STATE_TYPE_META.map((meta) => (
+          <SelectItem key={meta.type} value={meta.type}>
+            <span className="flex items-center gap-2">
+              <HugeiconsIcon
+                icon={meta.icon}
+                size={14}
+                className={meta.iconClass}
+              />
+              <span>{meta.label}</span>
+            </span>
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -173,32 +256,6 @@ function IconButton({
     >
       <HugeiconsIcon icon={icon} size={12} />
     </Button>
-  );
-}
-
-function AddStateMenu({ onAdd }: { onAdd: (type: ScenarioStateType) => void }) {
-  return (
-    <div className="space-y-2 rounded-md border border-dashed border-border/60 bg-muted/10 p-3">
-      <Label className="text-[12px]">Add state</Label>
-      <div className="grid grid-cols-3 gap-1.5">
-        {STATE_TYPE_META.map((meta) => (
-          <button
-            type="button"
-            key={meta.type}
-            onClick={() => onAdd(meta.type)}
-            className="flex flex-col items-center gap-1 rounded-md border border-border/40 bg-background px-2 py-2 text-[11px] font-medium text-foreground transition-colors hover:border-foreground/30 hover:bg-foreground/5"
-            title={meta.label}
-          >
-            <HugeiconsIcon
-              icon={meta.icon}
-              size={16}
-              className={meta.iconClass}
-            />
-            <span>{meta.label}</span>
-          </button>
-        ))}
-      </div>
-    </div>
   );
 }
 
