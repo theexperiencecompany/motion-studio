@@ -6,7 +6,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { componentsById } from "../../components";
+import { componentsByIdBase as componentsById } from "../../componentsBase";
 import { compositionsById } from "../../registry";
 
 export type LaptopFrameProps = {
