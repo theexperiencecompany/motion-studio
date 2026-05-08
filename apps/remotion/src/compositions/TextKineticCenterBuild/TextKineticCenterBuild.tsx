@@ -1,0 +1,112 @@
+"use client";
+import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
+import { TITLE_FONT_FAMILY, getSubtitleColor, type TitleProps } from "../title-shared";
+
+export type TextKineticCenterBuildProps = TitleProps;
+
+const HEADLINE_START = 8;
+const PUSH_FRAMES = 26;
+const ENTER_FRAMES = 22;
+const ENTRY_OFFSET = 88;
+const ENTER_EASE = Easing.bezier(0.2, 0.8, 0.2, 1);
+const APPLE_EASE = Easing.bezier(0.16, 1, 0.3, 1);
+
+export const TextKineticCenterBuild: React.FC<TextKineticCenterBuildProps> = ({
+  headline,
+  subtitle,
+  backgroundColor,
+  textColor,
+}) => {
+  const frame = useCurrentFrame();
+  const words = headline.trim().split(/\s+/).filter(Boolean);
+
+  const lastWordStart = HEADLINE_START + (words.length - 1) * PUSH_FRAMES;
+  const lastWordEnd = lastWordStart + ENTER_FRAMES;
+  const subtitleStart = lastWordEnd + 14;
+  const subtitleProgress = interpolate(
+    frame,
+    [subtitleStart, subtitleStart + 26],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: APPLE_EASE },
+  );
+
+  return (
+    <AbsoluteFill
+      style={{
+        background: backgroundColor,
+        color: textColor,
+        fontFamily: TITLE_FONT_FAMILY,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "0 80px",
+        textAlign: "center",
+      }}
+    >
+      <h1
+        style={{
+          fontSize: 132,
+          fontWeight: 700,
+          letterSpacing: "-0.045em",
+          lineHeight: 1.05,
+          margin: 0,
+          display: "flex",
+          flexWrap: "wrap",
+          justifyContent: "center",
+          gap: "0 0.28em",
+        }}
+      >
+        {words.map((word, i) => {
+          const wordStart = HEADLINE_START + i * PUSH_FRAMES;
+          if (frame < wordStart) return null;
+          const progress = interpolate(
+            frame,
+            [wordStart, wordStart + ENTER_FRAMES],
+            [0, 1],
+            {
+              extrapolateLeft: "clamp",
+              extrapolateRight: "clamp",
+              easing: ENTER_EASE,
+            },
+          );
+          const x = ENTRY_OFFSET * (1 - progress);
+          const blur = 3.5 * (1 - progress);
+          const opacity = progress;
+          const scale = 0.992 + 0.008 * progress;
+          return (
+            <span
+              key={i}
+              style={{
+                display: "inline-block",
+                opacity,
+                transform: `translateX(${x}px) scale(${scale})`,
+                filter: `blur(${blur}px)`,
+                willChange: "transform, opacity",
+              }}
+            >
+              {word}
+            </span>
+          );
+        })}
+      </h1>
+
+      {subtitle.trim() && (
+        <p
+          style={{
+            fontSize: 38,
+            fontWeight: 400,
+            letterSpacing: "-0.012em",
+            margin: "32px 0 0",
+            color: getSubtitleColor(textColor),
+            opacity: subtitleProgress,
+            transform: `translateY(${(1 - subtitleProgress) * 14}px)`,
+            willChange: "transform, opacity",
+          }}
+        >
+          {subtitle}
+        </p>
+      )}
+    </AbsoluteFill>
+  );
+};

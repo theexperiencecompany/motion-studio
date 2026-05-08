@@ -2,7 +2,8 @@
 
 import { useState } from "react"
 import { Player } from "@remotion/player"
-import { Plus } from "lucide-react"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { Add01Icon } from "@hugeicons/core-free-icons"
 import { Button } from "@workspace/ui/components/button"
 import {
   Tooltip,
@@ -109,7 +110,7 @@ function PreviewTooltipItem({
             className="size-5 shrink-0"
             tabIndex={-1}
           >
-            <Plus className="size-3.5" />
+            <HugeiconsIcon icon={Add01Icon} size={14} />
           </Button>
         </div>
       </TooltipTrigger>

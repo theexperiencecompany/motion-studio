@@ -1,6 +1,6 @@
 "use client";
 import { AbsoluteFill } from "remotion";
-import { componentsById } from "../../components";
+import { leafComponentsById as componentsById } from "../../leaf-components";
 import { compositionsById } from "../../registry";
 
 export type SplitLayout = "stacked" | "side-by-side" | "pip" | "grid-2x2";

@@ -1,0 +1,20 @@
+import type { CompositionInfo } from "../../schema";
+import { TITLE_FIELDS } from "../title-shared";
+import type { TextSharedAxisXProps } from "./TextSharedAxisX";
+
+export const textSharedAxisXInfo: CompositionInfo<TextSharedAxisXProps> = {
+  id: "TextSharedAxisX",
+  title: "Shared Axis X",
+  description: "Horizontal shared-axis transition for sibling destinations with continuity.",
+  durationInFrames: 220,
+  fps: 60,
+  width: 1920,
+  height: 1080,
+  defaultProps: {
+    headline: "Moving forward",
+    subtitle: "Horizontal continuity",
+    backgroundColor: "#ffffff",
+    textColor: "#0f1014",
+  },
+  fields: TITLE_FIELDS,
+};

@@ -1,0 +1,20 @@
+import type { CompositionInfo } from "../../schema";
+import { TITLE_FIELDS } from "../title-shared";
+import type { TextScaleDownFadeProps } from "./TextScaleDownFade";
+
+export const textScaleDownFadeInfo: CompositionInfo<TextScaleDownFadeProps> = {
+  id: "TextScaleDownFade",
+  title: "Scale Down Fade",
+  description: "Subtle premium settle-in with a restrained scale-down fade on exit.",
+  durationInFrames: 220,
+  fps: 60,
+  width: 1920,
+  height: 1080,
+  defaultProps: {
+    headline: "Premium settle",
+    subtitle: "Restrained and precise",
+    backgroundColor: "#ffffff",
+    textColor: "#0f1014",
+  },
+  fields: TITLE_FIELDS,
+};

@@ -6,7 +6,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { componentsById } from "../../components";
+import { leafComponentsById as componentsById } from "../../leaf-components";
 import { compositionsById } from "../../registry";
 
 export type PhoneFrameProps = {

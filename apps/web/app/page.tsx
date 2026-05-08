@@ -1,5 +1,6 @@
 import Link from "next/link"
-import { ArrowRight } from "lucide-react"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { ArrowRight01Icon } from "@hugeicons/core-free-icons"
 import { compositions } from "@workspace/compositions/registry"
 import { DocsHeader } from "@/components/docs-header"
 
@@ -64,7 +65,7 @@ export default function LandingPage() {
                 v1.0
               </span>
               <span>Initial release is out</span>
-              <ArrowRight size={12} />
+              <HugeiconsIcon icon={ArrowRight01Icon} size={12} />
             </Link>
 
             <h1 className="mt-6 text-balance text-5xl font-semibold tracking-tight sm:text-6xl">
@@ -81,7 +82,7 @@ export default function LandingPage() {
                 className="inline-flex items-center gap-2 rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background transition-opacity hover:opacity-90"
               >
                 Get started
-                <ArrowRight size={14} />
+                <HugeiconsIcon icon={ArrowRight01Icon} size={14} />
               </Link>
               <Link
                 href="/studio"
@@ -137,7 +138,7 @@ export default function LandingPage() {
               className="hidden shrink-0 items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground sm:inline-flex"
             >
               View all
-              <ArrowRight size={13} />
+              <HugeiconsIcon icon={ArrowRight01Icon} size={13} />
             </Link>
           </div>
 
@@ -156,7 +157,8 @@ export default function LandingPage() {
                       {c.id}
                     </div>
                   </div>
-                  <ArrowRight
+                  <HugeiconsIcon
+                    icon={ArrowRight01Icon}
                     size={14}
                     className="text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground"
                   />
@@ -182,7 +184,7 @@ export default function LandingPage() {
               className="inline-flex items-center gap-2 rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background transition-opacity hover:opacity-90"
             >
               Read the docs
-              <ArrowRight size={14} />
+              <HugeiconsIcon icon={ArrowRight01Icon} size={14} />
             </Link>
             <Link
               href="https://github.com"
