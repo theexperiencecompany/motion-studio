@@ -1,19 +1,49 @@
 import type { CompositionInfo } from "../../schema";
 import type { GaiaScenarioProps } from "./GaiaScenario";
 import powerMorningBriefing from "./power-morning-briefing.json";
+import { totalDurationFrames } from "./timing";
 import type { Scenario } from "./types";
 
 export const GAIA_SCENARIO_FPS = 60;
 export const GAIA_SCENARIO_WIDTH = 1080;
 export const GAIA_SCENARIO_HEIGHT = 1920;
-// Default 1 minute. Real durations are computed from each scenario's
-// state machine via timing.totalDurationFrames(scenario, fps).
-export const GAIA_SCENARIO_DURATION = GAIA_SCENARIO_FPS * 60;
 
 // Default scenario = the gold-standard "power-morning-briefing" demo from
 // gaia-demo-videos. Multi-tool flow (calendar + todos + search) with rich
 // bot synthesis — exercises every major chat-ui state type in one example.
 const defaultScenario = powerMorningBriefing as Scenario;
+
+// Compute composition duration from a scenario's state-machine
+// length + a 1s tail buffer so the last bot bubble has time to
+// finish streaming. Used both for the registration-time fallback
+// (the default scenario) and inside calculateMetadata, which
+// re-runs whenever scenarioJson changes in the studio.
+const FRAME_BUFFER = 60; // 1 second @ 60fps
+
+function durationFromScenario(scenario: Scenario, fps: number): number {
+  return totalDurationFrames(scenario, fps) + FRAME_BUFFER;
+}
+
+function safeParseScenario(json: string): Scenario | null {
+  try {
+    const parsed = JSON.parse(json) as Partial<Scenario>;
+    if (
+      !parsed ||
+      typeof parsed !== "object" ||
+      !Array.isArray(parsed.states)
+    ) {
+      return null;
+    }
+    return parsed as Scenario;
+  } catch {
+    return null;
+  }
+}
+
+export const GAIA_SCENARIO_DURATION = durationFromScenario(
+  defaultScenario,
+  GAIA_SCENARIO_FPS,
+);
 
 export const gaiaScenarioDefaultProps: GaiaScenarioProps = {
   title: "",
@@ -24,7 +54,7 @@ export const gaiaScenarioDefaultProps: GaiaScenarioProps = {
   scale: 2.5,
   userAvatarUrl: "https://github.com/aryanranderiya.png",
   botAvatarUrl: "/images/logos/logo.webp",
-  toolCallsExpanded: true,
+  toolCallsExpanded: "true",
   scenarioJson: JSON.stringify(defaultScenario, null, 2),
 };
 
@@ -38,6 +68,16 @@ export const gaiaScenarioInfo: CompositionInfo<GaiaScenarioProps> = {
   width: GAIA_SCENARIO_WIDTH,
   height: GAIA_SCENARIO_HEIGHT,
   defaultProps: gaiaScenarioDefaultProps,
+  // Re-derive durationInFrames whenever scenarioJson changes so the
+  // timeline card hugs the actual content length. Falls back to the
+  // registration-time default when the JSON is invalid.
+  calculateMetadata: ({ props }) => {
+    const scenario = safeParseScenario(props.scenarioJson ?? "");
+    if (!scenario) return {};
+    return {
+      durationInFrames: durationFromScenario(scenario, GAIA_SCENARIO_FPS),
+    };
+  },
   fields: [
     {
       kind: "text",
@@ -101,12 +141,19 @@ export const gaiaScenarioInfo: CompositionInfo<GaiaScenarioProps> = {
         { value: "false", label: "No (collapsed)" },
       ],
     },
+    // The per-state editor and the raw JSON view share the same
+    // scenarioJson key. FieldsRenderer pairs them as tabs ("States" /
+    // "JSON") so the user picks one editing surface or the other —
+    // never both stacked.
+    {
+      kind: "scenario",
+      key: "scenarioJson",
+      label: "States",
+    },
     {
       kind: "section",
       key: "advanced",
-      label: "Advanced options",
-      description:
-        "Raw scenario JSON. Paste any scenario from gaia-demo-videos/scenarios/.",
+      label: "JSON",
       defaultOpen: false,
       fields: [
         {
@@ -116,13 +163,6 @@ export const gaiaScenarioInfo: CompositionInfo<GaiaScenarioProps> = {
           rows: 24,
         },
       ],
-    },
-    // The full per-state editor lives below the section/JSON view —
-    // each state's fields render in their own collapsible row.
-    {
-      kind: "scenario",
-      key: "scenarioJson",
-      label: "States",
     },
   ],
 };

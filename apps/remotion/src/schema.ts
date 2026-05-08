@@ -37,6 +37,18 @@ export type SectionField = {
 
 export type Field = PrimitiveField | ShapeField | SectionField;
 
+// Re-derived from props at studio/render time. Same shape as
+// Remotion's CalculateMetadataFunction return — kept inlined to
+// avoid a hard remotion type dep in the schema module.
+export type CalculatedMetadata = {
+  durationInFrames?: number;
+  fps?: number;
+  width?: number;
+  height?: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  props?: any;
+};
+
 export type CompositionInfo<P extends Record<string, unknown>> = {
   id: string;
   title: string;
@@ -47,6 +59,13 @@ export type CompositionInfo<P extends Record<string, unknown>> = {
   height: number;
   defaultProps: P;
   fields: Field[];
+  // Optional callback Remotion runs at studio load + every prop edit.
+  // Use this to recompute durationInFrames (or any metadata) from
+  // current props — e.g. GaiaScenario derives its length from the
+  // active scenarioJson so the timeline card hugs the actual content.
+  calculateMetadata?: (args: {
+    props: P;
+  }) => CalculatedMetadata | Promise<CalculatedMetadata>;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

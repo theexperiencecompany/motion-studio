@@ -28,10 +28,13 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@workspace/ui/components/select";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { useState } from "react";
+import {
+  getToolCategory,
+  TOOL_CATEGORIES,
+} from "../compositions/GaiaScenario/toolCategories";
 import type {
   BotMessageState,
   LoadingState,
@@ -40,7 +43,7 @@ import type {
   ScenarioState,
   ScenarioStateType,
   ThinkingState,
-  ToolCallsData,
+  ToolCallEntry,
   ToolCallsState,
   UserMessageState,
 } from "../compositions/GaiaScenario/types";
@@ -65,10 +68,53 @@ export function ScenarioEditor({
   function patchState(i: number, patchedState: ScenarioState) {
     const states = scenario.states.slice();
     states[i] = patchedState;
+    // Coupling: when a tool_calls state's first call changes
+    // category, propagate to the immediately preceding loading
+    // state so the loading icon stays in sync. Only touches loading
+    // states that are using a tool integration (not wave spinner).
+    if (patchedState.type === "tool_calls") {
+      const firstCall = patchedState.entries[0]?.data[0];
+      const newCategory = firstCall?.tool_category;
+      const prev = states[i - 1];
+      if (
+        newCategory &&
+        prev &&
+        prev.type === "loading" &&
+        prev.toolInfo?.toolCategory &&
+        prev.toolInfo.toolCategory !== newCategory
+      ) {
+        states[i - 1] = {
+          ...prev,
+          toolInfo: { ...prev.toolInfo, toolCategory: newCategory },
+        };
+      }
+    }
     patch({ states });
   }
 
   function addState(type: ScenarioStateType) {
+    // Coupling: a tool_calls state is almost always preceded by a
+    // loading state with the same category. Auto-insert the pair so
+    // the user only adds one entry from the menu — they can still
+    // edit each independently afterwards.
+    if (type === "tool_calls") {
+      const loadingIdx = scenario.states.length;
+      const toolCallsIdx = loadingIdx + 1;
+      const states: ScenarioState[] = [
+        ...scenario.states,
+        {
+          type: "loading",
+          text: "Working on it…",
+          duration: 1200,
+          toolInfo: { toolCategory: "general" },
+          pauseAfter: 100,
+        },
+        defaultState("tool_calls"),
+      ];
+      patch({ states });
+      setOpenKeys((prev) => [...prev, `s-${loadingIdx}`, `s-${toolCallsIdx}`]);
+      return;
+    }
     const newIndex = scenario.states.length;
     const states = [...scenario.states, defaultState(type)];
     patch({ states });
@@ -395,21 +441,12 @@ function BotMessageFields({
         value={state.streamingSpeed}
         onChange={(streamingSpeed) => onChange({ ...state, streamingSpeed })}
       />
-      <FieldRow label="Follow-up actions (one per line)">
-        <Textarea
-          rows={3}
-          value={(state.follow_up_actions ?? []).join("\n")}
-          onChange={(e) =>
-            onChange({
-              ...state,
-              follow_up_actions: e.target.value
-                .split("\n")
-                .map((s) => s.trim())
-                .filter(Boolean),
-            })
-          }
-        />
-      </FieldRow>
+      <FollowUpActionsEditor
+        actions={state.follow_up_actions ?? []}
+        onChange={(follow_up_actions) =>
+          onChange({ ...state, follow_up_actions })
+        }
+      />
       <NumberRow
         label="Pause after (ms)"
         value={state.pauseAfter ?? 0}
@@ -426,8 +463,38 @@ function LoadingFields({
   state: LoadingState;
   onChange: (s: LoadingState) => void;
 }) {
+  // "Wave spinner" mode = no toolInfo (chat-ui falls back to
+  // <WaveSpinnerSquare>). "Tool integration" mode = a toolInfo with
+  // a real category. Pick which one is active by whether toolInfo
+  // has a non-empty category.
+  const isToolMode = !!state.toolInfo?.toolCategory;
   return (
     <>
+      <FieldRow label="Indicator">
+        <Select
+          value={isToolMode ? "tool" : "spinner"}
+          onValueChange={(v) => {
+            if (v === "spinner") {
+              onChange({ ...state, toolInfo: undefined });
+            } else {
+              onChange({
+                ...state,
+                toolInfo: { toolCategory: "general" },
+              });
+            }
+          }}
+        >
+          <SelectTrigger>
+            <span>
+              {isToolMode ? "Tool integration" : "Wave spinner (default)"}
+            </span>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="spinner">Wave spinner (default)</SelectItem>
+            <SelectItem value="tool">Tool integration</SelectItem>
+          </SelectContent>
+        </Select>
+      </FieldRow>
       <FieldRow label="Loading text">
         <Input
           value={state.text}
@@ -439,31 +506,22 @@ function LoadingFields({
         value={state.duration}
         onChange={(duration) => onChange({ ...state, duration })}
       />
-      <FieldRow label="Tool category">
-        <Select
-          value={state.toolInfo?.toolCategory ?? "general"}
-          onValueChange={(v) =>
-            onChange({
-              ...state,
-              toolInfo: {
-                ...(state.toolInfo ?? { toolCategory: "general" }),
-                toolCategory: v,
-              },
-            })
-          }
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="general">General</SelectItem>
-            <SelectItem value="gmail">Gmail</SelectItem>
-            <SelectItem value="google_calendar">Google Calendar</SelectItem>
-            <SelectItem value="todoist">Todoist</SelectItem>
-            <SelectItem value="search">Search</SelectItem>
-          </SelectContent>
-        </Select>
-      </FieldRow>
+      {isToolMode && (
+        <FieldRow label="Tool category">
+          <ToolCategorySelect
+            value={state.toolInfo?.toolCategory ?? "general"}
+            onChange={(v) =>
+              onChange({
+                ...state,
+                toolInfo: {
+                  ...(state.toolInfo ?? { toolCategory: "general" }),
+                  toolCategory: v,
+                },
+              })
+            }
+          />
+        </FieldRow>
+      )}
       <NumberRow
         label="Pause after (ms)"
         value={state.pauseAfter ?? 0}
@@ -510,31 +568,300 @@ function ToolCallsFields({
   state: ToolCallsState;
   onChange: (s: ToolCallsState) => void;
 }) {
+  // The scenario schema groups tool calls into "entries" (one per
+  // tool_calls_data envelope). For the editor we flatten one layer down
+  // and let the user manage individual ToolCallEntry items — each one
+  // owns its category, so multiple integrations in one state work fine.
+  const flatCalls: {
+    entryIdx: number;
+    callIdx: number;
+    call: ToolCallEntry;
+  }[] = [];
+  state.entries.forEach((entry, entryIdx) => {
+    entry.data.forEach((call, callIdx) => {
+      flatCalls.push({ entryIdx, callIdx, call });
+    });
+  });
+
+  function patchCall(
+    entryIdx: number,
+    callIdx: number,
+    patch: Partial<ToolCallEntry>,
+  ) {
+    const entries = state.entries.map((entry, i) => {
+      if (i !== entryIdx) return entry;
+      const data = entry.data.map((call, j) =>
+        j === callIdx ? { ...call, ...patch } : call,
+      );
+      // Keep the envelope's tool_category in sync with the first call's
+      // category — chat-ui reads it when rendering loading states.
+      const tool_category = data[0]?.tool_category ?? entry.tool_category;
+      return { ...entry, data, tool_category };
+    });
+    onChange({ ...state, entries });
+  }
+
+  function addCall() {
+    const fresh: ToolCallEntry = {
+      tool_name: "new_tool",
+      tool_category: "general",
+      message: "",
+      inputs: {},
+      output: "",
+    };
+    if (state.entries.length === 0) {
+      onChange({
+        ...state,
+        entries: [
+          {
+            tool_name: "tool_calls_data",
+            tool_category: "general",
+            data: [fresh],
+            timestamp: null,
+          },
+        ],
+      });
+      return;
+    }
+    const entries = state.entries.map((entry, i) =>
+      i === state.entries.length - 1
+        ? { ...entry, data: [...entry.data, fresh] }
+        : entry,
+    );
+    onChange({ ...state, entries });
+  }
+
+  function removeCall(entryIdx: number, callIdx: number) {
+    const entries = state.entries
+      .map((entry, i) => {
+        if (i !== entryIdx) return entry;
+        const data = entry.data.filter((_, j) => j !== callIdx);
+        return { ...entry, data };
+      })
+      .filter((entry) => entry.data.length > 0);
+    onChange({ ...state, entries });
+  }
+
   return (
     <>
-      <FieldRow
-        label="Entries (JSON)"
-        hint="Array of tool_calls_data entries. See gaia-demo-videos/CLAUDE.md."
-      >
-        <Textarea
-          rows={8}
-          value={JSON.stringify(state.entries, null, 2)}
-          onChange={(e) => {
-            try {
-              const entries = JSON.parse(e.target.value) as ToolCallsData[];
-              onChange({ ...state, entries });
-            } catch {
-              // Ignore invalid JSON until user finishes typing.
-            }
-          }}
-        />
-      </FieldRow>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label className="text-[12px]">Tool calls</Label>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-6 gap-1 px-2 text-[11px]"
+            onClick={addCall}
+          >
+            <HugeiconsIcon icon={PlusSignIcon} size={11} />
+            Add call
+          </Button>
+        </div>
+        {flatCalls.length === 0 && (
+          <p className="rounded-md border border-dashed border-border/60 px-3 py-4 text-center text-[11px] text-muted-foreground">
+            No tool calls yet. Click "Add call" to create one.
+          </p>
+        )}
+        {flatCalls.map(({ entryIdx, callIdx, call }) => {
+          return (
+            <div
+              key={`${entryIdx}-${callIdx}`}
+              className="space-y-2 rounded-md border border-border/60 bg-background/50 p-2.5"
+            >
+              <div className="flex items-center gap-2">
+                <div className="min-w-0 flex-1">
+                  <ToolCategorySelect
+                    value={call.tool_category}
+                    onChange={(v) =>
+                      patchCall(entryIdx, callIdx, { tool_category: v })
+                    }
+                  />
+                </div>
+                <IconButton
+                  title="Remove call"
+                  icon={Delete02Icon}
+                  destructive
+                  onClick={() => removeCall(entryIdx, callIdx)}
+                />
+              </div>
+              <FieldRow label="Tool name">
+                <Input
+                  value={call.tool_name}
+                  onChange={(e) =>
+                    patchCall(entryIdx, callIdx, { tool_name: e.target.value })
+                  }
+                  placeholder="e.g. google_calendar_today"
+                />
+              </FieldRow>
+              <FieldRow label="Message">
+                <Input
+                  value={call.message}
+                  onChange={(e) =>
+                    patchCall(entryIdx, callIdx, { message: e.target.value })
+                  }
+                  placeholder="Short status, e.g. 'Retrieved 4 events'"
+                />
+              </FieldRow>
+              <FieldRow label="Output">
+                <Textarea
+                  rows={3}
+                  value={call.output}
+                  onChange={(e) =>
+                    patchCall(entryIdx, callIdx, { output: e.target.value })
+                  }
+                  placeholder="What the tool returned (shown in the expanded accordion)"
+                />
+              </FieldRow>
+              <FieldRow label="Inputs (JSON, optional)">
+                <Textarea
+                  rows={2}
+                  value={
+                    Object.keys(call.inputs).length === 0
+                      ? ""
+                      : JSON.stringify(call.inputs, null, 2)
+                  }
+                  onChange={(e) => {
+                    const raw = e.target.value.trim();
+                    if (!raw) {
+                      patchCall(entryIdx, callIdx, { inputs: {} });
+                      return;
+                    }
+                    try {
+                      patchCall(entryIdx, callIdx, {
+                        inputs: JSON.parse(raw) as Record<string, unknown>,
+                      });
+                    } catch {
+                      // Ignore until JSON is valid.
+                    }
+                  }}
+                  placeholder='{"date": "2026-03-13"}'
+                />
+              </FieldRow>
+            </div>
+          );
+        })}
+      </div>
       <NumberRow
         label="Pause after (ms)"
         value={state.pauseAfter ?? 0}
         onChange={(pauseAfter) => onChange({ ...state, pauseAfter })}
       />
     </>
+  );
+}
+
+// Branded category select shared by LoadingFields and ToolCallsFields.
+function ToolCategorySelect({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const cat = getToolCategory(value);
+  return (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger className="w-full">
+        <span className="flex min-w-0 items-center gap-2">
+          <ToolCategoryGlyph cat={cat} size={14} />
+          <span className="truncate">{cat.label}</span>
+        </span>
+      </SelectTrigger>
+      <SelectContent className="max-h-72">
+        {TOOL_CATEGORIES.map((c) => (
+          <SelectItem key={c.key} value={c.key}>
+            <span className="flex items-center gap-2">
+              <ToolCategoryGlyph cat={c} size={14} />
+              <span>{c.label}</span>
+            </span>
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function ToolCategoryGlyph({
+  cat,
+  size = 14,
+}: {
+  cat: ReturnType<typeof getToolCategory>;
+  size?: number;
+}) {
+  if (cat.kind === "image") {
+    return (
+      // biome-ignore lint/performance/noImgElement: editor-only, no Next.js Image needed
+      <img
+        src={cat.src}
+        alt=""
+        width={size}
+        height={size}
+        className="aspect-square shrink-0 object-contain"
+      />
+    );
+  }
+  return (
+    <HugeiconsIcon
+      icon={cat.icon}
+      size={size}
+      className={`shrink-0 ${cat.iconClass}`}
+    />
+  );
+}
+
+function FollowUpActionsEditor({
+  actions,
+  onChange,
+}: {
+  actions: string[];
+  onChange: (next: string[]) => void;
+}) {
+  function update(i: number, value: string) {
+    const next = actions.slice();
+    next[i] = value;
+    onChange(next);
+  }
+  function remove(i: number) {
+    onChange(actions.filter((_, j) => j !== i));
+  }
+  function add() {
+    onChange([...actions, ""]);
+  }
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <Label className="text-[12px]">Follow-up actions</Label>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-6 gap-1 px-2 text-[11px]"
+          onClick={add}
+        >
+          <HugeiconsIcon icon={PlusSignIcon} size={11} />
+          Add action
+        </Button>
+      </div>
+      {actions.length === 0 && (
+        <p className="rounded-md border border-dashed border-border/60 px-3 py-3 text-center text-[11px] text-muted-foreground">
+          No follow-up actions. Click "Add action" to create one.
+        </p>
+      )}
+      {actions.map((action, i) => (
+        <div key={i} className="flex items-center gap-1.5">
+          <Input
+            value={action}
+            onChange={(e) => update(i, e.target.value)}
+            placeholder="e.g. Show full inbox"
+          />
+          <IconButton
+            title="Remove action"
+            icon={Delete02Icon}
+            destructive
+            onClick={() => remove(i)}
+          />
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -640,7 +967,9 @@ function defaultState(type: ScenarioStateType): ScenarioState {
         type,
         text: "Working on it…",
         duration: 1500,
-        toolInfo: { toolCategory: "general" },
+        // No toolInfo by default → chat-ui's LoadingIndicator falls
+        // back to <WaveSpinnerSquare>. Editor exposes "Tool
+        // integration" as the alternative indicator type.
         pauseAfter: 200,
       };
     case "tool_calls":

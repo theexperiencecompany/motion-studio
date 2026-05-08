@@ -7,10 +7,12 @@ import {
   ToolCallsSection,
 } from "@heygaia/chat-ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { domAnimation, LazyMotion } from "motion/react";
+import { useEffect, useMemo, useRef } from "react";
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 import "@heygaia/chat-ui/styles.css";
 import { computeWindows, contentProgress, type StateWindow } from "./timing";
+import { TOOL_CATEGORIES } from "./toolCategories";
 import type {
   BotMessageState,
   LoadingState,
@@ -20,6 +22,37 @@ import type {
   ToolCallsState,
   UserMessageState,
 } from "./types";
+
+// chat-ui's getToolCategoryIcon expects keys exactly as they appear in
+// the GAIA shared icon config. Our scenario data uses friendlier keys
+// (e.g. "google_calendar") that don't normalize cleanly to chat-ui's
+// internal name ("googlecalendar"). Map at the boundary.
+const TOOL_CATEGORY_ALIASES: Record<string, string> = {
+  google_calendar: "googlecalendar",
+  google_docs: "googledocs",
+  google_sheets: "googlesheets",
+  google_tasks: "googletasks",
+  google_meet: "googlemeet",
+  calendar: "googlecalendar",
+};
+
+const ICON_URL_BY_KEY = new Map<string, string>(
+  TOOL_CATEGORIES.flatMap((c) =>
+    c.kind === "image" ? [[c.key, c.src] as const] : [],
+  ),
+);
+
+function resolveCategoryKey(key: string | undefined): string {
+  const k = (key ?? "general").trim();
+  return TOOL_CATEGORY_ALIASES[k] ?? k;
+}
+
+function resolveIconUrl(key: string | undefined): string | undefined {
+  const resolved = resolveCategoryKey(key);
+  return (
+    ICON_URL_BY_KEY.get(resolved) ?? ICON_URL_BY_KEY.get(key ?? "") ?? undefined
+  );
+}
 
 export type GaiaScenarioProps = {
   scenarioJson: string;
@@ -46,8 +79,12 @@ export type GaiaScenarioProps = {
    * Whether tool_calls accordion sections render expanded by default.
    * chat-ui's ToolCallsSection collapses by default; for video where there's
    * no user interaction, expanded is the better default.
+   *
+   * Accepts boolean OR the strings "true" / "false" — the right-sidebar
+   * select control serializes as a string, the JSON form stores it as a
+   * boolean.
    */
-  toolCallsExpanded?: boolean;
+  toolCallsExpanded?: boolean | string;
 };
 
 const queryClient = new QueryClient();
@@ -105,7 +142,7 @@ export const GaiaScenario: React.FC<GaiaScenarioProps> = ({
   scale = 2.5,
   userAvatarUrl,
   botAvatarUrl,
-  toolCallsExpanded: toolCallsExpandedProp = true,
+  toolCallsExpanded: toolCallsExpandedProp = "true",
 }) => {
   // Select fields serialize booleans as strings — coerce.
   const toolCallsExpanded =
@@ -162,111 +199,219 @@ export const GaiaScenario: React.FC<GaiaScenarioProps> = ({
 
   return (
     <QueryClientProvider client={queryClient}>
-      {toolCallsExpanded && (
+      <LazyMotion features={domAnimation}>
         <style>
-          {/* Force chat-ui's ToolCallsSection accordion (HeroUI/Radix) open
-              in video output where there's no interaction. */}
+          {/* chat-ui ships a Tailwind-bundled JS but an empty styles.css.
+            Tailwind in lyon scans .ts/.tsx but does NOT scan
+            node_modules JS, so several utilities used inline by
+            chat-ui never make it into the output stylesheet. Re-define
+            the small set we actually need so the loading shimmer,
+            avatar offset, follow-up actions, and tool-call rows render
+            correctly without depending on Tailwind generation. */}
           {`
-            .chatbubblebot_parent [role="region"][data-state="closed"],
-            .chatbubblebot_parent [data-slot="content"][data-open="false"] {
-              animation: none !important;
-              height: auto !important;
-              visibility: visible !important;
-              overflow: visible !important;
-              display: block !important;
+          @keyframes gaiaScenarioShine {
+            0% { background-position: 100% 0; }
+            100% { background-position: -100% 0; }
+          }
+          /* Loading row left-padding (chat-ui uses pl-11.5 = 2.875rem). */
+          .gaia-scenario-root .pl-11\\.5 { padding-left: 2.875rem; }
+
+          /* Shimmer text: clip the gradient to the text shape and
+              animate the background-position so the highlight sweeps
+              across each character. Targets the unique animate-shine
+              class chat-ui puts on the loading <span>. */
+          .gaia-scenario-root .animate-shine {
+            background-size: 200% 100% !important;
+            background-clip: text !important;
+            -webkit-background-clip: text !important;
+            color: transparent !important;
+            -webkit-text-fill-color: transparent !important;
+            animation: gaiaScenarioShine 1.4s linear infinite !important;
+          }
+
+          /* Stacked tool icons next to "Used N tools": chat-ui ships
+              -space-x-2 (8px overlap). User feedback: tighten less so
+              the icons are more clearly readable — drop to ~3px overlap. */
+          .gaia-scenario-root .-space-x-2 > * + * {
+            margin-left: -0.2rem !important;
+          }
+
+          /* Tool calls accordion content: each row needs more breathing
+              room. Override chat-ui's space-y-0 + py-2 wrapper. */
+          .gaia-scenario-root [data-slot="content"] > .space-y-0,
+          .gaia-scenario-root [data-slot="content"] > div.space-y-0 {
+            padding-top: 0.75rem !important;
+            padding-bottom: 0.5rem !important;
+          }
+          .gaia-scenario-root [data-slot="content"] > .space-y-0 > * + *,
+          .gaia-scenario-root [data-slot="content"] > div.space-y-0 > * + * {
+            margin-top: 0.75rem !important;
+          }
+
+          /* Bot bubble footer (follow-ups + actions). chat-ui uses
+              ml-10.75 to indent past the avatar — ensure the class
+              actually has a value since Tailwind in lyon doesn't scan
+              chat-ui's bundle. Slightly tighter than chat-ui's
+              ml-10.75 (43px) per design feedback. */
+          .gaia-scenario-root .ml-10\\.75 { margin-left: 2.25rem; }
+
+          /* Follow-up action buttons: rounded corners, dashed outline.
+              The FollowUpActions container ships
+              "flex max-w-xl flex-wrap gap-2 pt-3 pb-1" — bump pt and
+              gap. Buttons inside use outline-dashed; round them. */
+          .gaia-scenario-root .outline-dashed {
+            outline-style: dashed !important;
+            outline-width: 1px !important;
+            outline-color: rgb(63 63 70) !important;
+            border-radius: 0.5rem !important;
+          }
+          .gaia-scenario-root .max-w-xl.flex-wrap {
+            padding-top: 1rem !important;
+            margin-left: 0.25rem !important;
+            gap: 0.5rem !important;
+          }
+
+          /* Bot action buttons (reply / copy / pin / thumbs up/down):
+              chat-ui hides them behind hover via inline opacity:0 +
+              visibility:hidden. In a static video render there is no
+              hover — force-show. Targets the actions row, which sits
+              under .ml-10.75 inside a .flex.flex-col wrapper. */
+          .gaia-scenario-root .ml-10\\.75 > .flex.flex-col {
+            opacity: 1 !important;
+            visibility: visible !important;
+          }
+          .gaia-scenario-root .ml-10\\.75 .flex.w-fit.items-center {
+            gap: 0.375rem !important;
+            margin-top: 0.5rem !important;
+          }
+        `}
+        </style>
+        {userAvatarUrl && (
+          <style>
+            {/* chat-ui renders the user avatar via Radix Avatar with
+              user.profilePicture (always undefined in our context). The
+              AvatarFallback's <img src="/images/avatars/default.webp"> is
+              flaky in Remotion's frame-by-frame render because Radix's
+              load-status state machine fires asynchronously. Sidestep all
+              of that: paint the avatar URL as a background-image on the
+              fallback slot and hide the inner <img>. */}
+            {`
+            [data-slot="avatar-fallback"] {
+              background-image: url(${JSON.stringify(userAvatarUrl).slice(1, -1)});
+              background-size: cover;
+              background-position: center;
+              background-color: transparent !important;
             }
-            .chatbubblebot_parent [data-state="closed"] > [data-slot="indicator"] {
-              transform: rotate(180deg);
+            [data-slot="avatar-fallback"] > * {
+              opacity: 0;
             }
           `}
-        </style>
-      )}
-      <AbsoluteFill
-        style={{
-          background: bg,
-          color: fg,
-          borderRadius,
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-          fontFamily:
-            "-apple-system, BlinkMacSystemFont, 'SF Pro Display', Inter, sans-serif",
-        }}
-      >
-        {headerLabel && (
-          <div
-            style={{
-              padding: `${Math.round(padding * 0.6)}px ${padding}px`,
-              fontSize: 14,
-              fontWeight: 500,
-              opacity: 0.6,
-              letterSpacing: "0.02em",
-              textTransform: "uppercase",
-            }}
-          >
-            {headerLabel}
-          </div>
+          </style>
         )}
-        <div
+        <AbsoluteFill
+          className="gaia-scenario-root"
           style={{
-            flex: 1,
+            background: bg,
+            color: fg,
+            borderRadius,
+            overflow: "hidden",
             display: "flex",
             flexDirection: "column",
-            justifyContent: "flex-end",
-            padding,
-            overflow: "hidden",
+            fontFamily:
+              "-apple-system, BlinkMacSystemFont, 'SF Pro Display', Inter, sans-serif",
           }}
         >
-          {/*
-           * chat-ui ships at native mobile pixel sizes. Use a CSS transform to
-           * scale the entire chat surface up to MessageBubbles-equivalent size.
-           * Width is divided by scale so the layout box still fills the parent.
-           */}
+          {headerLabel && (
+            <div
+              style={{
+                padding: `${Math.round(padding * 0.6)}px ${padding}px`,
+                fontSize: 14,
+                fontWeight: 500,
+                opacity: 0.6,
+                letterSpacing: "0.02em",
+                textTransform: "uppercase",
+              }}
+            >
+              {headerLabel}
+            </div>
+          )}
           <div
             style={{
-              transform: `scale(${scale})`,
-              transformOrigin: "bottom center",
-              width: `${100 / scale}%`,
-              margin: "0 auto",
+              flex: 1,
               display: "flex",
               flexDirection: "column",
               justifyContent: "flex-end",
-              gap: 12,
+              padding,
+              overflow: "hidden",
             }}
           >
-            {renderVisible(
-              visible,
-              frame,
-              activeLoading?.index ?? null,
-              activeThinking?.index ?? null,
-            )}
+            {/*
+             * chat-ui ships at native mobile pixel sizes. Use a CSS transform to
+             * scale the entire chat surface up to MessageBubbles-equivalent size.
+             * Width is divided by scale so the layout box still fills the parent.
+             */}
+            <div
+              style={{
+                transform: `scale(${scale})`,
+                transformOrigin: "bottom center",
+                width: `${100 / scale}%`,
+                margin: "0 auto",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "flex-end",
+                gap: 12,
+              }}
+            >
+              {renderVisible(
+                visible,
+                frame,
+                activeLoading?.index ?? null,
+                activeThinking?.index ?? null,
+                toolCallsExpanded,
+              )}
+            </div>
           </div>
-        </div>
-      </AbsoluteFill>
+        </AbsoluteFill>
+      </LazyMotion>
     </QueryClientProvider>
   );
 };
 
 /**
- * Render the visible windows, bundling consecutive tool_calls states into
- * a SINGLE ToolCallsSection so the chat shows "Used N tools" with all
- * stacked icons — matching the real GAIA UI's behavior of attaching
- * multiple tool results to one block.
+ * Render the visible windows, bundling ALL tool_calls states into a SINGLE
+ * ToolCallsSection that says "Used N tools" — even when separated by
+ * loading / thinking / pause states. The real GAIA UI attaches every tool
+ * result a bot used during one turn to one accordion; we mirror that.
+ *
+ * Flush only happens on user_message / bot_message boundaries (i.e. when
+ * a new chat turn starts), so loading→tool_calls→loading→tool_calls
+ * collapses into one block.
  */
 function renderVisible(
   visible: StateWindow[],
   frame: number,
   activeLoadingIdx: number | null,
   activeThinkingIdx: number | null,
+  toolCallsExpanded: boolean,
 ): React.ReactNode[] {
   const out: React.ReactNode[] = [];
   let toolCallsBuf: ScenarioToolEntry[] = [];
   let toolCallsKey: number | null = null;
+  // Loading + thinking are scheduled BEFORE the bot bubble in the
+  // scenario, but the rendered chat reads better with them anchored
+  // at the bottom (after bubble + follow-up actions). Hold them and
+  // append at the end of the output.
+  let pendingLoading: React.ReactNode = null;
+  let pendingThinking: React.ReactNode = null;
 
   const flushToolCalls = () => {
     if (toolCallsBuf.length > 0 && toolCallsKey !== null) {
       out.push(
-        <ToolCallsView key={`tc-${toolCallsKey}`} entries={toolCallsBuf} />,
+        <ToolCallsView
+          key={`tc-${toolCallsKey}`}
+          entries={toolCallsBuf}
+          toolCallsExpanded={toolCallsExpanded}
+        />,
       );
       toolCallsBuf = [];
       toolCallsKey = null;
@@ -282,10 +427,13 @@ function renderVisible(
       continue;
     }
 
-    flushToolCalls();
     const progress = contentProgress(window, frame);
     switch (window.state.type) {
       case "user_message":
+        flushToolCalls();
+        // New turn — drop any pending loading/thinking from before.
+        pendingLoading = null;
+        pendingThinking = null;
         out.push(
           <UserMessageView
             key={window.index}
@@ -296,6 +444,10 @@ function renderVisible(
         );
         break;
       case "bot_message":
+        flushToolCalls();
+        // Once the bot has started replying, the prior loading is
+        // stale — but per spec, keep loading visible if it's *still*
+        // marked active (mid-stream agentic step).
         out.push(
           <BotMessageView
             key={window.index}
@@ -307,18 +459,20 @@ function renderVisible(
         break;
       case "loading":
         if (activeLoadingIdx === window.index) {
-          out.push(
+          pendingLoading = (
             <LoadingView
               key={window.index}
               state={window.state}
               index={window.index}
-            />,
+            />
           );
         }
         break;
       case "thinking":
         if (activeThinkingIdx === window.index) {
-          out.push(<ThinkingView key={window.index} state={window.state} />);
+          pendingThinking = (
+            <ThinkingView key={window.index} state={window.state} />
+          );
         }
         break;
       case "todo_data":
@@ -328,6 +482,10 @@ function renderVisible(
     }
   }
   flushToolCalls();
+  // Loading / thinking always trail at the very bottom, after any
+  // already-rendered bot bubble + follow-up actions.
+  if (pendingThinking) out.push(pendingThinking);
+  if (pendingLoading) out.push(pendingLoading);
   return out;
 }
 
@@ -412,11 +570,30 @@ function BotMessageView({
 }
 
 function LoadingView({ state, index }: { state: LoadingState; index: number }) {
+  // chat-ui's LoadingIndicator reads toolInfo.toolCategory through
+  // getToolCategoryIcon — same alias problem as ToolCallsSection. Map
+  // to chat-ui's expected key + supply iconUrl for a guaranteed match.
+  //
+  // When toolInfo is missing (or toolCategory empty), chat-ui falls
+  // back to <WaveSpinnerSquare> — the generic "thinking" indicator.
+  // The editor exposes that as the "Wave spinner" indicator option.
+  const toolInfo = useMemo(() => {
+    if (!state.toolInfo) return undefined;
+    if (!state.toolInfo.toolCategory) return undefined;
+    return {
+      ...state.toolInfo,
+      toolCategory: resolveCategoryKey(state.toolInfo.toolCategory),
+      iconUrl:
+        (state.toolInfo as { iconUrl?: string }).iconUrl ??
+        resolveIconUrl(state.toolInfo.toolCategory),
+    };
+  }, [state.toolInfo]);
+
   return (
     <LoadingIndicator
       loadingText={state.text}
       loadingTextKey={index}
-      toolInfo={state.toolInfo}
+      toolInfo={toolInfo}
     />
   );
 }
@@ -425,9 +602,69 @@ function ThinkingView({ state }: { state: ThinkingState }) {
   return <ThinkingBubble thinkingContent={state.content} />;
 }
 
-function ToolCallsView({ entries }: { entries: ScenarioToolEntry[] }) {
-  // Pass ALL accumulated tool entries (across multiple consecutive
-  // tool_calls scenario states) as one tool_calls_data array — chat-ui
-  // renders a single "Used N tools" accordion with stacked icons.
-  return <ToolCallsSection tool_calls_data={entries as never} />;
+function ToolCallsView({
+  entries,
+  toolCallsExpanded,
+}: {
+  entries: ScenarioToolEntry[];
+  toolCallsExpanded: boolean;
+}) {
+  // chat-ui's ToolCallsSection prefers `call.message` for the per-row
+  // title and only falls back to a formatted `tool_name` when message
+  // is missing. Users want the tool name shown — strip message and let
+  // the fallback do its job.
+  //
+  // Also normalise tool_category so chat-ui's getToolCategoryIcon hits
+  // the right entry, and inject `icon_url` (chat-ui checks it first)
+  // pointing at the asset we serve from /images/icons.
+  const normalised = useMemo(
+    () =>
+      entries.map((e) => {
+        const category = resolveCategoryKey(e.tool_category);
+        const iconUrl = resolveIconUrl(e.tool_category);
+        return {
+          ...e,
+          tool_category: category,
+          message: undefined,
+          icon_url: iconUrl,
+        };
+      }),
+    [entries],
+  );
+
+  // chat-ui's ToolCallsSection holds its expanded state internally and
+  // starts collapsed. Programmatically click the accordion's trigger
+  // button so the demo always renders the expanded view.
+  //
+  // HeroUI's dataAttr() returns true OR undefined — so closed buttons
+  // have NO `data-open` attribute (not data-open="false"). React Aria's
+  // useButton sets `aria-expanded` reliably on accordion buttons, so
+  // target that instead. We retry on the next animation frame in case
+  // the button isn't queryable on the synchronous useLayoutEffect tick.
+  const containerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!toolCallsExpanded) return;
+    let cancelled = false;
+    const tryOpen = () => {
+      if (cancelled) return;
+      const root = containerRef.current;
+      if (!root) return;
+      const trigger = root.querySelector<HTMLButtonElement>(
+        'button[aria-expanded="false"]',
+      );
+      if (trigger) trigger.click();
+    };
+    tryOpen();
+    const raf = requestAnimationFrame(tryOpen);
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(raf);
+    };
+  }, [toolCallsExpanded, normalised]);
+
+  return (
+    <div ref={containerRef} style={{ marginLeft: 36 }}>
+      <ToolCallsSection tool_calls_data={normalised as never} />
+    </div>
+  );
 }

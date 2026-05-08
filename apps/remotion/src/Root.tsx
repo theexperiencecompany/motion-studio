@@ -48,6 +48,7 @@ export const RemotionRoot: React.FC = () => {
           width={c.width}
           height={c.height}
           defaultProps={c.defaultProps}
+          calculateMetadata={c.calculateMetadata}
         />
       ))}
       <Composition

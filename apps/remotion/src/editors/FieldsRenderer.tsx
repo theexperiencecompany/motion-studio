@@ -14,6 +14,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@workspace/ui/components/select";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@workspace/ui/components/tabs";
 import { compositions } from "../registry";
 import type { Field, SectionField } from "../schema";
 import { ChatEditor } from "./ChatEditor";
@@ -106,53 +112,122 @@ export function FieldsRenderer({ fields, value, onChange }: Props) {
           />
         </div>
       )}
-      {scenarioField && scenarioField.kind === "scenario" && (
-        <ScenarioEditor
-          label={scenarioField.label}
-          value={(value[scenarioField.key] ?? "") as string}
-          onChange={(v) => set(scenarioField.key, v)}
+      {scenarioField &&
+      scenarioField.kind === "scenario" &&
+      sectionFields.length > 0 ? (
+        // States editor + raw JSON share the same key but are different
+        // editing surfaces. Render them as tabs so the user picks one,
+        // never both stacked.
+        <ScenarioWithSectionsTabs
+          scenarioField={scenarioField}
+          sectionFields={sectionFields}
+          value={value}
+          set={set}
         />
-      )}
-      {/* Advanced sections render LAST so per-state editing is the primary
-          surface and rarely-used JSON / config sits at the bottom. */}
-      {sectionFields.length > 0 && (
-        <div className="shrink-0 px-5 py-3">
-          <Accordion
-            type="multiple"
-            defaultValue={sectionFields
-              .filter((s) => s.defaultOpen)
-              .map((s) => s.key)}
-            className="space-y-2"
-          >
-            {sectionFields.map((section) => (
-              <AccordionItem
-                key={section.key}
-                value={section.key}
-                className="rounded-md border border-border/60 bg-muted/20"
+      ) : (
+        <>
+          {scenarioField && scenarioField.kind === "scenario" && (
+            <ScenarioEditor
+              label={scenarioField.label}
+              value={(value[scenarioField.key] ?? "") as string}
+              onChange={(v) => set(scenarioField.key, v)}
+            />
+          )}
+          {sectionFields.length > 0 && (
+            <div className="shrink-0 px-5 py-3">
+              <Accordion
+                type="multiple"
+                defaultValue={sectionFields
+                  .filter((s) => s.defaultOpen)
+                  .map((s) => s.key)}
+                className="space-y-2"
               >
-                <AccordionTrigger className="px-3 py-2 text-xs font-semibold hover:no-underline">
-                  {section.label}
-                </AccordionTrigger>
-                <AccordionContent className="space-y-3 px-3 pb-3">
-                  {section.description && (
-                    <p className="text-[11px] text-muted-foreground">
-                      {section.description}
-                    </p>
-                  )}
-                  {section.fields.map((subField) => (
-                    <PrimitiveControl
-                      key={subField.key}
-                      field={subField}
-                      value={value[subField.key]}
-                      onChange={(v) => set(subField.key, v)}
-                    />
-                  ))}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        </div>
+                {sectionFields.map((section) => (
+                  <AccordionItem
+                    key={section.key}
+                    value={section.key}
+                    className="rounded-md border border-border/60 bg-muted/20"
+                  >
+                    <AccordionTrigger className="px-3 py-2 text-xs font-semibold hover:no-underline">
+                      {section.label}
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-3 px-3 pb-3">
+                      {section.description && (
+                        <p className="text-[11px] text-muted-foreground">
+                          {section.description}
+                        </p>
+                      )}
+                      {section.fields.map((subField) => (
+                        <PrimitiveControl
+                          key={subField.key}
+                          field={subField}
+                          value={value[subField.key]}
+                          onChange={(v) => set(subField.key, v)}
+                        />
+                      ))}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </div>
+          )}
+        </>
       )}
+    </div>
+  );
+}
+
+function ScenarioWithSectionsTabs({
+  scenarioField,
+  sectionFields,
+  value,
+  set,
+}: {
+  scenarioField: Extract<Field, { kind: "scenario" }>;
+  sectionFields: SectionField[];
+  value: Record<string, unknown>;
+  set: (key: string, v: unknown) => void;
+}) {
+  return (
+    <div className="flex min-h-0 flex-1 flex-col px-5 py-3">
+      <Tabs defaultValue="states" className="gap-3">
+        <TabsList className="self-start">
+          <TabsTrigger value="states">{scenarioField.label}</TabsTrigger>
+          {sectionFields.map((section) => (
+            <TabsTrigger key={section.key} value={section.key}>
+              {section.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        <TabsContent value="states" className="-mx-5">
+          <ScenarioEditor
+            label={scenarioField.label}
+            value={(value[scenarioField.key] ?? "") as string}
+            onChange={(v) => set(scenarioField.key, v)}
+          />
+        </TabsContent>
+        {sectionFields.map((section) => (
+          <TabsContent
+            key={section.key}
+            value={section.key}
+            className="space-y-3"
+          >
+            {section.description && (
+              <p className="text-[11px] text-muted-foreground">
+                {section.description}
+              </p>
+            )}
+            {section.fields.map((subField) => (
+              <PrimitiveControl
+                key={subField.key}
+                field={subField}
+                value={value[subField.key]}
+                onChange={(v) => set(subField.key, v)}
+              />
+            ))}
+          </TabsContent>
+        ))}
+      </Tabs>
     </div>
   );
 }
