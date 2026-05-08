@@ -1,26 +1,40 @@
-"use client"
+"use client";
 
-import { Player } from "@remotion/player"
-import { ProjectComposition } from "@workspace/compositions/compositions/Project/Project"
-import type { Project } from "@workspace/compositions/project"
+import { Player, type PlayerRef } from "@remotion/player";
+import { ProjectComposition } from "@workspace/compositions/compositions/Project/Project";
+import type { Project } from "@workspace/compositions/project";
+import { Button } from "@workspace/ui/components/button";
+import type { Ref } from "react";
 
 type Props = {
-  project: Project
-  playerInputProps: Project
-  totalDuration: number
-  hasClips: boolean
-}
+  project: Project;
+  playerInputProps: Project;
+  totalDuration: number;
+  hasClips: boolean;
+  onOpenLibrary: () => void;
+  playerRef?: Ref<PlayerRef>;
+};
 
 export function PreviewStage({
   project,
   playerInputProps,
   totalDuration,
   hasClips,
+  onOpenLibrary,
+  playerRef,
 }: Props) {
+  if (!hasClips) {
+    return (
+      <div className="relative flex min-h-0 flex-1 items-center justify-center bg-background">
+        <EmptyStage onOpenLibrary={onOpenLibrary} />
+      </div>
+    );
+  }
+
   return (
-    <div className="relative flex min-h-0 flex-1 items-center justify-center bg-[#0a0a0b] p-8">
+    <div className="relative flex min-h-0 flex-1 items-center justify-center bg-background p-8">
       <div
-        className="relative max-h-full max-w-full overflow-hidden rounded-2xl border border-zinc-800 bg-black shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]"
+        className="relative max-h-full max-w-full overflow-hidden bg-black ring-1 ring-border"
         style={{
           aspectRatio: `${project.width} / ${project.height}`,
           height: "100%",
@@ -29,50 +43,55 @@ export function PreviewStage({
           maxHeight: "100%",
         }}
       >
-        {hasClips ? (
-          <Player
-            component={ProjectComposition}
-            inputProps={playerInputProps}
-            durationInFrames={totalDuration}
-            fps={project.fps}
-            compositionWidth={project.width}
-            compositionHeight={project.height}
-            style={{ width: "100%", height: "100%" }}
-            controls
-            loop
-            initiallyMuted
-            acknowledgeRemotionLicense
-          />
-        ) : (
-          <EmptyStage />
-        )}
+        <Player
+          ref={playerRef}
+          component={ProjectComposition}
+          inputProps={playerInputProps}
+          durationInFrames={totalDuration}
+          fps={project.fps}
+          compositionWidth={project.width}
+          compositionHeight={project.height}
+          style={{ width: "100%", height: "100%" }}
+          loop
+          initiallyMuted
+          acknowledgeRemotionLicense
+        />
       </div>
     </div>
-  )
+  );
 }
 
-function EmptyStage() {
+function EmptyStage({ onOpenLibrary }: { onOpenLibrary: () => void }) {
   return (
     <div className="flex h-full w-full items-center justify-center">
-      <div className="text-center">
-        <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full border border-white/10 bg-white/5">
+      <div className="flex flex-col items-center gap-3">
+        <div className="flex size-10 items-center justify-center rounded-lg border border-border bg-muted/50">
           <svg
             viewBox="0 0 24 24"
-            className="size-5 text-white/40"
+            className="size-4 text-muted-foreground"
             fill="none"
             stroke="currentColor"
             strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
+            aria-hidden="true"
           >
+            <title>Play</title>
             <polygon points="5 3 19 12 5 21 5 3" />
           </svg>
         </div>
-        <p className="text-sm font-medium text-white/70">Your video</p>
-        <p className="mt-1 text-[12px] text-white/40">
-          Open the library and add your first scene.
-        </p>
+        <div className="text-center">
+          <p className="text-[13px] font-medium text-foreground/80">
+            No clips yet
+          </p>
+          <p className="mt-0.5 text-[12px] text-muted-foreground">
+            Add a scene from the library to get started.
+          </p>
+        </div>
+        <Button size="sm" onClick={onOpenLibrary} className="mt-1">
+          Add scene
+        </Button>
       </div>
     </div>
-  )
+  );
 }

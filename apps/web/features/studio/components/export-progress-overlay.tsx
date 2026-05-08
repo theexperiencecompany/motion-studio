@@ -1,41 +1,43 @@
-"use client"
+"use client";
 
-import type { ExportState } from "../hooks/use-export-render"
+import { Button } from "@workspace/ui/components/button";
+import type { ExportState } from "../hooks/use-export-render";
 
 type Props = {
-  state: ExportState
-  onClose: () => void
-}
+  state: ExportState;
+  onClose: () => void;
+};
 
 export function ExportProgressOverlay({ state, onClose }: Props) {
-  if (state.phase === "idle") return null
+  if (state.phase === "idle") return null;
 
-  const pct = Math.round(state.progress * 100)
-  const dismissable = state.phase === "done" || state.phase === "error"
+  const pct = Math.round(state.progress * 100);
+  const dismissable = state.phase === "done" || state.phase === "error";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-sm rounded-xl border border-zinc-800 bg-[#0f0f11] p-6 shadow-2xl">
+      <div className="w-full max-w-sm rounded-xl border border-border bg-background p-6 shadow-2xl">
         <div className="mb-1 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-zinc-100">
+          <h2 className="text-sm font-semibold text-foreground">
             {state.phase === "starting" && "Preparing render…"}
             {state.phase === "rendering" && "Rendering video"}
             {state.phase === "done" && "Render complete"}
             {state.phase === "error" && "Render failed"}
           </h2>
           {dismissable && (
-            <button
+            <Button
+              variant="ghost"
+              size="icon-xs"
               onClick={onClose}
-              className="flex size-6 items-center justify-center rounded-md text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200"
               title="Close"
             >
               ×
-            </button>
+            </Button>
           )}
         </div>
 
         {state.phase !== "error" && (
-          <p className="mb-4 text-[12px] text-zinc-500">
+          <p className="mb-4 text-[12px] text-muted-foreground">
             {state.phase === "starting" &&
               "Bundling your composition. First render may take longer."}
             {state.phase === "rendering" &&
@@ -53,48 +55,45 @@ export function ExportProgressOverlay({ state, onClose }: Props) {
         <ProgressBar phase={state.phase} pct={pct} />
 
         <div className="mt-3 flex items-center justify-between">
-          <span className="text-[11px] tabular-nums text-zinc-500">
+          <span className="text-[11px] tabular-nums text-muted-foreground">
             {state.phase === "rendering" || state.phase === "done"
               ? `${pct}%`
               : "—"}
           </span>
           {dismissable && (
-            <button
-              onClick={onClose}
-              className="rounded-md border border-zinc-800 px-2.5 py-1 text-[11px] text-zinc-300 hover:bg-zinc-800"
-            >
+            <Button variant="outline" size="xs" onClick={onClose}>
               Close
-            </button>
+            </Button>
           )}
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 function ProgressBar({
   phase,
   pct,
 }: {
-  phase: ExportState["phase"]
-  pct: number
+  phase: ExportState["phase"];
+  pct: number;
 }) {
   if (phase === "starting") {
     return (
-      <div className="relative h-2 overflow-hidden rounded-full bg-zinc-800">
+      <div className="relative h-2 overflow-hidden rounded-full bg-accent">
         <div className="absolute inset-y-0 left-0 w-1/3 animate-pulse rounded-full bg-blue-500" />
       </div>
-    )
+    );
   }
   if (phase === "error") {
-    return <div className="h-2 rounded-full bg-red-500/30" />
+    return <div className="h-2 rounded-full bg-red-500/30" />;
   }
   return (
-    <div className="h-2 overflow-hidden rounded-full bg-zinc-800">
+    <div className="h-2 overflow-hidden rounded-full bg-accent">
       <div
         className="h-full rounded-full bg-blue-500 transition-[width] duration-200"
         style={{ width: `${Math.max(2, pct)}%` }}
       />
     </div>
-  )
+  );
 }

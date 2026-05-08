@@ -1,11 +1,11 @@
-import Link from "next/link";
-import { notFound } from "next/navigation";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowLeft01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import {
   compositions,
   compositionsById,
 } from "@workspace/compositions/registry";
+import Link from "next/link";
+import { notFound } from "next/navigation";
 import { EditorView } from "./EditorView";
 
 export function generateStaticParams() {

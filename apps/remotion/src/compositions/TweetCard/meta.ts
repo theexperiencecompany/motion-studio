@@ -7,9 +7,9 @@ export const TWEET_CARD_WIDTH = 1920;
 export const TWEET_CARD_HEIGHT = 1080;
 
 export const tweetCardDefaultProps: TweetCardProps = {
-  displayName: "Theo",
-  handle: "@t3dotgg",
-  avatarUrl: "https://github.com/t3dotgg.png?size=200",
+  displayName: "sanku",
+  handle: "@sankalpa_02",
+  avatarUrl: "https://github.com/sankalpaacharya.png?size=200",
   verified: "yes",
   text: "Oh boy, we have a lot to talk about today.",
   timestamp: "10:30 PM · Mar 15, 2025",
@@ -59,6 +59,6 @@ export const tweetCardInfo: CompositionInfo<TweetCardProps> = {
         { value: "dark", label: "Dark" },
       ],
     },
-    { kind: "text", key: "backgroundColor", label: "Background color" },
+    { kind: "color", key: "backgroundColor", label: "Background color" },
   ],
 };

@@ -8,6 +8,7 @@ export const MESSAGE_BUBBLES_HEIGHT = 720;
 
 export const messageBubblesDefaultProps: MessageBubblesProps = {
   contactName: "sanku",
+  contactAvatar: "https://github.com/aryanranderiya.png",
   messages: [
     { text: "you up?", side: "left", typingFrames: 50, delay: 30 },
     { text: "for you, always 😏", side: "right", typingFrames: 60, delay: 150 },
@@ -20,6 +21,7 @@ export const messageBubblesDefaultProps: MessageBubblesProps = {
       delay: 560,
     },
   ],
+  theme: "light",
 };
 
 export const messageBubblesInfo: CompositionInfo<MessageBubblesProps> = {
@@ -34,6 +36,16 @@ export const messageBubblesInfo: CompositionInfo<MessageBubblesProps> = {
   defaultProps: messageBubblesDefaultProps,
   fields: [
     { kind: "text", key: "contactName", label: "Contact name" },
+    { kind: "text", key: "contactAvatar", label: "Avatar URL" },
     { kind: "chat", key: "messages", label: "Messages" },
+    {
+      kind: "select",
+      key: "theme",
+      label: "Theme",
+      options: [
+        { value: "light", label: "Light" },
+        { value: "dark", label: "Dark" },
+      ],
+    },
   ],
 };

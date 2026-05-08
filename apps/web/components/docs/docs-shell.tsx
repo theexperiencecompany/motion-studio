@@ -1,12 +1,11 @@
-import Link from "next/link"
-import { HugeiconsIcon } from "@hugeicons/react"
 import {
-  ListViewIcon,
-  Copy01Icon,
   ArrowDown01Icon,
   ArrowLeft01Icon,
   ArrowRight01Icon,
-} from "@hugeicons/core-free-icons"
+  Books02Icon,
+  Copy01Icon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -14,18 +13,20 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@workspace/ui/components/breadcrumb"
-import type { Doc } from "@/lib/docs"
-import { getAdjacent } from "@/lib/docs"
+} from "@workspace/ui/components/breadcrumb";
+import { Button } from "@workspace/ui/components/button";
+import Link from "next/link";
+import type { Doc } from "@/lib/docs";
+import { getAdjacent } from "@/lib/docs";
 
 export function DocsShell({ doc }: { doc: Doc }) {
-  const { prev, next } = getAdjacent(doc.slug)
-  const Content = doc.Content
+  const { prev, next } = getAdjacent(doc.slug);
+  const Content = doc.Content;
 
   return (
-    <div className="flex">
-      <div className="flex flex-1 justify-center">
-        <div className="min-w-0 w-full max-w-3xl px-12 py-10">
+    <div className="mx-auto flex w-full max-w-6xl gap-12 px-8 py-10 xl:px-12">
+      <div className="min-w-0 flex-1">
+        <div className="mx-auto w-full max-w-3xl">
           <Breadcrumb className="mb-8">
             <BreadcrumbList>
               <BreadcrumbItem>
@@ -43,7 +44,11 @@ export function DocsShell({ doc }: { doc: Doc }) {
               {doc.meta.title}
             </h1>
             <div className="flex items-center gap-1 shrink-0">
-              <button className="flex items-center gap-1.5 rounded-md border border-border bg-muted/40 px-2.5 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-[12px]"
+              >
                 <HugeiconsIcon icon={Copy01Icon} size={12} />
                 <span>Copy Page</span>
                 <HugeiconsIcon
@@ -51,8 +56,12 @@ export function DocsShell({ doc }: { doc: Doc }) {
                   size={12}
                   className="text-muted-foreground"
                 />
-              </button>
-              <NavButton href={prev?.href} label="Previous page" direction="prev" />
+              </Button>
+              <NavButton
+                href={prev?.href}
+                label="Previous page"
+                direction="prev"
+              />
               <NavButton href={next?.href} label="Next page" direction="next" />
             </div>
           </div>
@@ -92,10 +101,10 @@ export function DocsShell({ doc }: { doc: Doc }) {
         </div>
       </div>
 
-      <aside className="hidden w-48 shrink-0 px-6 py-10 xl:block">
+      <aside className="hidden w-52 shrink-0 xl:block">
         <div className="sticky top-24">
-          <div className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold tracking-wider text-muted-foreground/60 uppercase">
-            <HugeiconsIcon icon={ListViewIcon} size={13} />
+          <div className="mb-3 flex items-center gap-1.5 text-xs font-medium text-muted-foreground/60">
+            <HugeiconsIcon icon={Books02Icon} size={13} />
             <span>On This Page</span>
           </div>
           <ul className="space-y-2 border-l border-dashed border-border pl-3">
@@ -113,7 +122,7 @@ export function DocsShell({ doc }: { doc: Doc }) {
         </div>
       </aside>
     </div>
-  )
+  );
 }
 
 function NavButton({
@@ -121,31 +130,23 @@ function NavButton({
   label,
   direction,
 }: {
-  href: string | undefined
-  label: string
-  direction: "prev" | "next"
+  href: string | undefined;
+  label: string;
+  direction: "prev" | "next";
 }) {
-  const icon = direction === "prev" ? ArrowLeft01Icon : ArrowRight01Icon
-  const baseClass =
-    "flex items-center justify-center size-7 rounded-md border border-border bg-muted/40 transition-colors"
+  const icon = direction === "prev" ? ArrowLeft01Icon : ArrowRight01Icon;
   if (!href) {
     return (
-      <button
-        aria-label={label}
-        disabled
-        className={`${baseClass} text-muted-foreground/40 cursor-not-allowed`}
-      >
+      <Button variant="outline" size="icon-sm" aria-label={label} disabled>
         <HugeiconsIcon icon={icon} size={14} />
-      </button>
-    )
+      </Button>
+    );
   }
   return (
-    <Link
-      href={href}
-      aria-label={label}
-      className={`${baseClass} text-muted-foreground hover:bg-muted hover:text-foreground`}
-    >
-      <HugeiconsIcon icon={icon} size={14} />
-    </Link>
-  )
+    <Button variant="outline" size="icon-sm" asChild>
+      <Link href={href} aria-label={label}>
+        <HugeiconsIcon icon={icon} size={14} />
+      </Link>
+    </Button>
+  );
 }

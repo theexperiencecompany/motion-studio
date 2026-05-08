@@ -1,36 +1,61 @@
-"use client"
+"use client";
 
-import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion"
+import {
+  AbsoluteFill,
+  interpolate,
+  spring,
+  useCurrentFrame,
+  useVideoConfig,
+} from "remotion";
 
-export const HERO_DEMO_DURATION = 150 // 5s @ 30fps
-export const HERO_DEMO_FPS = 30
-export const HERO_DEMO_WIDTH = 1280
-export const HERO_DEMO_HEIGHT = 720
+export const HERO_DEMO_DURATION = 150; // 5s @ 30fps
+export const HERO_DEMO_FPS = 30;
+export const HERO_DEMO_WIDTH = 1280;
+export const HERO_DEMO_HEIGHT = 720;
 
 export function HeroDemo() {
-  const frame = useCurrentFrame()
-  const { fps } = useVideoConfig()
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
 
   // Logo: scale + fade in 0-30
-  const logoScale = spring({ frame, fps, from: 0.6, to: 1, durationInFrames: 30 })
-  const logoOpacity = interpolate(frame, [0, 20], [0, 1], { extrapolateRight: "clamp" })
+  const logoScale = spring({
+    frame,
+    fps,
+    from: 0.6,
+    to: 1,
+    durationInFrames: 30,
+  });
+  const logoOpacity = interpolate(frame, [0, 20], [0, 1], {
+    extrapolateRight: "clamp",
+  });
 
   // Title slides up at frame 25
-  const titleY = interpolate(frame, [25, 50], [30, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
-  const titleOpacity = interpolate(frame, [25, 50], [0, 1], { extrapolateRight: "clamp" })
+  const titleY = interpolate(frame, [25, 50], [30, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const titleOpacity = interpolate(frame, [25, 50], [0, 1], {
+    extrapolateRight: "clamp",
+  });
 
   // Subtitle at frame 45
-  const subtitleY = interpolate(frame, [45, 70], [20, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
-  const subtitleOpacity = interpolate(frame, [45, 70], [0, 1], { extrapolateRight: "clamp" })
+  const subtitleY = interpolate(frame, [45, 70], [20, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const subtitleOpacity = interpolate(frame, [45, 70], [0, 1], {
+    extrapolateRight: "clamp",
+  });
 
   // Pills appear staggered
-  const pills = ["Copy & paste", "Fully typed", "Dark mode", "Accessible"]
-  const pillStart = 80
+  const pills = ["Copy & paste", "Fully typed", "Dark mode", "Accessible"];
+  const pillStart = 80;
 
   return (
     <AbsoluteFill
       style={{
-        background: "radial-gradient(circle at 50% 40%, #1a1a2e 0%, #0a0a0a 60%)",
+        background:
+          "radial-gradient(circle at 50% 40%, #1a1a2e 0%, #0a0a0a 60%)",
         fontFamily: "Inter, sans-serif",
         color: "white",
       }}
@@ -103,9 +128,14 @@ export function HeroDemo() {
         {/* Pills */}
         <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
           {pills.map((label, i) => {
-            const start = pillStart + i * 8
-            const opacity = interpolate(frame, [start, start + 15], [0, 1], { extrapolateRight: "clamp" })
-            const y = interpolate(frame, [start, start + 15], [16, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
+            const start = pillStart + i * 8;
+            const opacity = interpolate(frame, [start, start + 15], [0, 1], {
+              extrapolateRight: "clamp",
+            });
+            const y = interpolate(frame, [start, start + 15], [16, 0], {
+              extrapolateLeft: "clamp",
+              extrapolateRight: "clamp",
+            });
             return (
               <div
                 key={label}
@@ -124,10 +154,10 @@ export function HeroDemo() {
               >
                 {label}
               </div>
-            )
+            );
           })}
         </div>
       </AbsoluteFill>
     </AbsoluteFill>
-  )
+  );
 }

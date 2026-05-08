@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   AbsoluteFill,
   Easing,
+  Img,
   interpolate,
   staticFile,
   useCurrentFrame,
@@ -65,7 +66,7 @@ export const BrowserScroll: React.FC<BrowserScrollProps> = ({
 
   return (
     <AbsoluteFill style={{ background: "#ffffff", overflow: "hidden" }}>
-      <img
+      <Img
         src={screenshotSrc}
         alt="page"
         style={{

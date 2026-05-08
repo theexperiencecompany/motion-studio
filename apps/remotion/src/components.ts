@@ -1,34 +1,18 @@
 "use client";
 import type { ComponentType } from "react";
-import { MessagePopup } from "./compositions/MessagePopup/MessagePopup";
-import { MessageBubbles } from "./compositions/MessageBubbles/MessageBubbles";
-import { TitleSlideUp } from "./compositions/TitleSlideUp/TitleSlideUp";
-import { TitleType } from "./compositions/TitleType/TitleType";
-import { TitlePopup } from "./compositions/TitlePopup/TitlePopup";
-import { TitleFade } from "./compositions/TitleFade/TitleFade";
-import { TypingSearch } from "./compositions/TypingSearch/TypingSearch";
-import { StatCounter } from "./compositions/StatCounter/StatCounter";
-import { TweetCard } from "./compositions/TweetCard/TweetCard";
-import { CursorWalkthrough } from "./compositions/CursorWalkthrough/CursorWalkthrough";
-import { BrowserWindow } from "./compositions/BrowserWindow/BrowserWindow";
-import { CaptionTrack } from "./compositions/CaptionTrack/CaptionTrack";
-import { TwitterFollow } from "./compositions/TwitterFollow/TwitterFollow";
-import { GaiaScenario } from "./compositions/GaiaScenario/GaiaScenario";
+import { componentsByIdBase } from "./componentsBase";
+import { PhoneFrame } from "./compositions/PhoneFrame/PhoneFrame";
+import { LaptopFrame } from "./compositions/LaptopFrame/LaptopFrame";
+import { SplitScene } from "./compositions/SplitScene/SplitScene";
 
+// Frame compositions (PhoneFrame, LaptopFrame, SplitScene) import this module
+// to look up nested compositions, which creates a circular dependency. To
+// avoid TDZ errors when the bundler evaluates this module mid-cycle, leaf
+// compositions live in `componentsBase`; we layer SplitScene on top here.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const componentsById: Record<string, ComponentType<any>> = {
-  GaiaScenario,
-  MessagePopup,
-  MessageBubbles,
-  TitleSlideUp,
-  TitleType,
-  TitlePopup,
-  TitleFade,
-  TypingSearch,
-  StatCounter,
-  TweetCard,
-  CursorWalkthrough,
-  BrowserWindow,
-  CaptionTrack,
-  TwitterFollow,
+  ...componentsByIdBase,
+  PhoneFrame,
+  LaptopFrame,
+  SplitScene,
 };

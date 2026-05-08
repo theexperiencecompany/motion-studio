@@ -7,6 +7,8 @@ import {
   Delete02Icon,
   Sent02Icon,
 } from "@hugeicons/core-free-icons";
+import { Button } from "@workspace/ui/components/button";
+import { cn } from "@workspace/ui/lib/utils";
 import type { EditorProps } from "../schema";
 import type { ChatMessage } from "./types";
 
@@ -87,7 +89,10 @@ export function ChatEditor({ value, onChange }: EditorProps<ChatMessage[]>) {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-muted/20">
+    <div
+      className="flex h-full min-h-0 flex-col bg-background"
+      style={{ ["--imessage-bg" as string]: "var(--background)" }}
+    >
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
         {value.length === 0 ? (
           <EmptyState />
@@ -207,15 +212,13 @@ function BubbleBody({
         }
       }}
       title="Tap to flip side"
-      className={`relative max-w-[78%] cursor-pointer rounded-[22px] px-4 py-2 transition-[background-color,transform,box-shadow] duration-300 ease-out ${
-        isRight
-          ? "bg-blue-500 text-white shadow-sm shadow-blue-500/30"
-          : "bg-zinc-200 text-zinc-900 dark:bg-zinc-700/70 dark:text-zinc-50"
-      } ${flashing ? "ring-2 ring-offset-4 ring-offset-muted/20 ring-foreground scale-[1.04]" : ""}`}
-      style={{
-        borderBottomRightRadius: isRight ? 8 : 22,
-        borderBottomLeftRadius: !isRight ? 8 : 22,
-      }}
+      className={`imessage-bubble ${
+        isRight ? "imessage-from-me" : "imessage-from-them"
+      } max-w-[78%] cursor-pointer px-4 py-2 transition-[transform,box-shadow] duration-300 ease-out ${
+        flashing
+          ? "ring-2 ring-offset-4 ring-offset-background ring-foreground scale-[1.04]"
+          : ""
+      }`}
     >
       <textarea
         value={msg.text}
@@ -224,7 +227,7 @@ function BubbleBody({
         onMouseDown={(e) => e.stopPropagation()}
         rows={1}
         spellCheck={false}
-        className={`block w-full min-w-[40px] bg-transparent text-[14px] leading-snug outline-none cursor-text placeholder:opacity-60 ${
+        className={`relative z-[1] block w-full min-w-[40px] bg-transparent text-[14px] leading-snug outline-none cursor-text placeholder:opacity-60 ${
           isRight ? "placeholder:text-white/60" : ""
         }`}
         style={
@@ -243,13 +246,15 @@ function BubbleBody({
 function DeleteAction({ onDelete }: { onDelete: () => void }) {
   return (
     <div className="flex shrink-0 items-center opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-      <button
+      <Button
+        variant="outline"
+        size="icon"
         onClick={onDelete}
         title="Delete"
-        className="flex size-8 items-center justify-center rounded-full border border-border bg-background text-muted-foreground shadow-sm transition-colors hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-500"
+        className="size-8 rounded-full shadow-sm hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-500"
       >
         <HugeiconsIcon icon={Delete02Icon} size={15} />
-      </button>
+      </Button>
     </div>
   );
 }
@@ -281,20 +286,21 @@ function Composer({
           placeholder={`Message as ${nextSide === "right" ? "you" : "them"}…`}
           className="flex-1 rounded-full border border-border bg-background px-4 py-2.5 text-sm outline-none placeholder:text-muted-foreground/70 focus:border-foreground/30"
         />
-        <button
+        <Button
           onClick={onSend}
           disabled={!canSend}
           aria-label="Send message"
-          className={`flex size-10 shrink-0 items-center justify-center rounded-full text-white shadow-sm transition-all ${
+          className={cn(
+            "size-10 shrink-0 rounded-full text-white shadow-sm",
             canSend
               ? nextSide === "right"
-                ? "bg-blue-500 hover:bg-blue-600 active:scale-95"
+                ? "bg-[#007AFF] hover:bg-[#0070E8] active:scale-95"
                 : "bg-zinc-500 hover:bg-zinc-600 active:scale-95"
-              : "cursor-not-allowed bg-muted text-muted-foreground"
-          }`}
+              : "cursor-not-allowed bg-muted text-muted-foreground",
+          )}
         >
           <HugeiconsIcon icon={Sent02Icon} size={18} />
-        </button>
+        </Button>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
-import { Builder } from "@/features/studio/components/builder"
+import { Builder } from "@/features/studio/components/builder";
 
 export default function StudioPage() {
-  return <Builder />
+  return <Builder />;
 }

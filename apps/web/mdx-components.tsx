@@ -1,17 +1,14 @@
-import type { MDXComponents } from "mdx/types"
-import Link from "next/link"
-import { Preview } from "@/components/docs/preview"
-import { PropsTable } from "@/components/docs/props-table"
-import { CompositionStats } from "@/components/docs/composition-stats"
-import { EditorLink } from "@/components/docs/editor-link"
+import type { MDXComponents } from "mdx/types";
+import Link from "next/link";
+import { CompositionStats } from "@/components/docs/composition-stats";
+import { EditorLink } from "@/components/docs/editor-link";
+import { Preview } from "@/components/docs/preview";
+import { PropsTable } from "@/components/docs/props-table";
 
 export function useMDXComponents(components: MDXComponents): MDXComponents {
   return {
     h1: ({ children, ...props }) => (
-      <h1
-        className="text-4xl font-bold tracking-tight scroll-mt-24"
-        {...props}
-      >
+      <h1 className="text-4xl font-bold tracking-tight scroll-mt-24" {...props}>
         {children}
       </h1>
     ),
@@ -40,9 +37,9 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
       </p>
     ),
     a: ({ href, children, ...props }) => {
-      const isExternal = href?.startsWith("http")
+      const isExternal = href?.startsWith("http");
       const className =
-        "text-foreground underline decoration-muted-foreground/40 underline-offset-4 transition-colors hover:decoration-foreground"
+        "text-foreground underline decoration-muted-foreground/40 underline-offset-4 transition-colors hover:decoration-foreground";
       if (isExternal) {
         return (
           <a
@@ -54,13 +51,13 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
           >
             {children}
           </a>
-        )
+        );
       }
       return (
         <Link href={href ?? "#"} className={className} {...props}>
           {children}
         </Link>
-      )
+      );
     },
     ul: ({ children, ...props }) => (
       <ul
@@ -108,5 +105,5 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
     CompositionStats,
     EditorLink,
     ...components,
-  }
+  };
 }

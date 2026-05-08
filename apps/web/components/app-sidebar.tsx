@@ -1,36 +1,84 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { compositions } from "@workspace/compositions/registry"
 import {
   Book01Icon,
-  Download01Icon,
-  PaintBrush01Icon,
-  Moon01Icon,
-  CommandLineIcon,
+  BrowserIcon,
+  BubbleChatIcon,
   Clock01Icon,
-  VideoReplayIcon,
+  CommandLineIcon,
+  ComputerVideoIcon,
+  Cursor02Icon,
+  Download01Icon,
+  Moon02Icon,
+  PaintBrush01Icon,
   TextFontIcon,
-} from "@hugeicons/core-free-icons"
+  TwitterIcon,
+  VideoAiIcon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { compositions } from "@workspace/compositions/registry";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@workspace/ui/components/accordion";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
-const textAnimations = compositions.filter((c) => c.id.startsWith("Title"))
-const templates = compositions.filter((c) => !c.id.startsWith("Title"))
+type NavItem = {
+  title: string;
+  href: string;
+  icon: Parameters<typeof HugeiconsIcon>[0]["icon"];
+  badge?: string;
+};
 
-const nav = [
+const TEXT_PREFIXES = ["Title", "Text"];
+const CHAT_IDS = new Set([
+  "MessagePopup",
+  "MessageBubbles",
+  "WhatsAppMessages",
+  "SlackMessages",
+  "DiscordMessages",
+]);
+const SOCIAL_IDS = new Set(["TweetCard", "TwitterFollow"]);
+const FRAME_IDS = new Set(["BrowserWindow", "LaptopFrame", "PhoneFrame"]);
+
+const textAnimations = compositions.filter((c) =>
+  TEXT_PREFIXES.some((p) => c.id.startsWith(p)),
+);
+const chatComponents = compositions.filter((c) => CHAT_IDS.has(c.id));
+const socialComponents = compositions.filter((c) => SOCIAL_IDS.has(c.id));
+const frameComponents = compositions.filter((c) => FRAME_IDS.has(c.id));
+const sceneComponents = compositions.filter(
+  (c) =>
+    !TEXT_PREFIXES.some((p) => c.id.startsWith(p)) &&
+    !CHAT_IDS.has(c.id) &&
+    !SOCIAL_IDS.has(c.id) &&
+    !FRAME_IDS.has(c.id),
+);
+
+const gettingStarted: NavItem[] = [
+  { title: "Introduction", href: "/docs", icon: Book01Icon },
+  { title: "Installation", href: "/docs/installation", icon: Download01Icon },
+  { title: "Theming", href: "/docs/theming", icon: PaintBrush01Icon },
+  { title: "Dark Mode", href: "/docs/dark-mode", icon: Moon02Icon },
+  { title: "CLI", href: "/docs/cli", icon: CommandLineIcon },
   {
-    section: "Getting Started",
-    items: [
-      { title: "Introduction", href: "/docs", icon: Book01Icon },
-      { title: "Installation", href: "/docs/installation", icon: Download01Icon },
-      { title: "Theming", href: "/docs/theming", icon: PaintBrush01Icon },
-      { title: "Dark Mode", href: "/docs/dark-mode", icon: Moon01Icon },
-      { title: "CLI", href: "/docs/cli", icon: CommandLineIcon },
-      { title: "Changelog", href: "/docs/changelog", icon: Clock01Icon, badge: "v1.0" },
-    ],
+    title: "Changelog",
+    href: "/docs/changelog",
+    icon: Clock01Icon,
+    badge: "v1.0",
   },
+];
+
+const collapsibleGroups: Array<{
+  value: string;
+  section: string;
+  items: NavItem[];
+}> = [
   {
+    value: "text-animations",
     section: "Text Animations",
     items: textAnimations.map((c) => ({
       title: c.title,
@@ -39,62 +87,116 @@ const nav = [
     })),
   },
   {
-    section: "Templates",
-    items: templates.map((c) => ({
+    value: "chat",
+    section: "Chat & Messaging",
+    items: chatComponents.map((c) => ({
       title: c.title,
       href: `/docs/${c.id}`,
-      icon: VideoReplayIcon,
+      icon: BubbleChatIcon,
     })),
   },
-]
+  {
+    value: "social",
+    section: "Social",
+    items: socialComponents.map((c) => ({
+      title: c.title,
+      href: `/docs/${c.id}`,
+      icon: TwitterIcon,
+    })),
+  },
+  {
+    value: "frames",
+    section: "Frames & Mockups",
+    items: frameComponents.map((c) => ({
+      title: c.title,
+      href: `/docs/${c.id}`,
+      icon: BrowserIcon,
+    })),
+  },
+  {
+    value: "scenes",
+    section: "Scenes & Effects",
+    items: sceneComponents.map((c) => {
+      const icon =
+        c.id === "CursorWalkthrough"
+          ? Cursor02Icon
+          : c.id === "CaptionTrack"
+            ? VideoAiIcon
+            : ComputerVideoIcon;
+      return { title: c.title, href: `/docs/${c.id}`, icon };
+    }),
+  },
+];
 
 export function AppSidebar() {
-  const pathname = usePathname()
+  const pathname = usePathname();
+
+  const navLink = (item: NavItem) => {
+    const active = pathname === item.href;
+    return (
+      <li key={item.href}>
+        <Link
+          href={item.href}
+          className={`group relative flex h-8 items-center gap-2.5 rounded-md px-3 text-[13px] transition-all duration-150 ease-out ${
+            active
+              ? "bg-accent font-medium text-foreground"
+              : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
+          }`}
+        >
+          <HugeiconsIcon
+            icon={item.icon}
+            size={14}
+            className={`shrink-0 transition-colors duration-150 ${
+              active
+                ? "text-foreground"
+                : "text-muted-foreground group-hover:text-foreground"
+            }`}
+          />
+          <span className="flex-1 truncate">{item.title}</span>
+          {item.badge && (
+            <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-400">
+              {item.badge}
+            </span>
+          )}
+        </Link>
+      </li>
+    );
+  };
+
+  const populatedGroups = collapsibleGroups.filter((g) => g.items.length > 0);
+  const defaultOpen = populatedGroups.map((g) => g.value);
 
   return (
-    <aside className="sticky top-14 h-[calc(100vh-3.5rem)] w-60 shrink-0 overflow-y-auto py-8 pl-8 pr-6">
+    <aside className="sticky top-14 h-[calc(100vh-3.5rem)] w-60 shrink-0 overflow-y-auto py-8 pr-6 pl-8">
       <nav className="space-y-7">
-        {nav.map((group) => (
-          <div key={group.section}>
-            <p className="mb-2.5 px-3 text-[10px] font-semibold tracking-[0.14em] uppercase text-muted-foreground/50">
-              {group.section}
-            </p>
-            <ul className="space-y-px">
-              {group.items.map((item) => {
-                const active = pathname === item.href
-                return (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      className={`group relative flex h-8 items-center gap-2.5 rounded-md px-3 text-[13px] transition-all duration-150 ease-out ${
-                        active
-                          ? "bg-accent/60 text-foreground font-medium"
-                          : "text-muted-foreground/85 hover:bg-accent/30 hover:text-foreground"
-                      }`}
-                    >
-                      <HugeiconsIcon
-                        icon={item.icon}
-                        size={14}
-                        className={`shrink-0 transition-colors duration-150 ${
-                          active
-                            ? "text-foreground"
-                            : "text-muted-foreground/60 group-hover:text-foreground"
-                        }`}
-                      />
-                      <span className="flex-1 truncate">{item.title}</span>
-                      {"badge" in item && item.badge && (
-                        <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-emerald-400">
-                          {item.badge}
-                        </span>
-                      )}
-                    </Link>
-                  </li>
-                )
-              })}
-            </ul>
-          </div>
-        ))}
+        <div>
+          <p className="mb-1 px-3 text-[11px] font-semibold text-muted-foreground/70">
+            Getting Started
+          </p>
+          <ul className="space-y-px">{gettingStarted.map(navLink)}</ul>
+        </div>
+
+        <Accordion
+          type="multiple"
+          defaultValue={defaultOpen}
+          className="space-y-5"
+        >
+          {populatedGroups.map((group) => (
+            <AccordionItem
+              key={group.value}
+              value={group.value}
+              className="border-none"
+            >
+              <AccordionTrigger className="mb-1 px-3 py-0 text-[11px] font-semibold text-muted-foreground/70 hover:no-underline [&>svg]:size-3">
+                {group.section}
+              </AccordionTrigger>
+              <AccordionContent className="pt-0 pb-0">
+                <ul className="space-y-px">{group.items.map(navLink)}</ul>
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
       </nav>
     </aside>
-  )
+  );
 }

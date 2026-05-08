@@ -1,11 +1,68 @@
-"use client"
+"use client";
+
+import {
+  Download01Icon,
+  FloppyDiskIcon,
+  FolderUploadIcon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Button } from "@workspace/ui/components/button";
+import { useTheme } from "next-themes";
+import { useRef } from "react";
+import { BrandLink } from "@/components/brand-link";
 
 type Props = {
-  clipCount: number
-  totalSeconds: number
-  exporting: boolean
-  canExport: boolean
-  onExport: () => void
+  clipCount: number;
+  totalSeconds: number;
+  exporting: boolean;
+  canExport: boolean;
+  canSave: boolean;
+  onExport: () => void;
+  onSaveProject: () => void;
+  onLoadProjectFile: (file: File) => void;
+};
+
+function ThemeToggle() {
+  const { resolvedTheme, setTheme } = useTheme();
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon-sm"
+      onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+      title="Toggle theme"
+    >
+      {/* Sun icon (shown in dark mode) */}
+      <svg
+        viewBox="0 0 24 24"
+        className="size-4 hidden dark:block"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <title>Sun</title>
+        <circle cx="12" cy="12" r="4" />
+        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+      </svg>
+      {/* Moon icon (shown in light mode) */}
+      <svg
+        viewBox="0 0 24 24"
+        className="size-4 block dark:hidden"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <title>Moon</title>
+        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+      </svg>
+    </Button>
+  );
 }
 
 export function TopBar({
@@ -13,45 +70,61 @@ export function TopBar({
   totalSeconds,
   exporting,
   canExport,
+  canSave,
   onExport,
+  onSaveProject,
+  onLoadProjectFile,
 }: Props) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) onLoadProjectFile(file);
+    // Reset so loading the same file twice still triggers onChange.
+    e.target.value = "";
+  }
+
   return (
-    <header className="flex h-12 shrink-0 items-center justify-between border-b border-zinc-800 bg-[#0d0d0f] px-4">
+    <header className="flex h-14 shrink-0 items-center justify-between border-b border-dashed border-border bg-background/95 px-8 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2">
-          <div className="size-5 rounded bg-zinc-100" />
-          <span className="text-sm font-semibold tracking-tight text-zinc-100">
-            untitled
-          </span>
-        </div>
-        <span className="text-zinc-700">·</span>
-        <span className="text-[12px] tabular-nums text-zinc-500">
+        <BrandLink />
+        <span className="text-muted-foreground/50">·</span>
+        <span className="text-[12px] tabular-nums text-muted-foreground">
           {clipCount} clip{clipCount === 1 ? "" : "s"} ·{" "}
           {totalSeconds.toFixed(2)}s
         </span>
       </div>
       <div className="flex items-center gap-3">
-        <button
-          onClick={onExport}
-          disabled={exporting || !canExport}
-          className="flex items-center gap-1.5 rounded-md bg-blue-600 px-3.5 py-1.5 text-[12px] font-medium text-white shadow-sm transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="application/json,.json"
+          className="hidden"
+          onChange={handleFileChange}
+        />
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => fileInputRef.current?.click()}
+          title="Open project (.json)"
         >
-          <svg
-            viewBox="0 0 24 24"
-            className="size-3.5"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-            <polyline points="7 10 12 15 17 10" />
-            <line x1="12" y1="15" x2="12" y2="3" />
-          </svg>
+          <HugeiconsIcon icon={FolderUploadIcon} size={14} />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={onSaveProject}
+          disabled={!canSave}
+          title="Save project (.json)"
+        >
+          <HugeiconsIcon icon={FloppyDiskIcon} size={14} />
+        </Button>
+        <ThemeToggle />
+        <Button size="sm" onClick={onExport} disabled={exporting || !canExport}>
+          <HugeiconsIcon icon={Download01Icon} size={14} />
           {exporting ? "Rendering…" : "Export"}
-        </button>
+        </Button>
       </div>
     </header>
-  )
+  );
 }

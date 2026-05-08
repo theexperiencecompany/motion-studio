@@ -1,66 +1,168 @@
-import Link from "next/link"
-import { Search } from "lucide-react"
+"use client";
+
+import {
+  Moon02Icon,
+  NewTwitterIcon,
+  Search01Icon,
+  StarIcon,
+  Sun03Icon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Button } from "@workspace/ui/components/button";
+import Link from "next/link";
+import { useTheme } from "next-themes";
+import * as React from "react";
+import { BrandLink } from "@/components/brand-link";
+import { DocsSearch } from "@/components/docs-search";
+
+function GitHubMark({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 98 96"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      aria-hidden="true"
+      fill="currentColor"
+    >
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M48.854 0C21.839 0 0 22 0 49.217c0 21.756 13.993 40.172 33.405 46.69 2.427.49 3.316-1.059 3.316-2.362 0-1.141-.08-5.052-.08-9.127-13.59 2.934-16.42-5.867-16.42-5.867-2.184-5.704-5.42-7.17-5.42-7.17-4.448-3.015.324-3.015.324-3.015 4.934.326 7.523 5.052 7.523 5.052 4.367 7.496 11.404 5.378 14.235 4.074.404-3.178 1.699-5.378 3.074-6.6-10.839-1.141-22.243-5.378-22.243-24.283 0-5.378 1.94-9.778 5.014-13.2-.485-1.222-2.184-6.275.486-13.038 0 0 4.125-1.304 13.426 5.052a46.97 46.97 0 0 1 12.214-1.63c4.125 0 8.33.571 12.213 1.63 9.302-6.356 13.427-5.052 13.427-5.052 2.67 6.763.97 11.816.485 13.038 3.155 3.422 5.015 7.822 5.015 13.2 0 18.905-11.404 23.06-22.324 24.283 1.78 1.548 3.316 4.481 3.316 9.126 0 6.6-.08 11.897-.08 13.526 0 1.304.89 2.853 3.316 2.364 19.412-6.52 33.405-24.935 33.405-46.691C97.707 22 75.788 0 48.854 0z"
+      />
+    </svg>
+  );
+}
+
+function formatStars(count: number): string {
+  if (count >= 1000) return `${(count / 1000).toFixed(1)}k`;
+  return count.toString();
+}
+
+function GitHubButton() {
+  const [stars, setStars] = React.useState<number | null>(null);
+
+  React.useEffect(() => {
+    fetch("https://api.github.com/repos/theexperiencecompany/motion-studio")
+      .then((r) => r.json())
+      .then((data: { stargazers_count?: number }) => {
+        if (typeof data.stargazers_count === "number") {
+          setStars(data.stargazers_count);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  return (
+    <Button variant="ghost" size="sm" className="gap-1.5 px-2" asChild>
+      <Link
+        href="https://github.com/theexperiencecompany/motion-studio"
+        title="GitHub"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {stars !== null && (
+          <>
+            <HugeiconsIcon icon={StarIcon} className="size-4 text-yellow-400" />
+            <span className="text-xs tabular-nums">{formatStars(stars)}</span>
+          </>
+        )}
+        <GitHubMark className="size-4" />
+      </Link>
+    </Button>
+  );
+}
+
+function ThemeToggle() {
+  const { resolvedTheme, setTheme } = useTheme();
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon-sm"
+      onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+      title="Toggle theme"
+    >
+      <HugeiconsIcon icon={Sun03Icon} className="size-4 hidden dark:block" />
+      <HugeiconsIcon icon={Moon02Icon} className="size-4 block dark:hidden" />
+    </Button>
+  );
+}
 
 const navLinks = [
   { label: "Docs", href: "/docs" },
   { label: "Studio", href: "/studio" },
-]
+];
 
 export function DocsHeader() {
+  const [searchOpen, setSearchOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setSearchOpen((v) => !v);
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-dashed border-white/10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="flex h-14 items-center gap-6 px-8">
-        {/* Logo */}
-        <Link href="/" className="flex shrink-0 items-center gap-2">
-          <div className="size-5 rounded bg-foreground" />
-          <span className="text-sm font-semibold">motioncrow</span>
-        </Link>
+    <>
+      <header className="sticky top-0 z-50 w-full border-b border-dashed border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <div className="flex h-14 items-center gap-6 px-8">
+          {/* Logo */}
+          <BrandLink />
 
-        {/* Nav links */}
-        <nav className="flex items-center gap-1">
-          {navLinks.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className="rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          {/* Nav links */}
+          <nav className="flex items-center gap-1">
+            {navLinks.map((l) => (
+              <Link
+                key={l.href}
+                href={l.href}
+                className="rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              >
+                {l.label}
+              </Link>
+            ))}
+          </nav>
+
+          {/* Right side */}
+          <div className="ml-auto flex items-center gap-3">
+            {/* Search */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-48 justify-start gap-2 text-muted-foreground"
+              onClick={() => setSearchOpen(true)}
             >
-              {l.label}
-            </Link>
-          ))}
-        </nav>
+              <HugeiconsIcon icon={Search01Icon} size={13} />
+              <span className="flex-1 text-left text-[13px]">
+                Search docs...
+              </span>
+              <kbd className="font-mono text-[11px] text-muted-foreground/60">
+                ⌘K
+              </kbd>
+            </Button>
 
-        {/* Right side */}
-        <div className="ml-auto flex items-center gap-3">
-          {/* Search */}
-          <button className="flex w-48 items-center gap-2 rounded-md border border-border/60 bg-muted/40 px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-border hover:bg-muted">
-            <Search size={13} />
-            <span className="flex-1 text-left text-[13px]">Search docs...</span>
-            <kbd className="font-mono text-[11px] text-muted-foreground/60">
-              ⌘K
-            </kbd>
-          </button>
+            <div className="flex items-center gap-0.5">
+              <ThemeToggle />
 
-          {/* GitHub */}
-          <Link
-            href="https://github.com"
-            className="text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <svg viewBox="0 0 24 24" className="size-[18px] fill-current">
-              <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
-            </svg>
-          </Link>
+              {/* GitHub */}
+              <GitHubButton />
 
-          {/* Twitter/X */}
-          <Link
-            href="https://x.com"
-            className="text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <svg viewBox="0 0 24 24" className="size-[16px] fill-current">
-              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622 5.911-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-            </svg>
-          </Link>
+              {/* Twitter/X */}
+              <Button variant="ghost" size="icon-sm" asChild>
+                <Link href="https://x.com/madebyexp" title="X (Twitter)">
+                  <HugeiconsIcon icon={NewTwitterIcon} className="size-4" />
+                </Link>
+              </Button>
+            </div>
+          </div>
         </div>
-      </div>
-    </header>
-  )
+      </header>
+
+      <DocsSearch open={searchOpen} onOpenChange={setSearchOpen} />
+    </>
+  );
 }

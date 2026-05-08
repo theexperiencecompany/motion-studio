@@ -1,14 +1,14 @@
-import { compositionsById } from "@workspace/compositions/registry"
-import type { Field } from "@workspace/compositions/schema"
+import { compositionsById } from "@workspace/compositions/registry";
+import type { Field } from "@workspace/compositions/schema";
 
 export function PropsTable({ id }: { id: string }) {
-  const info = compositionsById[id]
+  const info = compositionsById[id];
   if (!info) {
     return (
       <div className="rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">
         No composition registered for id &quot;{id}&quot;.
       </div>
-    )
+    );
   }
   return (
     <div className="overflow-hidden rounded-lg border border-border my-6 not-prose">
@@ -37,26 +37,34 @@ export function PropsTable({ id }: { id: string }) {
         </tbody>
       </table>
     </div>
-  )
+  );
 }
 
 function describeType(field: Field): string {
   switch (field.kind) {
     case "chat":
-      return "ChatMessage[]"
+      return "ChatMessage[]";
+    case "composition":
+      return "string (composition id)";
+    case "slots":
+      return "Record<string, string[]>";
     case "text":
     case "textarea":
-      return "string"
+      return "string";
+    case "color":
+      return "string (hex)";
+    case "image":
+      return "string (url)";
     case "number":
-      return "number"
+      return "number";
     case "select":
-      return field.options.map((o) => `"${o.value}"`).join(" | ")
+      return field.options.map((o) => `"${o.value}"`).join(" | ");
   }
 }
 
 function formatDefault(v: unknown): string {
-  if (v === undefined) return "—"
-  if (typeof v === "string") return `"${v}"`
-  if (Array.isArray(v)) return `[${v.length} item${v.length === 1 ? "" : "s"}]`
-  return String(v)
+  if (v === undefined) return "—";
+  if (typeof v === "string") return `"${v}"`;
+  if (Array.isArray(v)) return `[${v.length} item${v.length === 1 ? "" : "s"}]`;
+  return String(v);
 }

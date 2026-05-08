@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import { Player } from "@remotion/player";
-import type { AnyCompositionInfo } from "@workspace/compositions/schema";
 import { componentsById } from "@workspace/compositions/components";
 import { FieldsRenderer } from "@workspace/compositions/editors";
+import type { AnyCompositionInfo } from "@workspace/compositions/schema";
+import { Button } from "@workspace/ui/components/button";
+import { useMemo, useState } from "react";
 
 export function EditorView({ info }: { info: AnyCompositionInfo }) {
   const Component = componentsById[info.id];
@@ -61,13 +62,13 @@ export function EditorView({ info }: { info: AnyCompositionInfo }) {
           />
         </div>
         <div className="shrink-0 border-t border-border p-4">
-          <button
+          <Button
+            className="w-full"
             onClick={handleDownload}
             disabled={loading}
-            className="w-full rounded-md bg-foreground px-3 py-2 text-sm font-medium text-background hover:opacity-90 disabled:opacity-50"
           >
             {loading ? "Rendering…" : "Download MP4"}
-          </button>
+          </Button>
           {error && <p className="mt-2 text-[12px] text-red-500">{error}</p>}
         </div>
       </aside>

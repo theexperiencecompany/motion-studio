@@ -1,24 +1,24 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useChat } from "@ai-sdk/react"
-import { DefaultChatTransport } from "ai"
-import { MessageList } from "./message-list"
-import { ChatInput } from "./chat-input"
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
+import { useState } from "react";
+import { ChatInput } from "./chat-input";
+import { MessageList } from "./message-list";
 
 export function ChatView() {
-  const [input, setInput] = useState("")
+  const [input, setInput] = useState("");
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({ api: "/api/chat" }),
-  })
+  });
 
-  const isLoading = status === "submitted" || status === "streaming"
+  const isLoading = status === "submitted" || status === "streaming";
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    if (!input.trim()) return
-    sendMessage({ text: input })
-    setInput("")
+    e.preventDefault();
+    if (!input.trim()) return;
+    sendMessage({ text: input });
+    setInput("");
   }
 
   return (
@@ -31,5 +31,5 @@ export function ChatView() {
         onSubmit={handleSubmit}
       />
     </div>
-  )
+  );
 }

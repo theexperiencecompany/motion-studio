@@ -54,6 +54,7 @@
     "@theexperiencecompany/gaia-icons": "^1.9.0",
     "@tiptap/react": "^3.23.1",
     "@tiptap/starter-kit": "^3.23.1",
+    "@workspace/ui": "workspace:*",
     "axios": "^1.16.0",
     "canvas-confetti": "^1.9.4",
     "chrono-node": "^2.9.1",
@@ -121,7 +122,8 @@
     "dev": "remotionb studio",
     "build": "remotionb bundle",
     "upgrade": "remotionb upgrade",
-    "lint": "eslint src && tsc"
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit"
   },
   "sideEffects": [
     "*.css"

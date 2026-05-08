@@ -7,8 +7,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "format": "prettier --write \"**/*.{ts,tsx}\"",
+    "lint": "biome lint .",
+    "format": "biome format --write .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -29,7 +29,6 @@
     "@workspace/compositions": "workspace:*",
     "@workspace/ui": "workspace:*",
     "ai": "^6.0.175",
-    "lucide-react": "^1.14.0",
     "next": "16.1.6",
     "next-themes": "^0.4.6",
     "react": "^19.2.6",

@@ -7,10 +7,10 @@ export const TWITTER_FOLLOW_WIDTH = 1920;
 export const TWITTER_FOLLOW_HEIGHT = 1080;
 
 export const twitterFollowDefaultProps: TwitterFollowProps = {
-  handle: "@t3dotgg",
-  displayName: "Theo",
-  avatarUrl: "https://github.com/t3dotgg.png?size=400",
-  bio: "CEO @ping_gg, ex-Twitch. I make videos and break things.",
+  handle: "@sankalpa_02",
+  displayName: "sanku",
+  avatarUrl: "https://github.com/sankalpaacharya.png?size=400",
+  bio: "Silly humour and programming 🤓",
   followers: 482103,
   following: 2014,
   verified: "yes",
@@ -53,6 +53,6 @@ export const twitterFollowInfo: CompositionInfo<TwitterFollowProps> = {
         { value: "dark", label: "Dark" },
       ],
     },
-    { kind: "text", key: "backgroundColor", label: "Background color" },
+    { kind: "color", key: "backgroundColor", label: "Background color" },
   ],
 };
