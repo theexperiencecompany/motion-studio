@@ -1,6 +1,8 @@
 "use client";
 import type { ComponentType } from "react";
 import { componentsByIdBase } from "./componentsBase";
+import { PhoneFrame } from "./compositions/PhoneFrame/PhoneFrame";
+import { LaptopFrame } from "./compositions/LaptopFrame/LaptopFrame";
 import { SplitScene } from "./compositions/SplitScene/SplitScene";
 
 // Frame compositions (PhoneFrame, LaptopFrame, SplitScene) import this module
@@ -10,5 +12,7 @@ import { SplitScene } from "./compositions/SplitScene/SplitScene";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const componentsById: Record<string, ComponentType<any>> = {
   ...componentsByIdBase,
+  PhoneFrame,
+  LaptopFrame,
   SplitScene,
 };

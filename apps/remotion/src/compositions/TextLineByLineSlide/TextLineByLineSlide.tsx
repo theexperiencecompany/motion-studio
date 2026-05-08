@@ -1,0 +1,100 @@
+"use client";
+import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
+import { TITLE_FONT_FAMILY, getSubtitleColor, type TitleProps } from "../title-shared";
+
+export type TextLineByLineSlideProps = TitleProps;
+
+const APPLE_EASE = Easing.bezier(0.16, 1, 0.3, 1);
+const LINE_EASE = Easing.bezier(0.22, 1, 0.36, 1);
+
+const HEADLINE_START = 8;
+const LINE_STAGGER = 7.2;
+const LINE_DURATION = 54;
+
+export const TextLineByLineSlide: React.FC<TextLineByLineSlideProps> = ({
+  headline,
+  subtitle,
+  backgroundColor,
+  textColor,
+}) => {
+  const frame = useCurrentFrame();
+
+  const lines = headline.split("\n").filter((l) => l.trim());
+
+  const lastLineStart = HEADLINE_START + (lines.length - 1) * LINE_STAGGER;
+  const subtitleStart = lastLineStart + LINE_DURATION + 14;
+  const subtitleProgress = interpolate(
+    frame,
+    [subtitleStart, subtitleStart + 26],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: APPLE_EASE },
+  );
+
+  return (
+    <AbsoluteFill
+      style={{
+        background: backgroundColor,
+        color: textColor,
+        fontFamily: TITLE_FONT_FAMILY,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "0 80px",
+        textAlign: "center",
+      }}
+    >
+      <h1
+        style={{
+          fontSize: 96,
+          fontWeight: 700,
+          letterSpacing: "-0.04em",
+          lineHeight: 1.2,
+          margin: 0,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+        }}
+      >
+        {lines.map((line, i) => {
+          const lineStart = HEADLINE_START + i * LINE_STAGGER;
+          const progress = interpolate(
+            frame,
+            [lineStart, lineStart + LINE_DURATION],
+            [0, 1],
+            { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: LINE_EASE },
+          );
+          return (
+            <span
+              key={i}
+              style={{
+                opacity: progress,
+                transform: `translateX(${-48 * (1 - progress)}px)`,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {line}
+            </span>
+          );
+        })}
+      </h1>
+
+      {subtitle.trim() && (
+        <p
+          style={{
+            fontSize: 38,
+            fontWeight: 400,
+            letterSpacing: "-0.012em",
+            margin: "32px 0 0",
+            color: getSubtitleColor(textColor),
+            opacity: subtitleProgress,
+            transform: `translateY(${(1 - subtitleProgress) * 14}px)`,
+            willChange: "transform, opacity",
+          }}
+        >
+          {subtitle}
+        </p>
+      )}
+    </AbsoluteFill>
+  );
+};
