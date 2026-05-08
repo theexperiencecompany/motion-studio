@@ -19,6 +19,7 @@ import {
   type Project,
 } from "@workspace/compositions/project"
 import { PX_PER_SECOND } from "../lib/clip-colors"
+import { usePlayerFrame } from "../state/player-context"
 import { SortableClipBlock } from "./sortable-clip-block"
 
 const TRACK_PADDING_X = 12
@@ -26,7 +27,6 @@ const TRACK_PADDING_X = 12
 type Props = {
   project: Project
   selectedClipId: string | null
-  currentFrame: number
   onSelect: (id: string) => void
   onReorder: (clipIds: string[]) => void
   onDelete: (id: string) => void
@@ -39,7 +39,6 @@ type Props = {
 export function Timeline({
   project,
   selectedClipId,
-  currentFrame,
   onSelect,
   onReorder,
   onDelete,
@@ -63,7 +62,6 @@ export function Timeline({
   }, [totalSeconds, tickEvery])
 
   const trackWidth = Math.max(totalSeconds, 5) * PX_PER_SECOND
-  const playheadLeft = TRACK_PADDING_X + (currentFrame / project.fps) * PX_PER_SECOND
 
   const scrubAreaRef = useRef<HTMLDivElement>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
@@ -204,7 +202,7 @@ export function Timeline({
             </DndContext>
           )}
 
-          <Playhead left={playheadLeft} />
+          <Playhead fps={project.fps} />
         </div>
       </div>
     </div>
@@ -241,7 +239,9 @@ function TimeRuler({
   )
 }
 
-function Playhead({ left }: { left: number }) {
+function Playhead({ fps }: { fps: number }) {
+  const frame = usePlayerFrame()
+  const left = TRACK_PADDING_X + (frame / fps) * PX_PER_SECOND
   return (
     <div
       className="pointer-events-none absolute top-0 bottom-0 z-20 -ml-px w-px bg-blue-500"

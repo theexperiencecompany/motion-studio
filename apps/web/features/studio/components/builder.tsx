@@ -8,6 +8,7 @@ import {
   initialStudioState,
   studioReducer,
 } from "../state/reducer"
+import { PlayerProvider } from "../state/player-context"
 import { useExportRender } from "../hooks/use-export-render"
 import { TopBar } from "./top-bar"
 import { ToolRail } from "./tool-rail"
@@ -38,31 +39,14 @@ export function Builder() {
     exportState.phase === "starting" || exportState.phase === "rendering"
 
   const playerRef = useRef<PlayerRef>(null)
-  const [currentFrame, setCurrentFrame] = useState(0)
-  const [isPlaying, setIsPlaying] = useState(false)
   const wasPlayingBeforeScrubRef = useRef(false)
 
+  // Bumps every time the Player mounts. Lets per-frame consumer hooks
+  // (usePlayerFrame, useIsPlaying) re-attach to the fresh ref without
+  // forcing Builder itself to re-render at 60fps.
+  const [playerVersion, setPlayerVersion] = useState(0)
   useEffect(() => {
-    if (!hasClips) {
-      setCurrentFrame(0)
-      setIsPlaying(false)
-      return
-    }
-    const player = playerRef.current
-    if (!player) return
-    const onFrame: Parameters<PlayerRef["addEventListener"]>[1] = (e) => {
-      setCurrentFrame((e as { detail: { frame: number } }).detail.frame)
-    }
-    const onPlay = () => setIsPlaying(true)
-    const onPause = () => setIsPlaying(false)
-    player.addEventListener("frameupdate", onFrame)
-    player.addEventListener("play", onPlay)
-    player.addEventListener("pause", onPause)
-    return () => {
-      player.removeEventListener("frameupdate", onFrame)
-      player.removeEventListener("play", onPlay)
-      player.removeEventListener("pause", onPause)
-    }
+    if (hasClips) setPlayerVersion((v) => v + 1)
   }, [hasClips])
 
   useEffect(() => {
@@ -128,6 +112,7 @@ export function Builder() {
   }, [hasClips, handlePlayPause])
 
   return (
+    <PlayerProvider playerRef={playerRef} version={playerVersion}>
     <div className="flex h-screen flex-col bg-background text-foreground">
       <TopBar
         clipCount={state.project.clips.length}
@@ -164,10 +149,8 @@ export function Builder() {
           />
 
           <PlaybackControls
-            currentFrame={currentFrame}
             totalDuration={totalDuration}
             fps={state.project.fps}
-            isPlaying={isPlaying}
             disabled={!hasClips}
             onPlayPause={handlePlayPause}
             onSkipToStart={handleSkipToStart}
@@ -177,7 +160,6 @@ export function Builder() {
           <Timeline
             project={state.project}
             selectedClipId={state.selectedClipId}
-            currentFrame={currentFrame}
             onSelect={(id) => dispatch({ type: "SELECT_CLIP", clipId: id })}
             onReorder={(clipIds) =>
               dispatch({ type: "REORDER_CLIPS", clipIds })
@@ -214,6 +196,7 @@ export function Builder() {
 
       <ExportProgressOverlay state={exportState} onClose={resetExport} />
     </div>
+    </PlayerProvider>
   )
 }
 
