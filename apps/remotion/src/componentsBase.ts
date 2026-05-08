@@ -17,6 +17,7 @@ import { WhatsAppMessages } from "./compositions/WhatsAppMessages/WhatsAppMessag
 import { SlackMessages } from "./compositions/SlackMessages/SlackMessages";
 import { DiscordMessages } from "./compositions/DiscordMessages/DiscordMessages";
 import { PhoneFrame } from "./compositions/PhoneFrame/PhoneFrame";
+import { LaptopFrame } from "./compositions/LaptopFrame/LaptopFrame";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const componentsByIdBase: Record<string, ComponentType<any>> = {
@@ -37,4 +38,5 @@ export const componentsByIdBase: Record<string, ComponentType<any>> = {
   SlackMessages,
   DiscordMessages,
   PhoneFrame,
+  LaptopFrame,
 };

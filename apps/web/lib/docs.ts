@@ -21,6 +21,9 @@ import DiscordMessagesMDX, {
 import PhoneFrameMDX, {
   meta as phoneFrameMeta,
 } from "@/content/docs/phone-frame.mdx"
+import LaptopFrameMDX, {
+  meta as laptopFrameMeta,
+} from "@/content/docs/laptop-frame.mdx"
 import SplitSceneMDX, {
   meta as splitSceneMeta,
 } from "@/content/docs/split-scene.mdx"
