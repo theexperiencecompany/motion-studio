@@ -1,17 +1,22 @@
-"use client"
+"use client";
 
-import type { FormEvent } from "react"
-import { Button } from "@workspace/ui/components/button"
-import { Input } from "@workspace/ui/components/input"
+import { Button } from "@workspace/ui/components/button";
+import { Input } from "@workspace/ui/components/input";
+import type { FormEvent } from "react";
 
 interface Props {
-  input: string
-  isLoading: boolean
-  onInputChange: (value: string) => void
-  onSubmit: (e: FormEvent<HTMLFormElement>) => void
+  input: string;
+  isLoading: boolean;
+  onInputChange: (value: string) => void;
+  onSubmit: (e: FormEvent<HTMLFormElement>) => void;
 }
 
-export function ChatInput({ input, isLoading, onInputChange, onSubmit }: Props) {
+export function ChatInput({
+  input,
+  isLoading,
+  onInputChange,
+  onSubmit,
+}: Props) {
   return (
     <form onSubmit={onSubmit} className="border-t p-4">
       <div className="flex gap-2">
@@ -27,5 +32,5 @@ export function ChatInput({ input, isLoading, onInputChange, onSubmit }: Props) 
         </Button>
       </div>
     </form>
-  )
+  );
 }

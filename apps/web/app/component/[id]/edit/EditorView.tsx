@@ -1,11 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import { Player } from "@remotion/player";
-import type { AnyCompositionInfo } from "@workspace/compositions/schema";
 import { componentsById } from "@workspace/compositions/components";
 import { FieldsRenderer } from "@workspace/compositions/editors";
+import type { AnyCompositionInfo } from "@workspace/compositions/schema";
 import { Button } from "@workspace/ui/components/button";
+import { useMemo, useState } from "react";
 
 export function EditorView({ info }: { info: AnyCompositionInfo }) {
   const Component = componentsById[info.id];

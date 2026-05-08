@@ -1,24 +1,24 @@
-"use client"
+"use client";
 
-import { HugeiconsIcon } from "@hugeicons/react"
 import {
   BackwardIcon,
   ForwardIcon,
   PauseIcon,
   PlayIcon,
-} from "@hugeicons/core-free-icons"
-import { cn } from "@workspace/ui/lib/utils"
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { cn } from "@workspace/ui/lib/utils";
 
 type Props = {
-  currentFrame: number
-  totalDuration: number
-  fps: number
-  isPlaying: boolean
-  disabled: boolean
-  onPlayPause: () => void
-  onSkipToStart: () => void
-  onSkipToEnd: () => void
-}
+  currentFrame: number;
+  totalDuration: number;
+  fps: number;
+  isPlaying: boolean;
+  disabled: boolean;
+  onPlayPause: () => void;
+  onSkipToStart: () => void;
+  onSkipToEnd: () => void;
+};
 
 export function PlaybackControls({
   currentFrame,
@@ -30,8 +30,8 @@ export function PlaybackControls({
   onSkipToStart,
   onSkipToEnd,
 }: Props) {
-  const currentSeconds = currentFrame / fps
-  const totalSeconds = totalDuration / fps
+  const currentSeconds = currentFrame / fps;
+  const totalSeconds = totalDuration / fps;
 
   return (
     <div className="flex shrink-0 items-center justify-center gap-3 bg-background px-4 py-2">
@@ -62,7 +62,7 @@ export function PlaybackControls({
         <span>{formatClock(totalSeconds)}</span>
       </p>
     </div>
-  )
+  );
 }
 
 function ControlButton({
@@ -71,10 +71,10 @@ function ControlButton({
   title,
   icon,
 }: {
-  onClick: () => void
-  disabled: boolean
-  title: string
-  icon: unknown
+  onClick: () => void;
+  disabled: boolean;
+  title: string;
+  icon: typeof PlayIcon;
 }) {
   return (
     <button
@@ -88,16 +88,15 @@ function ControlButton({
         "disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted-foreground",
       )}
     >
-      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-      <HugeiconsIcon icon={icon as any} size={16} strokeWidth={2} />
+      <HugeiconsIcon icon={icon} size={16} strokeWidth={2} />
     </button>
-  )
+  );
 }
 
 function formatClock(s: number): string {
-  const safe = Math.max(0, s)
-  const mm = Math.floor(safe / 60)
-  const ss = Math.floor(safe % 60)
-  const cs = Math.floor((safe - Math.floor(safe)) * 100)
-  return `${mm}:${ss.toString().padStart(2, "0")}.${cs.toString().padStart(2, "0")}`
+  const safe = Math.max(0, s);
+  const mm = Math.floor(safe / 60);
+  const ss = Math.floor(safe % 60);
+  const cs = Math.floor((safe - Math.floor(safe)) * 100);
+  return `${mm}:${ss.toString().padStart(2, "0")}.${cs.toString().padStart(2, "0")}`;
 }

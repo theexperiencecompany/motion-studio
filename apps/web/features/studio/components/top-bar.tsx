@@ -1,21 +1,21 @@
-"use client"
+"use client";
 
-import { useTheme } from "next-themes"
-import { Button } from "@workspace/ui/components/button"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { Download01Icon } from "@hugeicons/core-free-icons"
-import { BrandLink } from "@/components/brand-link"
+import { Download01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Button } from "@workspace/ui/components/button";
+import { useTheme } from "next-themes";
+import { BrandLink } from "@/components/brand-link";
 
 type Props = {
-  clipCount: number
-  totalSeconds: number
-  exporting: boolean
-  canExport: boolean
-  onExport: () => void
-}
+  clipCount: number;
+  totalSeconds: number;
+  exporting: boolean;
+  canExport: boolean;
+  onExport: () => void;
+};
 
 function ThemeToggle() {
-  const { resolvedTheme, setTheme } = useTheme()
+  const { resolvedTheme, setTheme } = useTheme();
 
   return (
     <Button
@@ -33,7 +33,9 @@ function ThemeToggle() {
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
+        aria-hidden="true"
       >
+        <title>Sun</title>
         <circle cx="12" cy="12" r="4" />
         <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
       </svg>
@@ -46,11 +48,13 @@ function ThemeToggle() {
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
+        aria-hidden="true"
       >
+        <title>Moon</title>
         <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
       </svg>
     </Button>
-  )
+  );
 }
 
 export function TopBar({
@@ -72,15 +76,11 @@ export function TopBar({
       </div>
       <div className="flex items-center gap-3">
         <ThemeToggle />
-        <Button
-          size="sm"
-          onClick={onExport}
-          disabled={exporting || !canExport}
-        >
+        <Button size="sm" onClick={onExport} disabled={exporting || !canExport}>
           <HugeiconsIcon icon={Download01Icon} size={14} />
           {exporting ? "Rendering…" : "Export"}
         </Button>
       </div>
     </header>
-  )
+  );
 }

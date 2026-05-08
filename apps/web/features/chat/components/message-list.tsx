@@ -1,13 +1,13 @@
-"use client"
+"use client";
 
-import type { UIMessage, ChatStatus } from "ai"
-import { isTextUIPart, isToolOrDynamicToolUIPart } from "ai"
-import { Streamdown } from "streamdown"
+import type { ChatStatus, UIMessage } from "ai";
+import { isTextUIPart, isToolOrDynamicToolUIPart } from "ai";
+import { Streamdown } from "streamdown";
 
 interface Props {
-  messages: UIMessage[]
-  isLoading: boolean
-  status: ChatStatus
+  messages: UIMessage[];
+  isLoading: boolean;
+  status: ChatStatus;
 }
 
 export function MessageList({ messages, isLoading, status }: Props) {
@@ -26,32 +26,33 @@ export function MessageList({ messages, isLoading, status }: Props) {
             }`}
           >
             {m.parts.map((part, i) => {
+              const partKey = `${m.id}-${i}`;
               if (isTextUIPart(part)) {
                 if (m.role === "assistant") {
                   return (
                     <Streamdown
-                      key={i}
+                      key={partKey}
                       isAnimating={status === "streaming"}
                       animated={{ animation: "blurIn", duration: 150 }}
                     >
                       {part.text}
                     </Streamdown>
-                  )
+                  );
                 }
-                return <span key={i}>{part.text}</span>
+                return <span key={partKey}>{part.text}</span>;
               }
               if (isToolOrDynamicToolUIPart(part)) {
                 const toolName =
                   "toolName" in part
                     ? part.toolName
-                    : part.type.replace("tool-", "")
+                    : part.type.replace("tool-", "");
                 return (
-                  <span key={i} className="italic opacity-60">
+                  <span key={partKey} className="italic opacity-60">
                     Using tool: {toolName}…
                   </span>
-                )
+                );
               }
-              return null
+              return null;
             })}
           </div>
         </div>
@@ -64,5 +65,5 @@ export function MessageList({ messages, isLoading, status }: Props) {
         </div>
       )}
     </div>
-  )
+  );
 }

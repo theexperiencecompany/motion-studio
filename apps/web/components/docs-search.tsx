@@ -1,13 +1,12 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { useRouter } from "next/navigation"
-import { HugeiconsIcon } from "@hugeicons/react"
 import {
   Book01Icon,
   TextFontIcon,
   VideoAiIcon,
-} from "@hugeicons/core-free-icons"
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { compositions } from "@workspace/compositions/registry";
 import {
   CommandDialog,
   CommandEmpty,
@@ -15,58 +14,72 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@workspace/ui/components/command"
-import { docs } from "@/lib/docs"
-import { compositions } from "@workspace/compositions/registry"
+} from "@workspace/ui/components/command";
+import { useRouter } from "next/navigation";
+import { docs } from "@/lib/docs";
 
-const compositionIds = new Set(compositions.map((c) => c.id))
+const compositionIds = new Set(compositions.map((c) => c.id));
 const textAnimationIds = new Set(
-  compositions.filter((c) => c.id.startsWith("Title")).map((c) => c.id)
-)
+  compositions.filter((c) => c.id.startsWith("Title")).map((c) => c.id),
+);
 
-type SearchItem = { title: string; description: string; href: string }
+type SearchItem = { title: string; description: string; href: string };
 type SearchGroup = {
-  heading: string
-  icon: typeof Book01Icon
-  items: SearchItem[]
-}
+  heading: string;
+  icon: typeof Book01Icon;
+  items: SearchItem[];
+};
 
 function buildSearchGroups(): SearchGroup[] {
-  const gettingStarted: SearchGroup = { heading: "Getting Started", icon: Book01Icon, items: [] }
-  const textAnimations: SearchGroup = { heading: "Text Animations", icon: TextFontIcon, items: [] }
-  const templates: SearchGroup = { heading: "Templates", icon: VideoAiIcon, items: [] }
+  const gettingStarted: SearchGroup = {
+    heading: "Getting Started",
+    icon: Book01Icon,
+    items: [],
+  };
+  const textAnimations: SearchGroup = {
+    heading: "Text Animations",
+    icon: TextFontIcon,
+    items: [],
+  };
+  const templates: SearchGroup = {
+    heading: "Templates",
+    icon: VideoAiIcon,
+    items: [],
+  };
 
   for (const doc of docs) {
     const item: SearchItem = {
       title: doc.meta.title,
       description: doc.meta.description,
       href: doc.href,
-    }
+    };
     if (!compositionIds.has(doc.slug)) {
-      gettingStarted.items.push(item)
+      gettingStarted.items.push(item);
     } else if (textAnimationIds.has(doc.slug)) {
-      textAnimations.items.push(item)
+      textAnimations.items.push(item);
     } else {
-      templates.items.push(item)
+      templates.items.push(item);
     }
   }
 
-  return [gettingStarted, textAnimations, templates].filter((g) => g.items.length > 0)
+  return [gettingStarted, textAnimations, templates].filter(
+    (g) => g.items.length > 0,
+  );
 }
 
-const searchGroups = buildSearchGroups()
+const searchGroups = buildSearchGroups();
 
 interface DocsSearchProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 export function DocsSearch({ open, onOpenChange }: DocsSearchProps) {
-  const router = useRouter()
+  const router = useRouter();
 
   function handleSelect(href: string) {
-    onOpenChange(false)
-    router.push(href)
+    onOpenChange(false);
+    router.push(href);
   }
 
   return (
@@ -106,5 +119,5 @@ export function DocsSearch({ open, onOpenChange }: DocsSearchProps) {
         ))}
       </CommandList>
     </CommandDialog>
-  )
+  );
 }

@@ -1,6 +1,7 @@
 "use client";
 import {
   AbsoluteFill,
+  Img,
   spring,
   useCurrentFrame,
   useVideoConfig,
@@ -138,7 +139,7 @@ function ChatHeader({
         }}
       >
         {avatar ? (
-          <img
+          <Img
             src={avatar}
             alt={name}
             style={{ width: "100%", height: "100%", objectFit: "cover" }}

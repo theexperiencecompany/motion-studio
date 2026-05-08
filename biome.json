@@ -95,6 +95,28 @@
           "next": "recommended"
         }
       }
+    },
+    {
+      "includes": ["packages/ui/**"],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "useFocusableInteractive": "off",
+            "useSemanticElements": "off"
+          },
+          "suspicious": {
+            "noDocumentCookie": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["**/*.json"],
+      "json": {
+        "parser": {
+          "allowTrailingCommas": true
+        }
+      }
     }
   ]
 }

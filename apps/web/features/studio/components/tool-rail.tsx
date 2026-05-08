@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
-import { Button } from "@workspace/ui/components/button"
-import type { StudioPanel } from "../state/reducer"
+import { Button } from "@workspace/ui/components/button";
+import type { StudioPanel } from "../state/reducer";
 
 type Props = {
-  openPanel: StudioPanel
-  onToggle: (panel: StudioPanel) => void
-}
+  openPanel: StudioPanel;
+  onToggle: (panel: StudioPanel) => void;
+};
 
 export function ToolRail({ openPanel, onToggle }: Props) {
   return (
@@ -24,13 +24,15 @@ export function ToolRail({ openPanel, onToggle }: Props) {
           strokeWidth="1.7"
           strokeLinecap="round"
           strokeLinejoin="round"
+          aria-hidden="true"
         >
+          <title>Library</title>
           <line x1="12" y1="5" x2="12" y2="19" />
           <line x1="5" y1="12" x2="19" y2="12" />
         </svg>
       </ToolButton>
     </aside>
-  )
+  );
 }
 
 function ToolButton({
@@ -39,10 +41,10 @@ function ToolButton({
   label,
   children,
 }: {
-  active: boolean
-  onClick: () => void
-  label: string
-  children: React.ReactNode
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  children: React.ReactNode;
 }) {
   return (
     <div className="relative">
@@ -51,7 +53,9 @@ function ToolButton({
         size="icon"
         onClick={onClick}
         title={label}
-        className={active ? "text-primary bg-primary/10 hover:bg-primary/15" : ""}
+        className={
+          active ? "text-primary bg-primary/10 hover:bg-primary/15" : ""
+        }
       >
         {children}
       </Button>
@@ -59,5 +63,5 @@ function ToolButton({
         <span className="absolute -left-3 top-1/2 h-5 w-[2px] -translate-y-1/2 rounded-r bg-primary" />
       )}
     </div>
-  )
+  );
 }

@@ -1,21 +1,21 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { Player } from "@remotion/player"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { ArrowRight01Icon } from "@hugeicons/core-free-icons"
-import { compositions } from "@workspace/compositions/registry"
-import { componentsById } from "@workspace/compositions/components"
+import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Player } from "@remotion/player";
+import { componentsById } from "@workspace/compositions/components";
+import type { compositions } from "@workspace/compositions/registry";
+import Link from "next/link";
 
 type Props = {
-  items: typeof compositions
-}
+  items: typeof compositions;
+};
 
 export function FeaturedComponents({ items }: Props) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {items.map((c) => {
-        const Component = componentsById[c.id]
+        const Component = componentsById[c.id];
         return (
           <Link
             key={c.id}
@@ -52,8 +52,8 @@ export function FeaturedComponents({ items }: Props) {
               />
             </div>
           </Link>
-        )
+        );
       })}
     </div>
-  )
+  );
 }

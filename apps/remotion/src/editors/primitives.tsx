@@ -191,7 +191,7 @@ function ImageControl({
       />
       {hasImage ? (
         <div className="overflow-hidden rounded-md border border-border bg-background">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {/* eslint-disable-next-line @remotion/warn-native-media-tag -- editor preview, not rendered video */}
           <img
             src={value}
             alt="Selected image preview"

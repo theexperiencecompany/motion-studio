@@ -1,6 +1,7 @@
 "use client";
 import {
   AbsoluteFill,
+  Img,
   spring,
   staticFile,
   useCurrentFrame,
@@ -116,6 +117,7 @@ export const WhatsAppMessages: React.FC<WhatsAppMessagesProps> = ({
     >
       <AbsoluteFill
         style={{
+          // eslint-disable-next-line @remotion/no-background-image -- intentional tiled wallpaper
           backgroundImage: `url(${WALLPAPER_URL})`,
           backgroundSize: "540px 981px",
           backgroundRepeat: "repeat",
@@ -195,8 +197,9 @@ function Header({
           flexShrink: 0,
         }}
       >
-        <img
+        <Img
           src={avatar}
+          alt={name}
           style={{ width: "100%", height: "100%", objectFit: "cover" }}
         />
       </div>

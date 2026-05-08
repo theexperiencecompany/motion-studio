@@ -1,23 +1,23 @@
-"use client"
+"use client";
 
-import React, { useRef, useState } from "react"
-import { useSortable } from "@dnd-kit/sortable"
-import { CSS } from "@dnd-kit/utilities"
-import type { Clip } from "@workspace/compositions/project"
-import { compositionsById } from "@workspace/compositions/registry"
-import { cn } from "@workspace/ui/lib/utils"
-import { PX_PER_SECOND, colorForCompositionId } from "../lib/clip-colors"
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import type { Clip } from "@workspace/compositions/project";
+import { compositionsById } from "@workspace/compositions/registry";
+import type React from "react";
+import { useRef, useState } from "react";
+import { colorForCompositionId, PX_PER_SECOND } from "../lib/clip-colors";
 
-const MIN_DURATION_FRAMES = 15
+const MIN_DURATION_FRAMES = 15;
 
 type Props = {
-  clip: Clip
-  fps: number
-  selected: boolean
-  onSelect: () => void
-  onDelete: () => void
-  onDurationChange: (durationInFrames: number) => void
-}
+  clip: Clip;
+  fps: number;
+  selected: boolean;
+  onSelect: () => void;
+  onDelete: () => void;
+  onDurationChange: (durationInFrames: number) => void;
+};
 
 export function SortableClipBlock({
   clip,
@@ -27,12 +27,12 @@ export function SortableClipBlock({
   onDelete,
   onDurationChange,
 }: Props) {
-  const info = compositionsById[clip.compositionId]
-  const [resizing, setResizing] = useState<"left" | "right" | null>(null)
+  const info = compositionsById[clip.compositionId];
+  const [resizing, setResizing] = useState<"left" | "right" | null>(null);
 
-  const seconds = clip.durationInFrames / fps
-  const widthPx = seconds * PX_PER_SECOND
-  const colorClass = colorForCompositionId(clip.compositionId)
+  const seconds = clip.durationInFrames / fps;
+  const widthPx = seconds * PX_PER_SECOND;
+  const colorClass = colorForCompositionId(clip.compositionId);
 
   const {
     attributes,
@@ -41,7 +41,7 @@ export function SortableClipBlock({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: clip.id, disabled: resizing !== null })
+  } = useSortable({ id: clip.id, disabled: resizing !== null });
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -49,38 +49,38 @@ export function SortableClipBlock({
     width: widthPx,
     opacity: isDragging ? 0.6 : 1,
     zIndex: isDragging || resizing ? 10 : 1,
-  }
+  };
 
-  const framesPerPx = fps / PX_PER_SECOND
+  const framesPerPx = fps / PX_PER_SECOND;
 
   function startResize(side: "left" | "right", startEvent: React.PointerEvent) {
-    startEvent.preventDefault()
-    startEvent.stopPropagation()
-    setResizing(side)
+    startEvent.preventDefault();
+    startEvent.stopPropagation();
+    setResizing(side);
 
-    const startX = startEvent.clientX
-    const startDuration = clip.durationInFrames
+    const startX = startEvent.clientX;
+    const startDuration = clip.durationInFrames;
 
     function onMove(ev: PointerEvent) {
-      const deltaPx = ev.clientX - startX
-      const deltaFrames = Math.round(deltaPx * framesPerPx)
+      const deltaPx = ev.clientX - startX;
+      const deltaFrames = Math.round(deltaPx * framesPerPx);
       const next =
         side === "right"
           ? startDuration + deltaFrames
-          : startDuration - deltaFrames
-      onDurationChange(Math.max(MIN_DURATION_FRAMES, next))
+          : startDuration - deltaFrames;
+      onDurationChange(Math.max(MIN_DURATION_FRAMES, next));
     }
 
     function onUp() {
-      window.removeEventListener("pointermove", onMove)
-      window.removeEventListener("pointerup", onUp)
-      window.removeEventListener("pointercancel", onUp)
-      setResizing(null)
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+      setResizing(null);
     }
 
-    window.addEventListener("pointermove", onMove)
-    window.addEventListener("pointerup", onUp)
-    window.addEventListener("pointercancel", onUp)
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
   }
 
   return (
@@ -131,9 +131,10 @@ export function SortableClipBlock({
       />
 
       <button
+        type="button"
         onClick={(e) => {
-          e.stopPropagation()
-          onDelete()
+          e.stopPropagation();
+          onDelete();
         }}
         onPointerDown={(e) => e.stopPropagation()}
         title="Delete"
@@ -142,7 +143,7 @@ export function SortableClipBlock({
         ×
       </button>
     </div>
-  )
+  );
 }
 
 function ResizeHandle({
@@ -150,11 +151,11 @@ function ResizeHandle({
   active,
   onPointerDown,
 }: {
-  side: "left" | "right"
-  active: boolean
-  onPointerDown: (e: React.PointerEvent) => void
+  side: "left" | "right";
+  active: boolean;
+  onPointerDown: (e: React.PointerEvent) => void;
 }) {
-  const ref = useRef<HTMLDivElement>(null)
+  const ref = useRef<HTMLDivElement>(null);
   return (
     <div
       ref={ref}
@@ -170,5 +171,5 @@ function ResizeHandle({
         }`}
       />
     </div>
-  )
+  );
 }

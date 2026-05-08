@@ -1,6 +1,6 @@
-import Link from "next/link"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { ArrowRight01Icon, Edit02Icon } from "@hugeicons/core-free-icons"
+import { ArrowRight01Icon, Edit02Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import Link from "next/link";
 
 export function EditorLink({ id }: { id: string }) {
   return (
@@ -12,5 +12,5 @@ export function EditorLink({ id }: { id: string }) {
       Open editor
       <HugeiconsIcon icon={ArrowRight01Icon} size={14} />
     </Link>
-  )
+  );
 }

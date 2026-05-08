@@ -1,46 +1,45 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Player } from "@remotion/player"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { PlusSignIcon } from "@hugeicons/core-free-icons"
-import { Button } from "@workspace/ui/components/button"
+import { PlusSignIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Player } from "@remotion/player";
+import { componentsById } from "@workspace/compositions/components";
+import { compositions } from "@workspace/compositions/registry";
+import type { AnyCompositionInfo } from "@workspace/compositions/schema";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@workspace/ui/components/tooltip"
-import { compositions } from "@workspace/compositions/registry"
-import { componentsById } from "@workspace/compositions/components"
-import type { AnyCompositionInfo } from "@workspace/compositions/schema"
+} from "@workspace/ui/components/tooltip";
+import { useState } from "react";
 
 type Props = {
-  onAdd: (compositionId: string) => void
-}
+  onAdd: (compositionId: string) => void;
+};
 
 export function LibraryPanel({ onAdd }: Props) {
   const textAnimations = compositions.filter(
     (c) => c.id.startsWith("Title") || c.id.startsWith("Text"),
-  )
+  );
   const others = compositions.filter(
     (c) => !c.id.startsWith("Title") && !c.id.startsWith("Text"),
-  )
+  );
 
   return (
     <TooltipProvider delayDuration={300}>
       <aside className="flex w-72 shrink-0 flex-col overflow-y-auto border-r border-border bg-background">
         <div className="sticky top-0 z-10 border-b border-border bg-background/95 px-4 py-3 backdrop-blur">
-          <p className="text-sm font-medium text-foreground">
-            Library
+          <p className="text-sm font-medium text-foreground">Library</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Click to add a scene
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">Click to add a scene</p>
         </div>
         <Section title="Text" items={textAnimations} onAdd={onAdd} />
         <Section title="Templates" items={others} onAdd={onAdd} />
       </aside>
     </TooltipProvider>
-  )
+  );
 }
 
 function Section({
@@ -48,11 +47,11 @@ function Section({
   items,
   onAdd,
 }: {
-  title: string
-  items: typeof compositions
-  onAdd: (id: string) => void
+  title: string;
+  items: typeof compositions;
+  onAdd: (id: string) => void;
 }) {
-  if (items.length === 0) return null
+  if (items.length === 0) return null;
   return (
     <div className="border-b border-border/60 px-3 py-3">
       <p className="mb-2 px-1 text-xs font-medium text-muted-foreground">
@@ -66,46 +65,34 @@ function Section({
         ))}
       </ul>
     </div>
-  )
+  );
 }
 
 function PreviewTooltipItem({
   info,
   onAdd,
 }: {
-  info: AnyCompositionInfo
-  onAdd: (id: string) => void
+  info: AnyCompositionInfo;
+  onAdd: (id: string) => void;
 }) {
-  const [open, setOpen] = useState(false)
-  const Component = componentsById[info.id]
+  const [open, setOpen] = useState(false);
+  const Component = componentsById[info.id];
 
   return (
     <Tooltip open={open} onOpenChange={setOpen}>
       <TooltipTrigger asChild>
-        <div
-          role="button"
-          tabIndex={0}
+        <button
+          type="button"
           onClick={() => onAdd(info.id)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault()
-              onAdd(info.id)
-            }
-          }}
           className="group flex w-full cursor-pointer items-center gap-2 rounded-lg px-2.5 py-1.5 text-left transition-colors hover:bg-accent/60"
         >
           <span className="min-w-0 flex-1 truncate text-[13px] text-foreground/80 group-hover:text-foreground">
             {info.title}
           </span>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="size-5 shrink-0"
-            tabIndex={-1}
-          >
+          <span className="flex size-5 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors group-hover:bg-accent group-hover:text-foreground">
             <HugeiconsIcon icon={PlusSignIcon} className="size-3.5" />
-          </Button>
-        </div>
+          </span>
+        </button>
       </TooltipTrigger>
       {open && Component && (
         <TooltipContent
@@ -142,5 +129,5 @@ function PreviewTooltipItem({
         </TooltipContent>
       )}
     </Tooltip>
-  )
+  );
 }

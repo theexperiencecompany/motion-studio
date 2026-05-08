@@ -1,18 +1,18 @@
-"use client"
+"use client";
 
-import { Player } from "@remotion/player"
-import { compositionsById } from "@workspace/compositions/registry"
-import { componentsById } from "@workspace/compositions/components"
+import { Player } from "@remotion/player";
+import { componentsById } from "@workspace/compositions/components";
+import { compositionsById } from "@workspace/compositions/registry";
 
 export function Preview({ id }: { id: string }) {
-  const info = compositionsById[id]
-  const Component = info ? componentsById[info.id] : undefined
+  const info = compositionsById[id];
+  const Component = info ? componentsById[info.id] : undefined;
   if (!info || !Component) {
     return (
       <div className="rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">
         No composition registered for id &quot;{id}&quot;.
       </div>
-    )
+    );
   }
   return (
     <div className="not-prose my-6">
@@ -35,5 +35,5 @@ export function Preview({ id }: { id: string }) {
         />
       </div>
     </div>
-  )
+  );
 }

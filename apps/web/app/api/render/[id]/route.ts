@@ -1,9 +1,9 @@
-import { NextRequest } from "next/server";
-import path from "node:path";
-import os from "node:os";
 import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import { bundle } from "@remotion/bundler";
 import { renderMedia, selectComposition } from "@remotion/renderer";
+import type { NextRequest } from "next/server";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -12,10 +12,7 @@ let bundlePromise: Promise<string> | null = null;
 
 function getBundle() {
   if (!bundlePromise) {
-    const entryPoint = path.resolve(
-      process.cwd(),
-      "../remotion/src/index.ts",
-    );
+    const entryPoint = path.resolve(process.cwd(), "../remotion/src/index.ts");
     bundlePromise = bundle({
       entryPoint,
       webpackOverride: (config) => config,

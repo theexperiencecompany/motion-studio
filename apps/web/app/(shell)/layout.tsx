@@ -1,10 +1,10 @@
-import { AppSidebar } from "@/components/app-sidebar"
-import { DocsHeader } from "@/components/docs-header"
+import { AppSidebar } from "@/components/app-sidebar";
+import { DocsHeader } from "@/components/docs-header";
 
 export default function ShellLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode
+  children: React.ReactNode;
 }>) {
   return (
     <div className="mx-auto max-w-[1600px] border-x border-dashed border-white/10 min-h-screen">
@@ -16,5 +16,5 @@ export default function ShellLayout({
         </main>
       </div>
     </div>
-  )
+  );
 }

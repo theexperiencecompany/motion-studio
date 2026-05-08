@@ -1,33 +1,42 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { compositions } from "@workspace/compositions/registry"
 import {
   Book01Icon,
-  Download01Icon,
-  PaintBrush01Icon,
-  Moon02Icon,
-  CommandLineIcon,
   Clock01Icon,
-  VideoAiIcon,
+  CommandLineIcon,
+  Download01Icon,
+  Moon02Icon,
+  PaintBrush01Icon,
   TextFontIcon,
-} from "@hugeicons/core-free-icons"
+  VideoAiIcon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { compositions } from "@workspace/compositions/registry";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
-const textAnimations = compositions.filter((c) => c.id.startsWith("Title"))
-const templates = compositions.filter((c) => !c.id.startsWith("Title"))
+const textAnimations = compositions.filter((c) => c.id.startsWith("Title"));
+const templates = compositions.filter((c) => !c.id.startsWith("Title"));
 
 const nav = [
   {
     section: "Getting Started",
     items: [
       { title: "Introduction", href: "/docs", icon: Book01Icon },
-      { title: "Installation", href: "/docs/installation", icon: Download01Icon },
+      {
+        title: "Installation",
+        href: "/docs/installation",
+        icon: Download01Icon,
+      },
       { title: "Theming", href: "/docs/theming", icon: PaintBrush01Icon },
       { title: "Dark Mode", href: "/docs/dark-mode", icon: Moon02Icon },
       { title: "CLI", href: "/docs/cli", icon: CommandLineIcon },
-      { title: "Changelog", href: "/docs/changelog", icon: Clock01Icon, badge: "v1.0" },
+      {
+        title: "Changelog",
+        href: "/docs/changelog",
+        icon: Clock01Icon,
+        badge: "v1.0",
+      },
     ],
   },
   {
@@ -46,10 +55,10 @@ const nav = [
       icon: VideoAiIcon,
     })),
   },
-]
+];
 
 export function AppSidebar() {
-  const pathname = usePathname()
+  const pathname = usePathname();
 
   return (
     <aside className="sticky top-14 h-[calc(100vh-3.5rem)] w-60 shrink-0 overflow-y-auto py-8 pl-8 pr-6">
@@ -61,7 +70,7 @@ export function AppSidebar() {
             </p>
             <ul className="space-y-px">
               {group.items.map((item) => {
-                const active = pathname === item.href
+                const active = pathname === item.href;
                 return (
                   <li key={item.href}>
                     <Link
@@ -89,12 +98,12 @@ export function AppSidebar() {
                       )}
                     </Link>
                   </li>
-                )
+                );
               })}
             </ul>
           </div>
         ))}
       </nav>
     </aside>
-  )
+  );
 }

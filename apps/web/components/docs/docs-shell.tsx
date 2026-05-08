@@ -1,12 +1,11 @@
-import Link from "next/link"
-import { HugeiconsIcon } from "@hugeicons/react"
 import {
-  Books02Icon,
-  Copy01Icon,
   ArrowDown01Icon,
   ArrowLeft01Icon,
   ArrowRight01Icon,
-} from "@hugeicons/core-free-icons"
+  Books02Icon,
+  Copy01Icon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -14,14 +13,15 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@workspace/ui/components/breadcrumb"
-import { Button } from "@workspace/ui/components/button"
-import type { Doc } from "@/lib/docs"
-import { getAdjacent } from "@/lib/docs"
+} from "@workspace/ui/components/breadcrumb";
+import { Button } from "@workspace/ui/components/button";
+import Link from "next/link";
+import type { Doc } from "@/lib/docs";
+import { getAdjacent } from "@/lib/docs";
 
 export function DocsShell({ doc }: { doc: Doc }) {
-  const { prev, next } = getAdjacent(doc.slug)
-  const Content = doc.Content
+  const { prev, next } = getAdjacent(doc.slug);
+  const Content = doc.Content;
 
   return (
     <div className="mx-auto flex w-full max-w-6xl gap-12 px-8 py-10 xl:px-12">
@@ -44,7 +44,11 @@ export function DocsShell({ doc }: { doc: Doc }) {
               {doc.meta.title}
             </h1>
             <div className="flex items-center gap-1 shrink-0">
-              <Button variant="outline" size="sm" className="gap-1.5 text-[12px]">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-[12px]"
+              >
                 <HugeiconsIcon icon={Copy01Icon} size={12} />
                 <span>Copy Page</span>
                 <HugeiconsIcon
@@ -53,7 +57,11 @@ export function DocsShell({ doc }: { doc: Doc }) {
                   className="text-muted-foreground"
                 />
               </Button>
-              <NavButton href={prev?.href} label="Previous page" direction="prev" />
+              <NavButton
+                href={prev?.href}
+                label="Previous page"
+                direction="prev"
+              />
               <NavButton href={next?.href} label="Next page" direction="next" />
             </div>
           </div>
@@ -114,7 +122,7 @@ export function DocsShell({ doc }: { doc: Doc }) {
         </div>
       </aside>
     </div>
-  )
+  );
 }
 
 function NavButton({
@@ -122,17 +130,17 @@ function NavButton({
   label,
   direction,
 }: {
-  href: string | undefined
-  label: string
-  direction: "prev" | "next"
+  href: string | undefined;
+  label: string;
+  direction: "prev" | "next";
 }) {
-  const icon = direction === "prev" ? ArrowLeft01Icon : ArrowRight01Icon
+  const icon = direction === "prev" ? ArrowLeft01Icon : ArrowRight01Icon;
   if (!href) {
     return (
       <Button variant="outline" size="icon-sm" aria-label={label} disabled>
         <HugeiconsIcon icon={icon} size={14} />
       </Button>
-    )
+    );
   }
   return (
     <Button variant="outline" size="icon-sm" asChild>
@@ -140,5 +148,5 @@ function NavButton({
         <HugeiconsIcon icon={icon} size={14} />
       </Link>
     </Button>
-  )
+  );
 }

@@ -1,10 +1,11 @@
 import {
   AbsoluteFill,
+  type CalculateMetadataFunction,
   Easing,
+  Img,
   interpolate,
   useCurrentFrame,
   useVideoConfig,
-  CalculateMetadataFunction,
 } from "remotion";
 
 export const FOLLOWER_DURATION = 240; // 4s @ 60fps
@@ -94,7 +95,7 @@ function Header({
       }}
     >
       <span>
-        <img
+        <Img
           src={userAvatarUrl}
           alt={username}
           style={{
@@ -164,7 +165,7 @@ function FollowersRow({ followers }: { followers: Follower[] }) {
               willChange: "transform, opacity",
             }}
           >
-            <img
+            <Img
               src={f.avatar_url}
               alt={f.login}
               width={AVATAR_SIZE}

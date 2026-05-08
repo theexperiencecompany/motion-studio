@@ -25,7 +25,6 @@ export type BrowserWindowProps = {
 
 const APPLE_EASE = Easing.bezier(0.16, 1, 0.3, 1);
 
-const WINDOW_APPEAR_END = 22;
 const URL_TYPE_START = 28;
 const FRAMES_PER_CHAR = 3;
 const PAGE_FADE_DELAY = 14;

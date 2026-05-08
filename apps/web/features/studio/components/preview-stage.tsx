@@ -1,19 +1,19 @@
-"use client"
+"use client";
 
-import type { Ref } from "react"
-import { Player, type PlayerRef } from "@remotion/player"
-import { ProjectComposition } from "@workspace/compositions/compositions/Project/Project"
-import type { Project } from "@workspace/compositions/project"
-import { Button } from "@workspace/ui/components/button"
+import { Player, type PlayerRef } from "@remotion/player";
+import { ProjectComposition } from "@workspace/compositions/compositions/Project/Project";
+import type { Project } from "@workspace/compositions/project";
+import { Button } from "@workspace/ui/components/button";
+import type { Ref } from "react";
 
 type Props = {
-  project: Project
-  playerInputProps: Project
-  totalDuration: number
-  hasClips: boolean
-  onOpenLibrary: () => void
-  playerRef?: Ref<PlayerRef>
-}
+  project: Project;
+  playerInputProps: Project;
+  totalDuration: number;
+  hasClips: boolean;
+  onOpenLibrary: () => void;
+  playerRef?: Ref<PlayerRef>;
+};
 
 export function PreviewStage({
   project,
@@ -28,7 +28,7 @@ export function PreviewStage({
       <div className="relative flex min-h-0 flex-1 items-center justify-center bg-background">
         <EmptyStage onOpenLibrary={onOpenLibrary} />
       </div>
-    )
+    );
   }
 
   return (
@@ -58,7 +58,7 @@ export function PreviewStage({
         />
       </div>
     </div>
-  )
+  );
 }
 
 function EmptyStage({ onOpenLibrary }: { onOpenLibrary: () => void }) {
@@ -74,12 +74,16 @@ function EmptyStage({ onOpenLibrary }: { onOpenLibrary: () => void }) {
             strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
+            aria-hidden="true"
           >
+            <title>Play</title>
             <polygon points="5 3 19 12 5 21 5 3" />
           </svg>
         </div>
         <div className="text-center">
-          <p className="text-[13px] font-medium text-foreground/80">No clips yet</p>
+          <p className="text-[13px] font-medium text-foreground/80">
+            No clips yet
+          </p>
           <p className="mt-0.5 text-[12px] text-muted-foreground">
             Add a scene from the library to get started.
           </p>
@@ -89,5 +93,5 @@ function EmptyStage({ onOpenLibrary }: { onOpenLibrary: () => void }) {
         </Button>
       </div>
     </div>
-  )
+  );
 }
