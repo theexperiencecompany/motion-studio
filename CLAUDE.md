@@ -14,9 +14,14 @@ import { SomeIcon } from "@hugeicons/core-free-icons"
 ## UI Components & Styling
 
 - Always use **shadcn/ui** components with their default styling (`Button`, `Input`, `Select`, `Accordion`, etc.)
+- **Never hand-write UI components.** Always add new components via the shadcn CLI:
+  ```bash
+  cd packages/ui && bunx shadcn@latest add <component>
+  ```
 - Never use raw Radix UI primitives directly — always wrap them in shadcn-style components from `@workspace/ui/components/*`
 - Never use raw HTML `<input>`, `<button>`, `<select>`, etc. with custom styling unless explicitly requested
 - Always use **Tailwind** utility classes for layout and spacing — no inline styles unless required by a third-party API (e.g. Remotion player dimensions)
+- The `Accordion` component in `@workspace/ui/components/accordion` uses minimal sidebar-friendly defaults (no border/rounded-2xl on root, no heavy padding on trigger). Use `className` overrides to adapt for card-style contexts if needed.
 
 ## Type Checking
 

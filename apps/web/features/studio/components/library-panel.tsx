@@ -55,7 +55,7 @@ export function LibraryPanel({ onAdd, onClose }: Props) {
         <Accordion
           type="multiple"
           defaultValue={["text", "templates"]}
-          className="px-3"
+          className="rounded-none border-none px-3"
         >
           <AccordionSection
             value="text"
@@ -88,9 +88,11 @@ function AccordionSection({
 }) {
   if (items.length === 0) return null;
   return (
-    <AccordionItem value={value} className="border-border/60">
-      <AccordionTrigger className="px-1">{title}</AccordionTrigger>
-      <AccordionContent className="pb-0">
+    <AccordionItem value={value} className="border-border/60 data-open:bg-transparent">
+      <AccordionTrigger className="px-1 py-2 text-xs hover:no-underline">
+        {title}
+      </AccordionTrigger>
+      <AccordionContent className="px-0 pb-0">
         <ul className="space-y-px">
           {items.map((c) => (
             <li key={c.id}>
