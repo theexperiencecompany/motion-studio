@@ -1,13 +1,8 @@
-import {
-  ArrowRight01Icon,
-  CodeIcon,
-  Copy01Icon,
-  FilmRoll02Icon,
-  PaintBrush02Icon,
-} from "@hugeicons/core-free-icons";
+import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { compositions } from "@workspace/compositions/registry";
 import { Button } from "@workspace/ui/components/button";
+import { RaisedButton } from "@workspace/ui/components/raised-button";
 import Link from "next/link";
 import { DocsHeader } from "@/components/docs-header";
 import { FeaturedComponents } from "@/components/featured-components";
@@ -17,32 +12,6 @@ const FEATURED_IDS = [
   "TitleSlideUp",
   "MessageBubbles",
   "BrowserWindow",
-];
-
-const _features = [
-  {
-    icon: Copy01Icon,
-    title: "Copy & paste",
-    description:
-      "Composable Remotion primitives you own. No opaque framework, no lock-in.",
-  },
-  {
-    icon: CodeIcon,
-    title: "Fully typed",
-    description:
-      "Strict TypeScript end-to-end — props, schemas, and registry entries.",
-  },
-  {
-    icon: PaintBrush02Icon,
-    title: "Themeable",
-    description: "Tailwind-friendly tokens with light & dark modes baked in.",
-  },
-  {
-    icon: FilmRoll02Icon,
-    title: "Production-ready",
-    description:
-      "Render in the browser with the Remotion Player or ship to MP4 via the renderer.",
-  },
 ];
 
 export default function LandingPage() {
@@ -79,7 +48,7 @@ export default function LandingPage() {
             </p>
 
             <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
-              <Button asChild>
+              <RaisedButton asChild color="#3b82f6">
                 <Link href="/docs">
                   Get started
                   <HugeiconsIcon
@@ -87,7 +56,7 @@ export default function LandingPage() {
                     data-icon="inline-end"
                   />
                 </Link>
-              </Button>
+              </RaisedButton>
               <Button variant="outline" asChild>
                 <Link href="/studio">Open Studio</Link>
               </Button>
@@ -136,12 +105,12 @@ export default function LandingPage() {
             Read the docs, copy a component, render your first scene.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Button asChild>
+            <RaisedButton asChild color="#3b82f6">
               <Link href="/docs">
                 Read the docs
                 <HugeiconsIcon icon={ArrowRight01Icon} data-icon="inline-end" />
               </Link>
-            </Button>
+            </RaisedButton>
             <Button variant="outline" asChild>
               <Link href="https://github.com">GitHub</Link>
             </Button>
@@ -154,7 +123,7 @@ export default function LandingPage() {
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-2">
             <div className="size-4 rounded bg-foreground" />
-            <span>motioncrow</span>
+            <span>Motion Studio</span>
           </div>
           <div className="flex items-center gap-5">
             <Link href="/docs" className="hover:text-foreground">

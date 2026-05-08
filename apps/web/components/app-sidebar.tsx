@@ -139,7 +139,7 @@ export function AppSidebar() {
           href={item.href}
           className={`group relative flex h-8 items-center gap-2.5 rounded-md px-3 text-[13px] transition-all duration-150 ease-out ${
             active
-              ? "bg-accent text-foreground font-medium"
+              ? "bg-accent font-medium text-foreground"
               : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
           }`}
         >
@@ -167,10 +167,10 @@ export function AppSidebar() {
   const defaultOpen = populatedGroups.map((g) => g.value);
 
   return (
-    <aside className="sticky top-14 h-[calc(100vh-3.5rem)] w-60 shrink-0 overflow-y-auto py-8 pl-8 pr-6">
+    <aside className="sticky top-14 h-[calc(100vh-3.5rem)] w-60 shrink-0 overflow-y-auto py-8 pr-6 pl-8">
       <nav className="space-y-7">
         <div>
-          <p className="mb-2.5 px-3 text-[11px] font-semibold text-muted-foreground/70">
+          <p className="mb-1 px-3 text-[11px] font-semibold text-muted-foreground/70">
             Getting Started
           </p>
           <ul className="space-y-px">{gettingStarted.map(navLink)}</ul>
@@ -187,10 +187,10 @@ export function AppSidebar() {
               value={group.value}
               className="border-none"
             >
-              <AccordionTrigger className="mb-2.5 px-3 py-0 text-[11px] font-semibold text-muted-foreground/70 hover:no-underline [&>svg]:size-3">
+              <AccordionTrigger className="mb-1 px-3 py-0 text-[11px] font-semibold text-muted-foreground/70 hover:no-underline [&>svg]:size-3">
                 {group.section}
               </AccordionTrigger>
-              <AccordionContent className="pb-0 pt-2">
+              <AccordionContent className="pt-0 pb-0">
                 <ul className="space-y-px">{group.items.map(navLink)}</ul>
               </AccordionContent>
             </AccordionItem>
