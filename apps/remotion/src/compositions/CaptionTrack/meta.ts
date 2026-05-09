@@ -8,8 +8,6 @@ export const CAPTION_TRACK_HEIGHT = 1080;
 
 export const captionTrackDefaultProps: CaptionTrackProps = {
   text: "this is the future of motion graphics",
-  backgroundColor: "#ffffff",
-  textColor: "#0f1014",
   wordsPerSecond: 3,
 };
 
@@ -25,8 +23,6 @@ export const captionTrackInfo: CompositionInfo<CaptionTrackProps> = {
   defaultProps: captionTrackDefaultProps,
   fields: [
     { kind: "textarea", key: "text", label: "Caption text", rows: 3 },
-    { kind: "color", key: "backgroundColor", label: "Background color" },
-    { kind: "color", key: "textColor", label: "Text color" },
     {
       kind: "number",
       key: "wordsPerSecond",

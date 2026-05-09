@@ -10,7 +10,6 @@ export const browserWindowDefaultProps: BrowserWindowProps = {
   url: "https://aesthetic.dev",
   pageImageUrl: "",
   pageBackgroundColor: "#fafafa",
-  backgroundColor: "#ffffff",
 };
 
 export const browserWindowInfo: CompositionInfo<BrowserWindowProps> = {
@@ -31,6 +30,5 @@ export const browserWindowInfo: CompositionInfo<BrowserWindowProps> = {
       key: "pageBackgroundColor",
       label: "Page background color",
     },
-    { kind: "color", key: "backgroundColor", label: "Background color" },
   ],
 };

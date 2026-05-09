@@ -11,8 +11,6 @@ export const statCounterDefaultProps: StatCounterProps = {
   label: "developers",
   prefix: "",
   suffix: "+",
-  backgroundColor: "#ffffff",
-  textColor: "#0f1014",
 };
 
 export const statCounterInfo: CompositionInfo<StatCounterProps> = {
@@ -30,7 +28,5 @@ export const statCounterInfo: CompositionInfo<StatCounterProps> = {
     { kind: "text", key: "label", label: "Label" },
     { kind: "text", key: "prefix", label: "Prefix (e.g. $)" },
     { kind: "text", key: "suffix", label: "Suffix (e.g. +, %)" },
-    { kind: "color", key: "backgroundColor", label: "Background color" },
-    { kind: "color", key: "textColor", label: "Text color" },
   ],
 };

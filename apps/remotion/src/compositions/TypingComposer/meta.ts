@@ -9,8 +9,6 @@ export const TYPING_COMPOSER_HEIGHT = 1080;
 export const typingComposerDefaultProps: TypingComposerProps = {
   query: "Plan a 3-day trip to Tokyo with a $2000 budget",
   placeholder: "What can I do for you today? (Type '/' for tools)",
-  backgroundColor: "#111111",
-  accentColor: "#00bbff",
 };
 
 export const typingComposerInfo: CompositionInfo<TypingComposerProps> = {
@@ -26,7 +24,5 @@ export const typingComposerInfo: CompositionInfo<TypingComposerProps> = {
   fields: [
     { kind: "text", key: "query", label: "Query" },
     { kind: "text", key: "placeholder", label: "Placeholder" },
-    { kind: "color", key: "backgroundColor", label: "Background color" },
-    { kind: "color", key: "accentColor", label: "Accent color" },
   ],
 };
