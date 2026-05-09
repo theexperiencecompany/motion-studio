@@ -15,6 +15,8 @@ import { BrowserWindow } from "./compositions/BrowserWindow/BrowserWindow";
 import { CaptionTrack } from "./compositions/CaptionTrack/CaptionTrack";
 import { TwitterFollow } from "./compositions/TwitterFollow/TwitterFollow";
 import { WhatsAppMessages } from "./compositions/WhatsAppMessages/WhatsAppMessages";
+import { InstagramMessages } from "./compositions/InstagramMessages/InstagramMessages";
+import { InstagramPost } from "./compositions/InstagramPost/InstagramPost";
 import { SlackMessages } from "./compositions/SlackMessages/SlackMessages";
 import { DiscordMessages } from "./compositions/DiscordMessages/DiscordMessages";
 import { TextMicroScaleFade } from "./compositions/TextMicroScaleFade/TextMicroScaleFade";
@@ -67,6 +69,8 @@ export const componentsByIdBase: Record<string, ComponentType<any>> = {
   CaptionTrack,
   TwitterFollow,
   WhatsAppMessages,
+  InstagramMessages,
+  InstagramPost,
   SlackMessages,
   DiscordMessages,
   TextMicroScaleFade,

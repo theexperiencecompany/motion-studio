@@ -14,6 +14,8 @@ import { browserWindowInfo } from "./compositions/BrowserWindow/meta";
 import { captionTrackInfo } from "./compositions/CaptionTrack/meta";
 import { twitterFollowInfo } from "./compositions/TwitterFollow/meta";
 import { whatsappMessagesInfo } from "./compositions/WhatsAppMessages/meta";
+import { instagramMessagesInfo } from "./compositions/InstagramMessages/meta";
+import { instagramPostInfo } from "./compositions/InstagramPost/meta";
 import { slackMessagesInfo } from "./compositions/SlackMessages/meta";
 import { discordMessagesInfo } from "./compositions/DiscordMessages/meta";
 import { phoneFrameInfo } from "./compositions/PhoneFrame/meta";
@@ -62,9 +64,11 @@ export const compositions: AnyCompositionInfo[] = [
   statCounterInfo,
   tweetCardInfo,
   twitterFollowInfo,
+  instagramPostInfo,
   messagePopupInfo,
   messageBubblesInfo,
   whatsappMessagesInfo,
+  instagramMessagesInfo,
   slackMessagesInfo,
   discordMessagesInfo,
   phoneFrameInfo,
