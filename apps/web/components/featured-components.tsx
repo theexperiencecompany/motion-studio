@@ -29,14 +29,6 @@ export function FeaturedComponents({ items }: Props) {
             <Link
               key={c.id}
               href={`/docs/${c.id}`}
-              // Some compositions (e.g. GaiaScenario) call .click() on inner
-              // buttons to force-open accordions for the video render. Those
-              // synthetic events bubble up and would trigger Link navigation.
-              // Real user clicks have detail >= 1; programmatic clicks have
-              // detail === 0 — use that to ignore them.
-              onClick={(e) => {
-                if (e.detail === 0) e.preventDefault();
-              }}
               className="group relative overflow-hidden rounded-lg border border-border bg-muted/20 p-4 transition-colors hover:bg-muted/40"
             >
               <div

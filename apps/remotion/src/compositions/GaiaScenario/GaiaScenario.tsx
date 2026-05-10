@@ -663,7 +663,20 @@ function ToolCallsView({
   }, [toolCallsExpanded, normalised]);
 
   return (
-    <div ref={containerRef} style={{ marginLeft: 36 }}>
+    // The trigger.click() above synthesizes a click event. If this composition
+    // is rendered inside a Remotion Player that's wrapped by a Next.js <Link>
+    // (e.g. the landing page's clickable component grid), that click bubbles
+    // up through React's synthetic event system and triggers Link navigation
+    // a few seconds into the loop. Stop the synthetic click from bubbling
+    // past this wrapper — React Aria's button handler fires before the bubble
+    // reaches us, so the accordion still expands.
+    // biome-ignore lint/a11y/noStaticElementInteractions: stopPropagation guard, not an interactive surface
+    // biome-ignore lint/a11y/useKeyWithClickEvents: same reason — only stops bubble, not user interactions
+    <div
+      ref={containerRef}
+      style={{ marginLeft: 36 }}
+      onClick={(e) => e.stopPropagation()}
+    >
       <ToolCallsSection tool_calls_data={normalised as never} />
     </div>
   );
