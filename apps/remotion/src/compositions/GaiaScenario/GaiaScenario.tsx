@@ -655,65 +655,46 @@ function ToolCallsView({
   // target that instead. We retry on the next animation frame in case
   // the button isn't queryable on the synchronous useLayoutEffect tick.
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Order matters: the native click guard must be ATTACHED before the
+  // synthetic trigger.click() below. Otherwise the first click fires
+  // during the same useEffect tick and the listener doesn't catch it,
+  // letting the click bubble to any wrapping <Link> and trigger anchor
+  // navigation. We combine both into one effect so registration order
+  // is unambiguous, and run the guard hookup before the click.
   useEffect(() => {
     if (!toolCallsExpanded) return;
+    const el = containerRef.current;
+    if (!el) return;
+
+    const guard = (e: MouseEvent) => {
+      if (!e.isTrusted) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    el.addEventListener("click", guard);
+
     let cancelled = false;
     const tryOpen = () => {
       if (cancelled) return;
-      const root = containerRef.current;
-      if (!root) return;
-      const trigger = root.querySelector<HTMLButtonElement>(
+      const trigger = el.querySelector<HTMLButtonElement>(
         'button[aria-expanded="false"]',
       );
       if (trigger) trigger.click();
     };
     tryOpen();
     const raf = requestAnimationFrame(tryOpen);
+
     return () => {
       cancelled = true;
       cancelAnimationFrame(raf);
+      el.removeEventListener("click", guard);
     };
   }, [toolCallsExpanded, normalised]);
 
-  // Native bubble-phase guard. If this composition is rendered inside a
-  // Remotion Player wrapped by a Next.js <Link>, the synthetic trigger.click()
-  // above bubbles to the anchor and the browser performs default navigation.
-  // React's synthetic preventDefault (below) should suffice, but in practice
-  // we've seen the navigation still fire — possibly because the synthetic
-  // dispatch runs after the native event has effectively committed. A native
-  // listener on this element fires during the actual DOM bubble, in order,
-  // and preventDefault here unambiguously cancels the default action.
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const handler = (e: MouseEvent) => {
-      if (!e.isTrusted) {
-        e.preventDefault();
-        e.stopPropagation();
-        console.warn(
-          "[GaiaScenario] cancelled synthetic click (native bubble guard)",
-          { defaultPrevented: e.defaultPrevented },
-        );
-      }
-    };
-    el.addEventListener("click", handler);
-    return () => el.removeEventListener("click", handler);
-  }, []);
-
   return (
-    <div
-      ref={containerRef}
-      style={{ marginLeft: 36 }}
-      onClick={(e) => {
-        if (!e.isTrusted) {
-          e.preventDefault();
-          console.warn(
-            "[GaiaScenario] cancelled synthetic click (React onClick guard)",
-            { defaultPrevented: e.defaultPrevented },
-          );
-        }
-      }}
-    >
+    <div ref={containerRef} style={{ marginLeft: 36 }}>
       <ToolCallsSection tool_calls_data={normalised as never} />
     </div>
   );
