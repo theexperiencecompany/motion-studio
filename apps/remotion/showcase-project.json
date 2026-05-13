@@ -10,7 +10,7 @@
         "headline": "Ship video that doesn't look free.",
         "subtitle": ""
       },
-      "durationInFrames": 132,
+      "durationInFrames": 120,
       "transition": {
         "kind": "none",
         "durationInFrames": 14
@@ -18,15 +18,67 @@
     },
     {
       "id": "clip-2",
+      "compositionId": "TextSoftBlurIn",
+      "props": {
+        "headline": "60+ cinematic scenes.",
+        "subtitle": "All open source."
+      },
+      "durationInFrames": 132,
+      "transition": {
+        "kind": "fade",
+        "durationInFrames": 14
+      }
+    },
+    {
+      "id": "clip-3",
+      "compositionId": "TextPerCharacterRise",
+      "props": {
+        "headline": "Built on Remotion.",
+        "subtitle": "Fully typed React."
+      },
+      "durationInFrames": 132,
+      "transition": {
+        "kind": "fade",
+        "durationInFrames": 14
+      }
+    },
+    {
+      "id": "clip-4",
+      "compositionId": "TextMaskRevealUp",
+      "props": {
+        "headline": "Copy the source.\nOwn it.",
+        "subtitle": "Drop into any Remotion project."
+      },
+      "durationInFrames": 144,
+      "transition": {
+        "kind": "fade",
+        "durationInFrames": 14
+      }
+    },
+    {
+      "id": "clip-5",
+      "compositionId": "TextDepthParallaxWords",
+      "props": {
+        "headline": "MIT licensed.",
+        "subtitle": "Forever."
+      },
+      "durationInFrames": 132,
+      "transition": {
+        "kind": "fade",
+        "durationInFrames": 14
+      }
+    },
+    {
+      "id": "clip-6",
       "compositionId": "PerspectiveMarquee",
       "props": {
-        "items": "Cinematic, Open source, Copy-paste, 60fps, Typed, MIT, Browser-rendered, Zero-config, Production-ready, Remotion",
-        "speedPxPerFrame": 3.2,
+        "items": "SHIP, COPY, PASTE, RENDER, EXPORT, COMPOSE, TWEAK, DROP IN, LAUNCH, STITCH, REMIX",
+        "speedPxPerFrame": 3.6,
         "perspective": 1200,
         "rotateY": -28,
         "rotateX": 8,
-        "fontSize": 168,
-        "fontWeight": 700,
+        "fontSize": 180,
+        "fontWeight": 800,
         "textTransform": "uppercase"
       },
       "durationInFrames": 180,
@@ -36,7 +88,7 @@
       }
     },
     {
-      "id": "clip-3",
+      "id": "clip-7",
       "compositionId": "TitleSlideUp",
       "props": {
         "headline": "60+ scenes. Copy the source.",
@@ -49,7 +101,7 @@
       }
     },
     {
-      "id": "clip-4",
+      "id": "clip-8",
       "compositionId": "Terminal",
       "props": {
         "title": "~/projects/launch-reel",
@@ -105,7 +157,7 @@
       }
     },
     {
-      "id": "clip-5",
+      "id": "clip-9",
       "compositionId": "TitleFade",
       "props": {
         "headline": "Charts that animate themselves.",
@@ -118,7 +170,7 @@
       }
     },
     {
-      "id": "clip-6",
+      "id": "clip-10",
       "compositionId": "BarChart",
       "props": {
         "title": "Monthly active users",
@@ -136,7 +188,7 @@
       }
     },
     {
-      "id": "clip-7",
+      "id": "clip-11",
       "compositionId": "RadialChart",
       "props": {
         "title": "Conversion lift",
@@ -153,7 +205,7 @@
       }
     },
     {
-      "id": "clip-8",
+      "id": "clip-12",
       "compositionId": "StatCounter",
       "props": {
         "target": 12847,
@@ -168,7 +220,7 @@
       }
     },
     {
-      "id": "clip-9",
+      "id": "clip-13",
       "compositionId": "AreaChart",
       "props": {
         "title": "Signups",
@@ -185,7 +237,7 @@
       }
     },
     {
-      "id": "clip-10",
+      "id": "clip-14",
       "compositionId": "TitlePopup",
       "props": {
         "headline": "Pixel-faithful product UI.",
@@ -198,7 +250,7 @@
       }
     },
     {
-      "id": "clip-11",
+      "id": "clip-15",
       "compositionId": "GitHubStarButton",
       "props": {
         "owner": "theexperiencecompany",
@@ -214,7 +266,7 @@
       }
     },
     {
-      "id": "clip-12",
+      "id": "clip-16",
       "compositionId": "TweetCard",
       "props": {
         "displayName": "Motion Studio",
@@ -237,7 +289,7 @@
       }
     },
     {
-      "id": "clip-13",
+      "id": "clip-17",
       "compositionId": "TitleType",
       "props": {
         "headline": "Every chat. Every brand.",
@@ -250,7 +302,7 @@
       }
     },
     {
-      "id": "clip-14",
+      "id": "clip-18",
       "compositionId": "MessageBubbles",
       "props": {
         "contactName": "design",
@@ -290,7 +342,7 @@
       }
     },
     {
-      "id": "clip-15",
+      "id": "clip-19",
       "compositionId": "WhatsAppMessages",
       "props": {
         "contactName": "shipping",
@@ -330,7 +382,7 @@
       }
     },
     {
-      "id": "clip-16",
+      "id": "clip-20",
       "compositionId": "TelegramMessages",
       "props": {
         "contactName": "launch",
@@ -370,7 +422,7 @@
       }
     },
     {
-      "id": "clip-17",
+      "id": "clip-21",
       "compositionId": "SlackMessages",
       "props": {
         "contactName": "general",
@@ -409,7 +461,7 @@
       }
     },
     {
-      "id": "clip-18",
+      "id": "clip-22",
       "compositionId": "DiscordMessages",
       "props": {
         "contactName": "motion-studio",
@@ -448,7 +500,7 @@
       }
     },
     {
-      "id": "clip-19",
+      "id": "clip-23",
       "compositionId": "TitleSlideUp",
       "props": {
         "headline": "Scenes compose.",
@@ -461,7 +513,7 @@
       }
     },
     {
-      "id": "clip-20",
+      "id": "clip-24",
       "compositionId": "PhoneFrame",
       "props": {
         "device": "dynamic-island",
@@ -475,7 +527,7 @@
       }
     },
     {
-      "id": "clip-21",
+      "id": "clip-25",
       "compositionId": "LaptopFrame",
       "props": {
         "innerCompositionId": "BarChart",
@@ -488,7 +540,7 @@
       }
     },
     {
-      "id": "clip-22",
+      "id": "clip-26",
       "compositionId": "TitleFade",
       "props": {
         "headline": "Kinetic typography, baked in.",
@@ -501,7 +553,7 @@
       }
     },
     {
-      "id": "clip-23",
+      "id": "clip-27",
       "compositionId": "TextShimmerSweep",
       "props": {
         "headline": "Polished by default.",
@@ -514,7 +566,7 @@
       }
     },
     {
-      "id": "clip-24",
+      "id": "clip-28",
       "compositionId": "TextSoftBlurIn",
       "props": {
         "headline": "Built for shipping.",
@@ -527,7 +579,7 @@
       }
     },
     {
-      "id": "clip-25",
+      "id": "clip-29",
       "compositionId": "TitlePopup",
       "props": {
         "headline": "Export in the browser.",
@@ -540,7 +592,7 @@
       }
     },
     {
-      "id": "clip-26",
+      "id": "clip-30",
       "compositionId": "Toast",
       "props": {
         "title": "Render complete",
@@ -557,7 +609,7 @@
       }
     },
     {
-      "id": "clip-27",
+      "id": "clip-31",
       "compositionId": "TextMaskRevealUp",
       "props": {
         "headline": "Open source.\nForever.",
@@ -570,7 +622,7 @@
       }
     },
     {
-      "id": "clip-28",
+      "id": "clip-32",
       "compositionId": "TitleSlideUp",
       "props": {
         "headline": "Ship the reel.",

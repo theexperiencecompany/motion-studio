@@ -131,24 +131,25 @@ export async function renderComponentInBrowser<
   // ---------------------------------------------------------------------
   // 1. Set up the offscreen mount point.
   //
-  // We render at the native pixel dimensions and pin the container off
-  // the viewport but still painted. html-to-image needs the node to be
-  // laid out. Using `opacity: 0` + `pointer-events: none` rather than
-  // `display: none` so children actually render.
+  // html-to-image serializes the node's inline styles into an SVG <foreignObject>
+  // and rasterizes that. If we set `opacity: 0` on the host, the captured SVG
+  // is transparent — every frame renders as a black VideoFrame. Instead we
+  // shove the host fully off the viewport with `left: -100000px` so it's
+  // still painted at full opacity and the rasterizer reads real pixels.
   // ---------------------------------------------------------------------
   const host = document.createElement("div");
   host.setAttribute("data-motion-studio-export", "true");
   host.style.cssText = [
     "position: fixed",
     "top: 0",
-    "left: 0",
+    "left: -100000px",
     `width: ${width}px`,
     `height: ${height}px`,
     "pointer-events: none",
-    "opacity: 0",
     "z-index: -1",
     "overflow: hidden",
     "contain: strict",
+    "background: #000",
   ].join(";");
   document.body.appendChild(host);
   const root: Root = createRoot(host);
@@ -246,6 +247,22 @@ export async function renderComponentInBrowser<
             rasterErr instanceof Error ? rasterErr.message : String(rasterErr)
           }. Common cause: a tainted cross-origin image in the composition.`,
         );
+      }
+
+      if (frame === 0 || frame === Math.floor(durationInFrames / 2)) {
+        try {
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            const cx = Math.floor(canvas.width / 2);
+            const cy = Math.floor(canvas.height / 2);
+            const px = ctx.getImageData(cx, cy, 1, 1).data;
+            console.info(
+              `[export] frame ${frame} center pixel rgba(${px[0]},${px[1]},${px[2]},${px[3]})`,
+            );
+          }
+        } catch (sampleErr) {
+          console.warn("[export] pixel sample failed", sampleErr);
+        }
       }
 
       try {

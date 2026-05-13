@@ -39,27 +39,65 @@ const project = {
   height: 1080,
   clips: [
     // ═════════════════════ COLD OPEN ═════════════════════
-    // Big bold pitch, then a fast marquee of value props.
+    // Bold pitch, then four text-reveal beats — each one introduces a
+    // different value prop using a different signature text effect from
+    // the library. Closes on a punchy single-line marquee.
     clip(
       "TitlePopup",
       {
         headline: "Ship video that doesn't look free.",
         subtitle: "",
       },
-      2.2,
+      2.0,
       "none",
+    ),
+    clip(
+      "TextSoftBlurIn",
+      {
+        headline: "60+ cinematic scenes.",
+        subtitle: "All open source.",
+      },
+      2.2,
+      "fade",
+    ),
+    clip(
+      "TextPerCharacterRise",
+      {
+        headline: "Built on Remotion.",
+        subtitle: "Fully typed React.",
+      },
+      2.2,
+      "fade",
+    ),
+    clip(
+      "TextMaskRevealUp",
+      {
+        headline: "Copy the source.\nOwn it.",
+        subtitle: "Drop into any Remotion project.",
+      },
+      2.4,
+      "fade",
+    ),
+    clip(
+      "TextDepthParallaxWords",
+      {
+        headline: "MIT licensed.",
+        subtitle: "Forever.",
+      },
+      2.2,
+      "fade",
     ),
     clip(
       "PerspectiveMarquee",
       {
         items:
-          "Cinematic, Open source, Copy-paste, 60fps, Typed, MIT, Browser-rendered, Zero-config, Production-ready, Remotion",
-        speedPxPerFrame: 3.2,
+          "SHIP, COPY, PASTE, RENDER, EXPORT, COMPOSE, TWEAK, DROP IN, LAUNCH, STITCH, REMIX",
+        speedPxPerFrame: 3.6,
         perspective: 1200,
         rotateY: -28,
         rotateX: 8,
-        fontSize: 168,
-        fontWeight: 700,
+        fontSize: 180,
+        fontWeight: 800,
         textTransform: "uppercase",
       },
       3.0,
