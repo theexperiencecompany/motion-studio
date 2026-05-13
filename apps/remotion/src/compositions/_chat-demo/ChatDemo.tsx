@@ -1,7 +1,16 @@
 "use client";
 
 import { cn } from "@workspace/ui/lib/utils";
-import { Img } from "remotion";
+import { Img, staticFile } from "remotion";
+
+// Remotion's bundle server only serves public/ assets through `staticFile()`
+// — literal "/foo.png" strings fail with 404 inside `remotion render`. This
+// helper resolves bare paths and pass-throughs absolute URLs.
+function asset(src: string | undefined): string | undefined {
+  if (!src) return src;
+  if (/^(https?:|data:|blob:)/i.test(src)) return src;
+  return staticFile(src.replace(/^\//, ""));
+}
 
 export type ChatPlatform =
   | "imessage"
@@ -47,7 +56,7 @@ export function ChatDemo({
   platform,
   messages,
   title,
-  subtitle: _subtitle,
+  subtitle,
   headerAvatar,
   showComposer = true,
   theme,
@@ -224,7 +233,7 @@ const IMESSAGE_TAIL_ME_COLOR = "#0E89FF";
 function IMessageDemo({
   messages,
   title,
-  subtitle: _subtitle,
+  subtitle,
   headerAvatar,
   showComposer,
   className,
@@ -251,7 +260,7 @@ function IMessageDemo({
           style={{ width: 54, height: 54, marginBottom: 5 }}
         >
           <Img
-            src={headerAvatar ?? ""}
+            src={asset(headerAvatar) ?? ""}
             alt=""
             style={{ width: 54, height: 54, objectFit: "cover" }}
           />
@@ -413,7 +422,7 @@ function IMessageDemo({
 function WhatsAppDemo({
   messages,
   title,
-  subtitle: _subtitle,
+  subtitle,
   headerAvatar,
   showComposer,
   className,
@@ -474,7 +483,7 @@ function WhatsAppDemo({
               style={{ width: 32, height: 32 }}
             >
               <Img
-                src={headerAvatar ?? ""}
+                src={asset(headerAvatar) ?? ""}
                 alt=""
                 style={{ width: 32, height: 32, objectFit: "cover" }}
               />
@@ -533,7 +542,7 @@ function WhatsAppDemo({
           scrollbarWidth: "none",
           gap: 8,
           backgroundColor: bg,
-          backgroundImage: 'url("/whatsapp-doodle.png")',
+          backgroundImage: `url("${staticFile("whatsapp-doodle.png")}")`,
           backgroundRepeat: "repeat",
           backgroundSize: "404px auto",
           paddingTop: 8,
@@ -690,7 +699,7 @@ function WhatsAppTicks({ status }: { status: "sent" | "delivered" | "read" }) {
 function TelegramDemo({
   messages,
   title,
-  subtitle: _subtitle,
+  subtitle,
   headerAvatar,
   showComposer,
   className,
@@ -779,7 +788,7 @@ function TelegramDemo({
               style={{ width: 32, height: 32 }}
             >
               <Img
-                src={headerAvatar ?? ""}
+                src={asset(headerAvatar) ?? ""}
                 alt=""
                 style={{ width: 32, height: 32, objectFit: "cover" }}
               />
@@ -796,8 +805,7 @@ function TelegramDemo({
           scrollbarWidth: "none",
           gap: 8,
           backgroundColor: blueOverlay,
-          backgroundImage:
-            'linear-gradient(rgba(43,120,205,0.5), rgba(43,120,205,0.5)), url("/telegram-doodle.png")',
+          backgroundImage: `linear-gradient(rgba(43,120,205,0.5), rgba(43,120,205,0.5)), url("${staticFile("telegram-doodle.png")}")`,
           backgroundSize: "auto, 480px auto",
           backgroundRepeat: "repeat",
           paddingTop: 8,
@@ -961,7 +969,7 @@ function TelegramTicks({
 function SlackDemo({
   messages,
   title,
-  subtitle: _subtitle,
+  subtitle,
   showComposer,
   theme,
   className,
@@ -1082,7 +1090,7 @@ function SlackDemo({
               }}
             >
               <Img
-                src={g.author?.avatar ?? DEFAULT_AVATAR}
+                src={asset(g.author?.avatar) ?? asset(DEFAULT_AVATAR) ?? ""}
                 alt=""
                 style={{ width: 36, height: 36, objectFit: "cover" }}
               />
@@ -1466,7 +1474,7 @@ function renderSlackText(text: string, dark: boolean) {
 function DiscordDemo({
   messages,
   title,
-  subtitle: _subtitle,
+  subtitle,
   showComposer,
   className,
 }: {
@@ -1595,7 +1603,7 @@ function DiscordDemo({
               }}
             >
               <Img
-                src={g.author?.avatar ?? DEFAULT_AVATAR}
+                src={asset(g.author?.avatar) ?? asset(DEFAULT_AVATAR) ?? ""}
                 alt=""
                 style={{ width: 40, height: 40, objectFit: "cover" }}
               />

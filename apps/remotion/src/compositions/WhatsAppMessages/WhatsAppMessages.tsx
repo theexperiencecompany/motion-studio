@@ -1,7 +1,8 @@
 "use client";
-import { AbsoluteFill, useCurrentFrame } from "remotion";
+import { useCurrentFrame } from "remotion";
 import type { ChatMessage } from "../../editors/types";
 import { ChatDemo, type ChatMessageItem } from "../_chat-demo/ChatDemo";
+import { ChatStage } from "../_chat-demo/ChatStage";
 
 export type WhatsAppMessagesProps = {
   contactName: string;
@@ -37,13 +38,13 @@ export const WhatsAppMessages: React.FC<WhatsAppMessagesProps> = ({
   const items = buildItems(messages, frame);
 
   return (
-    <AbsoluteFill style={{ background: "#EFEFF4" }}>
+    <ChatStage variant="mobile">
       <ChatDemo
         platform="whatsapp"
         title={contactName}
         headerAvatar={contactAvatar}
         messages={items}
       />
-    </AbsoluteFill>
+    </ChatStage>
   );
 };

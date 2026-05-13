@@ -1,7 +1,8 @@
 "use client";
-import { AbsoluteFill, useCurrentFrame } from "remotion";
+import { useCurrentFrame } from "remotion";
 import type { ChatMessage } from "../../editors/types";
 import { ChatDemo, type ChatMessageItem } from "../_chat-demo/ChatDemo";
+import { ChatStage } from "../_chat-demo/ChatStage";
 
 export type SlackMessagesProps = {
   contactName: string;
@@ -41,13 +42,16 @@ export const SlackMessages: React.FC<SlackMessagesProps> = ({
   const items = buildItems(messages, frame);
 
   return (
-    <AbsoluteFill style={{ background: theme === "dark" ? "#1A1D21" : "#fff" }}>
+    <ChatStage
+      variant="desktop"
+      backdrop="linear-gradient(135deg, #f5f3ee 0%, #eee6d8 100%)"
+    >
       <ChatDemo
         platform="slack"
         title={contactName}
         theme={theme}
         messages={items}
       />
-    </AbsoluteFill>
+    </ChatStage>
   );
 };
