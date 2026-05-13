@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 /**
- * Build a showcase Project JSON that demos a wide variety of compositions.
+ * Build the landing-page showcase project: a tight, sales-oriented tour
+ * through the library. Short clips, value-prop title cards between scenes,
+ * different chat platforms shown back-to-back to demonstrate breadth.
+ *
  * Output: apps/remotion/showcase-project.json (consumed by `remotion render`).
  */
 import { writeFileSync } from "node:fs";
@@ -13,17 +16,13 @@ const repoRoot = resolve(__dirname, "..", "..", "..");
 let nextId = 1;
 const id = () => `clip-${nextId++}`;
 
-/**
- * Concise scene factory. Pass compositionId + props + durationSec + optional
- * transition kind. Falls back to fade.
- */
 function clip(compositionId, props, durationSec, transition = "fade") {
   return {
     id: id(),
     compositionId,
     props,
     durationInFrames: Math.round(durationSec * 60),
-    transition: { kind: transition, durationInFrames: 18 },
+    transition: { kind: transition, durationInFrames: 14 },
   };
 }
 
@@ -32,18 +31,20 @@ const project = {
   width: 1920,
   height: 1080,
   clips: [
-    // ───────────────────────── INTRO ─────────────────────────
+    // ───────────────── COLD OPEN ─────────────────
+    // Big bold pitch, then a fast marquee that establishes the value props.
     clip(
-      "TitleSlideUp",
-      { headline: "Motion Studio", subtitle: "Cinematic Remotion scenes" },
-      2.3,
+      "TitlePopup",
+      { headline: "Motion Studio.", subtitle: "" },
+      1.6,
       "none",
     ),
     clip(
       "PerspectiveMarquee",
       {
-        items: "Motion Studio, Remotion, GAIA, React, Cinematic, Open Source",
-        speedPxPerFrame: 2.5,
+        items:
+          "Cinematic, Copy-paste, Open source, 60+ scenes, Browser-rendered, MIT, Remotion, Typed, Composable, Zero-config",
+        speedPxPerFrame: 3.2,
         perspective: 1200,
         rotateY: -28,
         rotateX: 8,
@@ -55,29 +56,34 @@ const project = {
       "fade",
     ),
 
-    // ───────────────────────── INSTALL ───────────────────────
+    // ───────────────── THE PITCH ─────────────────
     clip(
-      "TitlePopup",
-      { headline: "Drop in. Render. Ship.", subtitle: "" },
-      1.8,
-      "swipe-up",
+      "TitleSlideUp",
+      {
+        headline: "60+ scenes.",
+        subtitle: "Drop-in. Fully typed. Copy the source.",
+      },
+      2.4,
+      "fade",
     ),
+
+    // Terminal — show how easy install / render is
     clip(
       "Terminal",
       {
         title: "~/projects/launch-reel",
         prompt: "❯",
         lines: [
-          { kind: "comment", text: "# 1 — install" },
+          { kind: "comment", text: "# 1 — one dependency" },
           { kind: "command", text: "npm install remotion" },
-          { kind: "success", text: "ready" },
+          { kind: "success", text: "ready in 3.2s" },
           { kind: "comment", text: "" },
-          { kind: "comment", text: "# 2 — render" },
-          { kind: "command", text: "npx remotion render Showcase out.mp4" },
-          { kind: "output", text: "encoding frames @ 60fps..." },
+          { kind: "comment", text: "# 2 — render in the browser" },
+          { kind: "command", text: "open localhost:3000/studio" },
+          { kind: "output", text: "encoding @ 60fps via WebCodecs..." },
           { kind: "success", text: "shipped" },
         ],
-        charactersPerSecond: 32,
+        charactersPerSecond: 36,
         lineGap: 6,
         chromeStyle: "mac",
         cursorStyle: "block",
@@ -85,22 +91,25 @@ const project = {
         paddingX: 32,
         paddingY: 28,
         cornerRadius: 16,
-        successColor: "#34d399",
+        successColor: "#10b981",
         outputOpacity: 0.62,
-        commentOpacity: 0.38,
+        commentOpacity: 0.4,
         showShadow: true,
         maxWidth: 1280,
       },
-      6,
+      5.4,
       "fade",
     ),
 
-    // ───────────────────────── DATA ──────────────────────────
+    // ───────────────── DATA STORYTELLING ─────────────────
     clip(
-      "TitlePopup",
-      { headline: "Built for product reels.", subtitle: "" },
-      1.6,
-      "swipe-left",
+      "TitleFade",
+      {
+        headline: "Tell stories with data.",
+        subtitle: "Charts that animate themselves.",
+      },
+      1.8,
+      "swipe-up",
     ),
     clip(
       "BarChart",
@@ -113,14 +122,8 @@ const project = {
         showGrid: true,
         showValues: true,
       },
-      3,
+      2.4,
       "fade",
-    ),
-    clip(
-      "StatCounter",
-      { target: 12847, label: "developers shipping", prefix: "", suffix: "+" },
-      2.3,
-      "zoom-in",
     ),
     clip(
       "RadialChart",
@@ -132,7 +135,13 @@ const project = {
         max: 100,
         unit: "%",
       },
-      2.5,
+      2.0,
+      "zoom-in",
+    ),
+    clip(
+      "StatCounter",
+      { target: 12847, label: "developers shipping", prefix: "", suffix: "+" },
+      2.0,
       "fade",
     ),
     clip(
@@ -145,15 +154,18 @@ const project = {
         showAxes: true,
         showGrid: true,
       },
-      2.6,
+      2.2,
       "swipe-right",
     ),
 
-    // ───────────────────────── SOCIAL ────────────────────────
+    // ───────────────── BRAND-FAITHFUL SOCIAL ─────────────────
     clip(
-      "TitleFade",
-      { headline: "Brand-faithful UI.", subtitle: "" },
-      1.6,
+      "TitlePopup",
+      {
+        headline: "Pixel-faithful UI.",
+        subtitle: "Tweet, GitHub, every chat platform.",
+      },
+      1.8,
       "fade",
     ),
     clip(
@@ -162,10 +174,10 @@ const project = {
         owner: "theexperiencecompany",
         repo: "motion-studio",
         startCount: 1240,
-        endCount: 1289,
+        endCount: 1872,
         theme: "light",
       },
-      3,
+      2.6,
       "zoom-out",
     ),
     clip(
@@ -175,84 +187,141 @@ const project = {
         handle: "@motionstudio",
         avatarUrl: "https://github.com/theexperiencecompany.png?size=200",
         verified: "yes",
-        text: "Just shipped — 60+ Remotion scenes, in-browser MP4 export, open source.",
+        text:
+          "shipped: 60+ Remotion scenes, in-browser MP4 export, fully typed.\n\nopen source. MIT.",
         timestamp: "10:30 PM · Today",
-        replies: 28,
-        retweets: 73,
-        likes: 482,
-        views: 21400,
+        replies: 84,
+        retweets: 412,
+        likes: 1893,
+        views: 84200,
         theme: "light",
         backgroundColor: "#ffffff",
       },
-      3,
+      3.0,
       "swipe-down",
     ),
 
-    // ───────────────────────── CHAT ──────────────────────────
+    // ───────────────── CHAT — show platform breadth ─────────────────
+    clip(
+      "TitleType",
+      {
+        headline: "Every chat. Every brand.",
+        subtitle: "iMessage. WhatsApp. Telegram. Slack. Discord.",
+      },
+      2.4,
+      "fade",
+    ),
     clip(
       "MessageBubbles",
       {
-        contactName: "shipped",
+        contactName: "design",
         contactAvatar: "https://github.com/theexperiencecompany.png",
         messages: [
-          { text: "you see motion studio yet?", side: "left", typingFrames: 40, delay: 24 },
-          { text: "yeah just exported a demo in browser 😳", side: "right", typingFrames: 50, delay: 110 },
-          { text: "no way it's open source?", side: "left", typingFrames: 42, delay: 220 },
-          { text: "MIT license. zero servers.", side: "right", typingFrames: 44, delay: 320 },
+          { text: "saw the new reel?", side: "left", typingFrames: 45, delay: 24 },
+          { text: "yeah just rendered in browser 🔥", side: "right", typingFrames: 50, delay: 130 },
+          { text: "how long did it take?", side: "left", typingFrames: 45, delay: 240 },
+          { text: "12 seconds", side: "right", typingFrames: 30, delay: 340 },
         ],
         theme: "light",
       },
-      6,
+      4.2,
       "fade",
     ),
+    clip(
+      "WhatsAppMessages",
+      {
+        contactName: "shipping",
+        contactAvatar: "https://github.com/theexperiencecompany.png",
+        messages: [
+          { text: "is it really open source?", side: "left", typingFrames: 45, delay: 24 },
+          { text: "MIT licensed", side: "right", typingFrames: 30, delay: 130 },
+          { text: "zero servers, zero SDK", side: "right", typingFrames: 45, delay: 230 },
+          { text: "you're kidding", side: "left", typingFrames: 35, delay: 340 },
+        ],
+        theme: "light",
+      },
+      4.2,
+      "swipe-left",
+    ),
+    clip(
+      "TelegramMessages",
+      {
+        contactName: "launch",
+        contactAvatar: "https://github.com/theexperiencecompany.png",
+        messages: [
+          { text: "demo's recorded", side: "left", typingFrames: 40, delay: 24 },
+          { text: "via the browser?", side: "right", typingFrames: 35, delay: 130 },
+          { text: "WebCodecs + mp4-muxer", side: "left", typingFrames: 50, delay: 240 },
+          { text: "no FFmpeg needed 🎉", side: "right", typingFrames: 45, delay: 350 },
+        ],
+        theme: "light",
+      },
+      4.2,
+      "swipe-left",
+    ),
+    clip(
+      "SlackMessages",
+      {
+        contactName: "general",
+        messages: [
+          { text: "ship motion studio v1?", side: "left", typingFrames: 45, delay: 24 },
+          { text: "lgtm 🚀", side: "right", typingFrames: 30, delay: 130 },
+          { text: "60+ scenes, all typed", side: "left", typingFrames: 45, delay: 230 },
+          { text: "merging now", side: "right", typingFrames: 35, delay: 340 },
+        ],
+        theme: "light",
+      },
+      4.2,
+      "swipe-left",
+    ),
+    clip(
+      "DiscordMessages",
+      {
+        contactName: "motion-studio",
+        messages: [
+          { text: "anyone tried the new charts?", side: "left", typingFrames: 50, delay: 24 },
+          { text: "the radar one goes hard", side: "right", typingFrames: 45, delay: 140 },
+          { text: "bar + line + area + pie + radial too", side: "left", typingFrames: 60, delay: 260 },
+          { text: "all animated. all configurable.", side: "right", typingFrames: 55, delay: 380 },
+        ],
+        theme: "dark",
+      },
+      4.2,
+      "swipe-left",
+    ),
 
-    // ───────────────────────── ALERTS ────────────────────────
+    // ───────────────── EXPORT ─────────────────
+    clip(
+      "TitleSlideUp",
+      {
+        headline: "Export in the browser.",
+        subtitle: "WebCodecs + mp4-muxer. No servers. No SDK.",
+      },
+      2.4,
+      "fade",
+    ),
     clip(
       "Toast",
       {
         title: "Render complete",
-        description: "Your 30-second video is ready to download.",
+        description: "Your MP4 is ready to download.",
         position: "bottom-right",
         variant: "success",
         showIcon: true,
         durationVisibleSec: 2.4,
       },
-      3,
-      "fade",
-    ),
-
-    // ───────────────────────── PROOF ─────────────────────────
-    clip(
-      "TitleType",
-      { headline: "Trusted by builders.", subtitle: "" },
-      2.2,
+      2.6,
       "swipe-up",
     ),
-    clip(
-      "LogoCloud",
-      {
-        headline: "Trusted by teams at",
-        logos: [
-          { name: "Vercel", url: "" },
-          { name: "Linear", url: "" },
-          { name: "Stripe", url: "" },
-          { name: "Notion", url: "" },
-          { name: "Figma", url: "" },
-        ],
-        theme: "light",
-      },
-      2.4,
-      "fade",
-    ),
 
-    // ───────────────────────── OUTRO ─────────────────────────
+    // ───────────────── CLOSE ─────────────────
     clip(
       "TextMaskRevealUp",
       {
         headline: "Open source.\nForever.",
-        subtitle: "MIT licensed",
+        subtitle: "MIT licensed.",
       },
-      2.4,
+      2.2,
       "fade",
     ),
     clip(

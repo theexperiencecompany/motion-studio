@@ -25,6 +25,7 @@ import { showcaseInfo } from "./compositions/Showcase/meta";
 import { slackMessagesInfo } from "./compositions/SlackMessages/meta";
 import { splitSceneInfo } from "./compositions/SplitScene/meta";
 import { statCounterInfo } from "./compositions/StatCounter/meta";
+import { telegramMessagesInfo } from "./compositions/TelegramMessages/meta";
 import { terminalInfo } from "./compositions/Terminal/meta";
 import { testimonialCardInfo } from "./compositions/TestimonialCard/meta";
 import { textBlurOutUpInfo } from "./compositions/TextBlurOutUp/meta";
@@ -84,6 +85,7 @@ export const compositions: AnyCompositionInfo[] = [
   instagramMessagesInfo,
   slackMessagesInfo,
   discordMessagesInfo,
+  telegramMessagesInfo,
   phoneFrameInfo,
   laptopFrameInfo,
   splitSceneInfo,

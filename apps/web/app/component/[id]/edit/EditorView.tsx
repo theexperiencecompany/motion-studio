@@ -59,8 +59,8 @@ export function EditorView({
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] lg:min-h-0 lg:flex-1">
-      <aside className="flex flex-col border-b border-border lg:border-b-0 lg:border-r lg:min-h-0">
-        <div className="flex flex-col lg:min-h-0 lg:flex-1 lg:overflow-hidden">
+      <aside className="flex flex-col border-b border-border lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r">
+        <div className="flex flex-col lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
           <FieldsRenderer
             fields={info.fields}
             value={props}

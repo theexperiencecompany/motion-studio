@@ -90,6 +90,9 @@ import SplitSceneMDX, {
 import StatCounterMDX, {
   meta as statCounterMeta,
 } from "@/content/docs/stat-counter.mdx";
+import TelegramMessagesMDX, {
+  meta as telegramMessagesMeta,
+} from "@/content/docs/telegram-messages.mdx";
 import TerminalMDX, { meta as terminalMeta } from "@/content/docs/terminal.mdx";
 import TestimonialCardMDX, {
   meta as testimonialCardMeta,
@@ -483,6 +486,12 @@ export const docs: Doc[] = [
     href: "/docs/DiscordMessages",
     meta: discordMessagesMeta,
     Content: DiscordMessagesMDX,
+  },
+  {
+    slug: "TelegramMessages",
+    href: "/docs/TelegramMessages",
+    meta: telegramMessagesMeta,
+    Content: TelegramMessagesMDX,
   },
   {
     slug: "PhoneFrame",

@@ -13,12 +13,15 @@ export type DiscordMessagesProps = {
   theme: "light" | "dark";
 };
 
-const ROW_SHIFT = 130;
-const BASE_BOTTOM = 100;
-const SIDE_PADDING = 56;
+const ROW_SHIFT = 180;
+const BASE_BOTTOM = 140;
+const SIDE_PADDING = 100;
 
-const COLOR_LEFT = "#5865F2";
-const COLOR_RIGHT = "#ED4245";
+// Discord username gradient colors (role gradient).
+const COLOR_LEFT_GRAD = "linear-gradient(90deg, #5865F2, #EB459E)";
+const COLOR_RIGHT_GRAD = "linear-gradient(90deg, #FAA61A, #ED4245)";
+const COLOR_LEFT_SOLID = "#5865F2";
+const COLOR_RIGHT_SOLID = "#FAA61A";
 
 type Palette = {
   bg: string;
@@ -31,6 +34,10 @@ type Palette = {
   typingText: string;
   typingDot: string;
   typingStrong: string;
+  reactionBg: string;
+  reactionBorder: string;
+  reactionText: string;
+  botTagBg: string;
 };
 
 function getPalette(theme: "light" | "dark"): Palette {
@@ -46,6 +53,10 @@ function getPalette(theme: "light" | "dark"): Palette {
       typingText: "#5C5E66",
       typingDot: "#5C5E66",
       typingStrong: "#060607",
+      reactionBg: "#E3E5E8",
+      reactionBorder: "#D4D6D9",
+      reactionText: "#4F5660",
+      botTagBg: "#5865F2",
     };
   }
   return {
@@ -59,6 +70,10 @@ function getPalette(theme: "light" | "dark"): Palette {
     typingText: "#b5bac1",
     typingDot: "#b5bac1",
     typingStrong: "#f2f3f5",
+    reactionBg: "rgba(88,101,242,0.15)",
+    reactionBorder: "rgba(88,101,242,0.4)",
+    reactionText: "#dbdee1",
+    botTagBg: "#5865F2",
   };
 }
 
@@ -113,12 +128,12 @@ function Header({
   return (
     <div
       style={{
-        padding: "20px 28px",
+        padding: "32px 48px",
         borderBottom: `1px solid ${palette.headerBorder}`,
         background: palette.headerBg,
         display: "flex",
         alignItems: "center",
-        gap: 10,
+        gap: 12,
         opacity: enter,
         transform: `translateY(${(1 - enter) * -8}px)`,
         boxShadow: "0 1px 0 rgba(4,4,5,0.2)",
@@ -126,17 +141,17 @@ function Header({
     >
       <span
         style={{
-          fontSize: 30,
+          fontSize: 50,
           color: palette.channelHash,
           fontWeight: 600,
-          marginRight: 4,
+          marginRight: 6,
         }}
       >
         #
       </span>
       <span
         style={{
-          fontSize: 26,
+          fontSize: 40,
           fontWeight: 700,
           color: palette.channelText,
           letterSpacing: "-0.005em",
@@ -228,12 +243,22 @@ function MessageRow({
   const bottom = BASE_BOTTOM + stackOffset * ROW_SHIFT;
   const isRight = msg.side === "right";
   const senderName = isRight ? "you" : contactName;
-  const accent = isRight ? COLOR_RIGHT : COLOR_LEFT;
+  const accentSolid = isRight ? COLOR_RIGHT_SOLID : COLOR_LEFT_SOLID;
+  const accentGrad = isRight ? COLOR_RIGHT_GRAD : COLOR_LEFT_GRAD;
+  const isBot = !isRight;
+  const isLatest = index === messages.length - 1;
 
   const pop = spring({
     frame: localBubble,
     fps,
     config: { damping: 14, stiffness: 160, mass: 0.55 },
+  });
+
+  const showReaction = isLatest && localBubble > 30;
+  const reactionPop = spring({
+    frame: Math.max(0, localBubble - 30),
+    fps,
+    config: { damping: 12, stiffness: 180, mass: 0.5 },
   });
 
   return (
@@ -244,7 +269,7 @@ function MessageRow({
         left: SIDE_PADDING,
         right: SIDE_PADDING,
         display: "flex",
-        gap: 16,
+        gap: 24,
         alignItems: "flex-start",
         opacity: pop,
         transform: `translateY(${(1 - pop) * 18}px)`,
@@ -252,15 +277,15 @@ function MessageRow({
     >
       <div
         style={{
-          width: 56,
-          height: 56,
+          width: 80,
+          height: 80,
           borderRadius: "50%",
-          background: accent,
+          background: accentSolid,
           color: "#fff",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: 24,
+          fontSize: 36,
           fontWeight: 700,
           flexShrink: 0,
         }}
@@ -271,28 +296,48 @@ function MessageRow({
         <div
           style={{
             display: "flex",
-            alignItems: "baseline",
-            gap: 10,
-            marginBottom: 2,
+            alignItems: "center",
+            gap: 14,
+            marginBottom: 4,
           }}
         >
           <span
             style={{
-              fontSize: 24,
-              fontWeight: 600,
-              color: accent,
+              fontSize: 34,
+              fontWeight: 700,
+              background: accentGrad,
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
               letterSpacing: "-0.005em",
             }}
           >
             {senderName}
           </span>
-          <span style={{ fontSize: 14, color: palette.metaText }}>
+          {isBot ? (
+            <span
+              style={{
+                background: palette.botTagBg,
+                color: "#fff",
+                fontSize: 16,
+                fontWeight: 600,
+                padding: "3px 8px",
+                borderRadius: 4,
+                lineHeight: 1,
+                textTransform: "uppercase",
+                letterSpacing: "0.04em",
+              }}
+            >
+              BOT
+            </span>
+          ) : null}
+          <span style={{ fontSize: 20, color: palette.metaText }}>
             Today at 14:32
           </span>
         </div>
         <div
           style={{
-            fontSize: 26,
+            fontSize: 36,
             fontWeight: 400,
             color: palette.bodyText,
             lineHeight: 1.375,
@@ -301,7 +346,53 @@ function MessageRow({
         >
           {msg.text}
         </div>
+        {showReaction ? (
+          <div
+            style={{
+              marginTop: 14,
+              display: "flex",
+              gap: 10,
+              opacity: reactionPop,
+              transform: `scale(${0.7 + reactionPop * 0.3})`,
+              transformOrigin: "left center",
+            }}
+          >
+            <Reaction emoji="🔥" count={4} palette={palette} />
+            <Reaction emoji="👀" count={2} palette={palette} />
+            <Reaction emoji="🎮" count={3} palette={palette} />
+          </div>
+        ) : null}
       </div>
+    </div>
+  );
+}
+
+function Reaction({
+  emoji,
+  count,
+  palette,
+}: {
+  emoji: string;
+  count: number;
+  palette: Palette;
+}) {
+  return (
+    <div
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+        background: palette.reactionBg,
+        border: `1px solid ${palette.reactionBorder}`,
+        color: palette.reactionText,
+        borderRadius: 10,
+        padding: "5px 12px",
+        fontSize: 22,
+        fontWeight: 600,
+      }}
+    >
+      <span style={{ fontSize: 26 }}>{emoji}</span>
+      <span>{count}</span>
     </div>
   );
 }
@@ -326,14 +417,14 @@ function TypingIndicator({
     <div
       style={{
         position: "absolute",
-        bottom: 24,
+        bottom: 40,
         left: SIDE_PADDING,
         right: SIDE_PADDING,
         display: "flex",
-        gap: 8,
+        gap: 10,
         alignItems: "center",
         opacity: enter,
-        fontSize: 15,
+        fontSize: 22,
         color: palette.typingText,
       }}
     >
@@ -344,8 +435,8 @@ function TypingIndicator({
           <span
             key={i}
             style={{
-              width: 7,
-              height: 7,
+              width: 11,
+              height: 11,
               borderRadius: "50%",
               background: palette.typingDot,
               transform: `translateY(${-Math.abs(yBob)}px)`,

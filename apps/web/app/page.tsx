@@ -258,17 +258,8 @@ export default function LandingPage() {
       </section>
 
       {/* Showcase video */}
-      <section className="border-b border-dashed border-border px-8 py-20">
+      <section className="border-b border-dashed border-border px-8 py-16">
         <div className="mx-auto max-w-5xl">
-          <div className="mb-10 text-center">
-            <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-              Watch it in action.
-            </h2>
-            <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-              A 30-second tour through the library — every scene below was
-              rendered straight from the browser studio.
-            </p>
-          </div>
           <HeroVideoDialog
             videoSrc="/motion-studio-showcase.mp4"
             thumbnailSrc="/motion-studio-showcase-poster.png"

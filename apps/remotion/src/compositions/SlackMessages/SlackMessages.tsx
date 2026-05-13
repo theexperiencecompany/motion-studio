@@ -13,9 +13,9 @@ export type SlackMessagesProps = {
   theme: "light" | "dark";
 };
 
-const ROW_SHIFT = 130;
-const BASE_BOTTOM = 100;
-const SIDE_PADDING = 56;
+const ROW_SHIFT = 180;
+const BASE_BOTTOM = 140;
+const SIDE_PADDING = 100;
 
 const COLOR_LEFT = "#4A154B";
 const COLOR_RIGHT = "#1264A3";
@@ -23,6 +23,7 @@ const COLOR_RIGHT = "#1264A3";
 type Palette = {
   bg: string;
   border: string;
+  hoverBg: string;
   channelText: string;
   channelHash: string;
   senderText: string;
@@ -31,6 +32,9 @@ type Palette = {
   typingText: string;
   typingDot: string;
   typingStrong: string;
+  reactionBg: string;
+  reactionText: string;
+  reactionBorder: string;
 };
 
 function getPalette(theme: "light" | "dark"): Palette {
@@ -38,6 +42,7 @@ function getPalette(theme: "light" | "dark"): Palette {
     return {
       bg: "#1A1D21",
       border: "rgba(255,255,255,0.08)",
+      hoverBg: "rgba(255,255,255,0.04)",
       channelText: "#FFFFFF",
       channelHash: "#9A9B9D",
       senderText: "#FFFFFF",
@@ -46,11 +51,15 @@ function getPalette(theme: "light" | "dark"): Palette {
       typingText: "#9A9B9D",
       typingDot: "#9A9B9D",
       typingStrong: "#FFFFFF",
+      reactionBg: "rgba(29,155,209,0.15)",
+      reactionText: "#1D9BD1",
+      reactionBorder: "rgba(29,155,209,0.35)",
     };
   }
   return {
     bg: "#FFFFFF",
     border: "#e8e8e8",
+    hoverBg: "#F8F8F8",
     channelText: "#1d1c1d",
     channelHash: "#616061",
     senderText: "#1d1c1d",
@@ -59,6 +68,9 @@ function getPalette(theme: "light" | "dark"): Palette {
     typingText: "#616061",
     typingDot: "#616061",
     typingStrong: "#1d1c1d",
+    reactionBg: "#E8F5FA",
+    reactionText: "#1264A3",
+    reactionBorder: "#B8DCEE",
   };
 }
 
@@ -114,18 +126,18 @@ function Header({
   return (
     <div
       style={{
-        padding: "20px 28px",
+        padding: "32px 48px",
         borderBottom: `1px solid ${palette.border}`,
         display: "flex",
         alignItems: "center",
-        gap: 10,
+        gap: 16,
         opacity: enter,
         transform: `translateY(${(1 - enter) * -8}px)`,
       }}
     >
       <span
         style={{
-          fontSize: 28,
+          fontSize: 44,
           color: palette.channelHash,
           fontWeight: 400,
           marginRight: 4,
@@ -135,7 +147,7 @@ function Header({
       </span>
       <span
         style={{
-          fontSize: 26,
+          fontSize: 42,
           fontWeight: 800,
           color: palette.channelText,
           letterSpacing: "-0.01em",
@@ -228,11 +240,23 @@ function MessageRow({
   const isRight = msg.side === "right";
   const senderName = isRight ? "you" : contactName;
   const accent = isRight ? COLOR_RIGHT : COLOR_LEFT;
+  const isLatest = index === messages.length - 1;
 
   const pop = spring({
     frame: localBubble,
     fps,
     config: { damping: 14, stiffness: 160, mass: 0.55 },
+  });
+
+  // Highlight the currently-animating-in message subtly.
+  const highlight = Math.max(0, Math.min(1, 1 - localBubble / 30));
+
+  // Reaction appears 30 frames after bubble lands, only on every-other message.
+  const showReaction = !isLatest && localBubble > 30 && index % 2 === 1;
+  const reactionPop = spring({
+    frame: Math.max(0, localBubble - 30),
+    fps,
+    config: { damping: 12, stiffness: 180, mass: 0.5 },
   });
 
   return (
@@ -243,23 +267,29 @@ function MessageRow({
         left: SIDE_PADDING,
         right: SIDE_PADDING,
         display: "flex",
-        gap: 14,
+        gap: 22,
         alignItems: "flex-start",
         opacity: pop,
         transform: `translateY(${(1 - pop) * 18}px)`,
+        padding: "10px 16px",
+        marginLeft: -16,
+        marginRight: -16,
+        background: `rgba(29,155,209,${highlight * 0.06})`,
+        borderRadius: 8,
+        transition: "background 200ms ease",
       }}
     >
       <div
         style={{
-          width: 48,
-          height: 48,
-          borderRadius: 8,
+          width: 72,
+          height: 72,
+          borderRadius: 10,
           background: accent,
           color: "#fff",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: 22,
+          fontSize: 32,
           fontWeight: 700,
           flexShrink: 0,
           letterSpacing: "-0.01em",
@@ -272,13 +302,13 @@ function MessageRow({
           style={{
             display: "flex",
             alignItems: "baseline",
-            gap: 8,
-            marginBottom: 2,
+            gap: 14,
+            marginBottom: 6,
           }}
         >
           <span
             style={{
-              fontSize: 22,
+              fontSize: 32,
               fontWeight: 800,
               color: palette.senderText,
               letterSpacing: "-0.005em",
@@ -286,11 +316,13 @@ function MessageRow({
           >
             {senderName}
           </span>
-          <span style={{ fontSize: 14, color: palette.metaText }}>now</span>
+          <span style={{ fontSize: 20, color: palette.metaText }}>
+            Today at 14:32
+          </span>
         </div>
         <div
           style={{
-            fontSize: 26,
+            fontSize: 36,
             fontWeight: 400,
             color: palette.bodyText,
             lineHeight: 1.35,
@@ -299,7 +331,52 @@ function MessageRow({
         >
           {msg.text}
         </div>
+        {showReaction ? (
+          <div
+            style={{
+              marginTop: 14,
+              display: "flex",
+              gap: 8,
+              opacity: reactionPop,
+              transform: `scale(${0.7 + reactionPop * 0.3})`,
+              transformOrigin: "left center",
+            }}
+          >
+            <Reaction emoji="🎉" count={3} palette={palette} />
+            <Reaction emoji="🚀" count={1} palette={palette} />
+          </div>
+        ) : null}
       </div>
+    </div>
+  );
+}
+
+function Reaction({
+  emoji,
+  count,
+  palette,
+}: {
+  emoji: string;
+  count: number;
+  palette: Palette;
+}) {
+  return (
+    <div
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+        background: palette.reactionBg,
+        border: `1px solid ${palette.reactionBorder}`,
+        color: palette.reactionText,
+        borderRadius: 18,
+        padding: "6px 14px",
+        fontSize: 22,
+        fontWeight: 600,
+      }}
+    >
+      <span style={{ fontSize: 24 }}>{emoji}</span>
+      <span>{count}</span>
     </div>
   );
 }
@@ -324,14 +401,14 @@ function TypingIndicator({
     <div
       style={{
         position: "absolute",
-        bottom: 24,
+        bottom: 40,
         left: SIDE_PADDING,
         right: SIDE_PADDING,
         display: "flex",
-        gap: 8,
+        gap: 10,
         alignItems: "center",
         opacity: enter,
-        fontSize: 16,
+        fontSize: 24,
         color: palette.typingText,
         fontStyle: "italic",
       }}
@@ -343,8 +420,8 @@ function TypingIndicator({
           <span
             key={i}
             style={{
-              width: 6,
-              height: 6,
+              width: 10,
+              height: 10,
               borderRadius: "50%",
               background: palette.typingDot,
               opacity: dotOpacity,
@@ -352,7 +429,7 @@ function TypingIndicator({
           />
         );
       })}
-      <span style={{ marginLeft: 4 }}>
+      <span style={{ marginLeft: 6 }}>
         <strong style={{ color: palette.typingStrong, fontWeight: 700 }}>
           {name}
         </strong>{" "}

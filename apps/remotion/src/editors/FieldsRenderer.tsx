@@ -26,6 +26,10 @@ import { ChatEditor } from "./ChatEditor";
 import { ImageListEditor, type ImageListItem } from "./ImageListEditor";
 import { PrimitiveControl } from "./primitives";
 import { ScenarioEditor } from "./ScenarioEditor";
+import {
+  type TerminalLineItem,
+  TerminalLinesEditor,
+} from "./TerminalLinesEditor";
 
 type Props = {
   fields: Field[];
@@ -81,6 +85,16 @@ export function FieldsRenderer({ fields, value, onChange }: Props) {
                   itemLabel={field.itemLabel}
                   max={field.max}
                   value={(value[field.key] as ImageListItem[]) ?? []}
+                  onChange={(v) => set(field.key, v)}
+                />
+              );
+            }
+            if (field.kind === "terminalLines") {
+              return (
+                <TerminalLinesEditor
+                  key={field.key}
+                  label={field.label}
+                  value={(value[field.key] as TerminalLineItem[]) ?? []}
                   onChange={(v) => set(field.key, v)}
                 />
               );

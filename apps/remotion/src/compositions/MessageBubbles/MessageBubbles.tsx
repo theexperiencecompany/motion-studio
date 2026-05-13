@@ -34,9 +34,9 @@ function getPalette(theme: "light" | "dark"): Palette {
       mutedText: "rgba(255,255,255,0.55)",
       border: "rgba(255,255,255,0.08)",
       receivedBg: "#26252A",
-      sentBg: "#007AFF",
+      sentBg: "#00BBFF",
       receivedText: "#ffffff",
-      sentText: "#ffffff",
+      sentText: "#0a0a0a",
     };
   }
   return {
@@ -44,12 +44,37 @@ function getPalette(theme: "light" | "dark"): Palette {
     text: "#0f1014",
     mutedText: "rgba(15,16,20,0.55)",
     border: "rgba(15,16,20,0.08)",
-    receivedBg: "#E9E9EB",
-    sentBg: "#007AFF",
+    receivedBg: "#D4D4D8",
+    sentBg: "#00BBFF",
     receivedText: "#0f1014",
-    sentText: "#ffffff",
+    sentText: "#0a0a0a",
   };
 }
+
+// Group position relative to consecutive same-side runs.
+type GroupPos = "first" | "middle" | "last" | "only";
+
+function getGroupPos(
+  messages: ChatMessage[],
+  index: number,
+  frame: number,
+): GroupPos {
+  const cur = messages[index]!;
+  const prev = messages[index - 1];
+  const next = messages[index + 1];
+  const prevVisible = prev && frame >= prev.delay && prev.side === cur.side;
+  const nextVisible = next && frame >= next.delay && next.side === cur.side;
+  if (prevVisible && nextVisible) return "middle";
+  if (prevVisible && !nextVisible) return "last";
+  if (!prevVisible && nextVisible) return "first";
+  return "only";
+}
+
+const ROW_SHIFT = 110;
+const BASE_BOTTOM = 120;
+const TIGHT_GAP = 16;
+const SIDE_PADDING = 140;
+const HEADER_HEIGHT = 220;
 
 export const MessageBubbles: React.FC<MessageBubblesProps> = ({
   contactName,
@@ -108,24 +133,25 @@ function ChatHeader({
     fps,
     config: { damping: 22, stiffness: 90 },
   });
-
   return (
     <div
       style={{
-        padding: "48px 0 28px",
+        height: HEADER_HEIGHT,
+        padding: "60px 0 30px",
         borderBottom: `1px solid ${palette.border}`,
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        gap: 12,
+        gap: 18,
         opacity: enter,
         transform: `translateY(${(1 - enter) * -8}px)`,
+        flexShrink: 0,
       }}
     >
       <div
         style={{
-          width: 88,
-          height: 88,
+          width: 120,
+          height: 120,
           borderRadius: "50%",
           overflow: "hidden",
           background: "linear-gradient(135deg, #818cf8 0%, #6366f1 100%)",
@@ -133,7 +159,7 @@ function ChatHeader({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: 36,
+          fontSize: 52,
           fontWeight: 600,
           letterSpacing: "-0.01em",
         }}
@@ -150,7 +176,7 @@ function ChatHeader({
       </div>
       <div
         style={{
-          fontSize: 28,
+          fontSize: 40,
           fontWeight: 600,
           color: palette.text,
           letterSpacing: "-0.01em",
@@ -161,10 +187,6 @@ function ChatHeader({
     </div>
   );
 }
-
-const ROW_SHIFT = 85;
-const BASE_BOTTOM = 80;
-const SIDE_PADDING = 100;
 
 function Conversation({
   frame,
@@ -178,13 +200,7 @@ function Conversation({
   palette: Palette;
 }) {
   return (
-    <div
-      style={{
-        flex: 1,
-        position: "relative",
-        overflow: "hidden",
-      }}
-    >
+    <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
       {messages.map((msg, i) => (
         <MessageRow
           key={i}
@@ -217,9 +233,9 @@ function MessageRow({
 }) {
   const local = frame - msg.delay;
   if (local < 0) return null;
-
   const isTyping = local < msg.typingFrames;
 
+  // Stack offset accumulates rows above this one (newer ones).
   let stackOffset = 0;
   for (let j = index + 1; j < messages.length; j++) {
     const newerLocal = frame - messages[j]!.delay;
@@ -229,10 +245,14 @@ function MessageRow({
       fps,
       config: { damping: 20, stiffness: 120, mass: 0.7 },
     });
-    stackOffset += progress;
+    // Tight gap if the newer message is on the same side as the row above it.
+    const sameSide = messages[j]!.side === messages[j - 1]?.side;
+    stackOffset +=
+      progress * (sameSide ? TIGHT_GAP + ROW_SHIFT * 0.55 : ROW_SHIFT);
   }
 
-  const bottom = BASE_BOTTOM + stackOffset * ROW_SHIFT;
+  const bottom = BASE_BOTTOM + stackOffset;
+  const groupPos = getGroupPos(messages, index, frame);
 
   return (
     <div
@@ -250,18 +270,97 @@ function MessageRow({
         <TypingBubble
           side={msg.side}
           localFrame={local}
-          fps={fps}
           palette={palette}
+          showTail
         />
       ) : (
-        <MessageBubble
+        <BubbleView
           side={msg.side}
           text={msg.text}
           localFrame={local - msg.typingFrames}
           fps={fps}
           palette={palette}
+          groupPos={groupPos}
         />
       )}
+    </div>
+  );
+}
+
+function radiiFor(side: ChatMessage["side"], pos: GroupPos): string {
+  // Match gaia-ui message-bubble.css: 20px corners, tight 5px on stacking side
+  // for grouped middle/first/last (not the last bubble's tail-side bottom).
+  const R = 36; // scaled up for 1920×1080
+  const T = 12; // tight corner radius
+  if (side === "left") {
+    // from-them — tight corners on bottom-left side
+    if (pos === "only") return `${R}px ${R}px ${R}px ${R}px`;
+    if (pos === "first") return `${R}px ${R}px ${R}px ${T}px`;
+    if (pos === "middle") return `${T}px ${R}px ${R}px ${T}px`;
+    return `${T}px ${R}px ${R}px ${R}px`; // last
+  }
+  // from-me — tight corners on bottom-right side
+  if (pos === "only") return `${R}px ${R}px ${R}px ${R}px`;
+  if (pos === "first") return `${R}px ${R}px ${T}px ${R}px`;
+  if (pos === "middle") return `${R}px ${T}px ${T}px ${R}px`;
+  return `${R}px ${T}px ${R}px ${R}px`; // last
+}
+
+function BubbleView({
+  side,
+  text,
+  localFrame,
+  fps,
+  palette,
+  groupPos,
+}: {
+  side: ChatMessage["side"];
+  text: string;
+  localFrame: number;
+  fps: number;
+  palette: Palette;
+  groupPos: GroupPos;
+}) {
+  const pop = spring({
+    frame: localFrame,
+    fps,
+    config: { damping: 11, stiffness: 170, mass: 0.55 },
+  });
+  const isRight = side === "right";
+  const bubbleColor = isRight ? palette.sentBg : palette.receivedBg;
+  const textColor = isRight ? palette.sentText : palette.receivedText;
+  // Tail only on "only" and "last" bubbles.
+  const showTail = groupPos === "only" || groupPos === "last";
+
+  return (
+    <div
+      style={{
+        position: "relative",
+        background: bubbleColor,
+        color: textColor,
+        padding: "18px 32px",
+        borderRadius: radiiFor(side, groupPos),
+        maxWidth: "60%",
+        fontSize: 38,
+        fontWeight: 400,
+        lineHeight: 1.28,
+        letterSpacing: "-0.005em",
+        opacity: pop,
+        transform: `scale(${0.7 + pop * 0.3})`,
+        transformOrigin: isRight ? "bottom right" : "bottom left",
+        willChange: "transform, opacity",
+        wordWrap: "break-word",
+        whiteSpace: "pre-wrap",
+      }}
+    >
+      {text}
+      {showTail ? (
+        <BubbleTail
+          side={side}
+          bubbleColor={bubbleColor}
+          bgColor={palette.bg}
+        />
+      ) : null}
     </div>
   );
 }
@@ -269,113 +368,59 @@ function MessageRow({
 function TypingBubble({
   side,
   localFrame,
-  fps,
   palette,
+  showTail,
 }: {
   side: ChatMessage["side"];
   localFrame: number;
-  fps: number;
   palette: Palette;
+  showTail: boolean;
 }) {
-  const enter = spring({
-    frame: localFrame,
-    fps,
-    config: { damping: 13, stiffness: 160, mass: 0.6 },
-  });
-
+  const isRight = side === "right";
   return (
     <div
       style={{
         position: "relative",
         background: palette.receivedBg,
-        padding: "22px 28px",
-        borderRadius: 30,
+        padding: "26px 36px",
+        borderRadius: 40,
         display: "flex",
-        gap: 12,
+        gap: 14,
         alignItems: "center",
-        opacity: enter,
-        transform: `scale(${0.7 + enter * 0.3})`,
-        transformOrigin: side === "left" ? "bottom left" : "bottom right",
+        transformOrigin: isRight ? "bottom right" : "bottom left",
         willChange: "transform, opacity",
       }}
     >
       {[0, 1, 2].map((i) => {
         const phase = (localFrame + i * 5) / 7;
-        const yBob = Math.sin(phase) * 4;
+        const yBob = Math.sin(phase) * 5;
         const dotOpacity = 0.5 + Math.sin(phase) * 0.3;
         return (
           <span
             key={i}
             style={{
-              width: 14,
-              height: 14,
+              width: 16,
+              height: 16,
               borderRadius: "50%",
               background: palette.mutedText,
               transform: `translateY(${-Math.abs(yBob)}px)`,
               opacity: dotOpacity,
-              willChange: "transform, opacity",
             }}
           />
         );
       })}
-      <BubbleTail
-        side={side}
-        bubbleColor={palette.receivedBg}
-        bgColor={palette.bg}
-      />
+      {showTail ? (
+        <BubbleTail
+          side={side}
+          bubbleColor={palette.receivedBg}
+          bgColor={palette.bg}
+        />
+      ) : null}
     </div>
   );
 }
 
-function MessageBubble({
-  side,
-  text,
-  localFrame,
-  fps,
-  palette,
-}: {
-  side: ChatMessage["side"];
-  text: string;
-  localFrame: number;
-  fps: number;
-  palette: Palette;
-}) {
-  const pop = spring({
-    frame: localFrame,
-    fps,
-    config: { damping: 11, stiffness: 170, mass: 0.55 },
-  });
-
-  const isRight = side === "right";
-
-  const bubbleColor = isRight ? palette.sentBg : palette.receivedBg;
-
-  return (
-    <div
-      style={{
-        position: "relative",
-        background: bubbleColor,
-        color: isRight ? palette.sentText : palette.receivedText,
-        padding: "18px 26px",
-        borderRadius: 30,
-        maxWidth: 720,
-        fontSize: 32,
-        fontWeight: 400,
-        lineHeight: 1.3,
-        letterSpacing: "-0.005em",
-        opacity: pop,
-        transform: `scale(${0.7 + pop * 0.3})`,
-        transformOrigin: isRight ? "bottom right" : "bottom left",
-        willChange: "transform, opacity",
-        wordWrap: "break-word",
-      }}
-    >
-      {text}
-      <BubbleTail side={side} bubbleColor={bubbleColor} bgColor={palette.bg} />
-    </div>
-  );
-}
-
+// Pseudo-element tail re-creation per gaia-ui CSS rules (left: -7px / right: -7px etc.)
 function BubbleTail({
   side,
   bubbleColor,
@@ -392,24 +437,24 @@ function BubbleTail({
         style={{
           position: "absolute",
           bottom: 0,
-          height: 27,
-          width: 30,
+          height: 36,
+          width: 40,
           backgroundColor: bubbleColor,
           ...(isRight
-            ? { right: -10, borderBottomLeftRadius: "24px 21px" }
-            : { left: -10, borderBottomRightRadius: 24 }),
+            ? { right: -14, borderBottomLeftRadius: "32px 28px" }
+            : { left: -14, borderBottomRightRadius: 32 }),
         }}
       />
       <div
         style={{
           position: "absolute",
           bottom: 0,
-          height: 27,
-          width: 39,
+          height: 36,
+          width: 52,
           backgroundColor: bgColor,
           ...(isRight
-            ? { right: -39, borderBottomLeftRadius: 15 }
-            : { left: -39, borderBottomRightRadius: 15 }),
+            ? { right: -52, borderBottomLeftRadius: 20 }
+            : { left: -52, borderBottomRightRadius: 20 }),
         }}
       />
     </>

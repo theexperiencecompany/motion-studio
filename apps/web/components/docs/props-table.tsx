@@ -65,6 +65,8 @@ function describeType(field: Field): string {
       return "string (Scenario JSON)";
     case "imageList":
       return "Array<{ name: string; url: string }>";
+    case "terminalLines":
+      return "Array<{ kind: string; text: string }>";
   }
 }
 

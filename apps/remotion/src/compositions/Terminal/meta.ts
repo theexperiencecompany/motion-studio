@@ -47,6 +47,7 @@ export const terminalInfo: CompositionInfo<TerminalProps> = {
   fields: [
     { kind: "text", key: "title", label: "Window title" },
     { kind: "text", key: "prompt", label: "Prompt symbol" },
+    { kind: "terminalLines", key: "lines", label: "Lines" },
     {
       kind: "select",
       key: "chromeStyle",

@@ -2,7 +2,8 @@ import type { CompositionInfo } from "../../schema";
 import type { PerspectiveMarqueeProps } from "./PerspectiveMarquee";
 
 export const perspectiveMarqueeDefaultProps: PerspectiveMarqueeProps = {
-  items: "Vercel, Linear, Stripe, Figma, Notion, Raycast, Arc, Cursor",
+  items:
+    "Cinematic, Open source, Browser-rendered, 60fps, MIT, Copy-paste, Remotion, Typed, Composable, Zero-config, Production-ready",
   speedPxPerFrame: 2,
   perspective: 1200,
   rotateY: -28,

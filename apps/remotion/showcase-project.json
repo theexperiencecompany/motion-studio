@@ -5,23 +5,23 @@
   "clips": [
     {
       "id": "clip-1",
-      "compositionId": "TitleSlideUp",
+      "compositionId": "TitlePopup",
       "props": {
-        "headline": "Motion Studio",
-        "subtitle": "Cinematic Remotion scenes"
+        "headline": "Motion Studio.",
+        "subtitle": ""
       },
-      "durationInFrames": 138,
+      "durationInFrames": 96,
       "transition": {
         "kind": "none",
-        "durationInFrames": 18
+        "durationInFrames": 14
       }
     },
     {
       "id": "clip-2",
       "compositionId": "PerspectiveMarquee",
       "props": {
-        "items": "Motion Studio, Remotion, GAIA, React, Cinematic, Open Source",
-        "speedPxPerFrame": 2.5,
+        "items": "Cinematic, Copy-paste, Open source, 60+ scenes, Browser-rendered, MIT, Remotion, Typed, Composable, Zero-config",
+        "speedPxPerFrame": 3.2,
         "perspective": 1200,
         "rotateY": -28,
         "rotateX": 8,
@@ -32,20 +32,20 @@
       "durationInFrames": 180,
       "transition": {
         "kind": "fade",
-        "durationInFrames": 18
+        "durationInFrames": 14
       }
     },
     {
       "id": "clip-3",
-      "compositionId": "TitlePopup",
+      "compositionId": "TitleSlideUp",
       "props": {
-        "headline": "Drop in. Render. Ship.",
-        "subtitle": ""
+        "headline": "60+ scenes.",
+        "subtitle": "Drop-in. Fully typed. Copy the source."
       },
-      "durationInFrames": 108,
+      "durationInFrames": 144,
       "transition": {
-        "kind": "swipe-up",
-        "durationInFrames": 18
+        "kind": "fade",
+        "durationInFrames": 14
       }
     },
     {
@@ -57,7 +57,7 @@
         "lines": [
           {
             "kind": "comment",
-            "text": "# 1 — install"
+            "text": "# 1 — one dependency"
           },
           {
             "kind": "command",
@@ -65,7 +65,7 @@
           },
           {
             "kind": "success",
-            "text": "ready"
+            "text": "ready in 3.2s"
           },
           {
             "kind": "comment",
@@ -73,22 +73,22 @@
           },
           {
             "kind": "comment",
-            "text": "# 2 — render"
+            "text": "# 2 — render in the browser"
           },
           {
             "kind": "command",
-            "text": "npx remotion render Showcase out.mp4"
+            "text": "open localhost:3000/studio"
           },
           {
             "kind": "output",
-            "text": "encoding frames @ 60fps..."
+            "text": "encoding @ 60fps via WebCodecs..."
           },
           {
             "kind": "success",
             "text": "shipped"
           }
         ],
-        "charactersPerSecond": 32,
+        "charactersPerSecond": 36,
         "lineGap": 6,
         "chromeStyle": "mac",
         "cursorStyle": "block",
@@ -96,29 +96,29 @@
         "paddingX": 32,
         "paddingY": 28,
         "cornerRadius": 16,
-        "successColor": "#34d399",
+        "successColor": "#10b981",
         "outputOpacity": 0.62,
-        "commentOpacity": 0.38,
+        "commentOpacity": 0.4,
         "showShadow": true,
         "maxWidth": 1280
       },
-      "durationInFrames": 360,
+      "durationInFrames": 324,
       "transition": {
         "kind": "fade",
-        "durationInFrames": 18
+        "durationInFrames": 14
       }
     },
     {
       "id": "clip-5",
-      "compositionId": "TitlePopup",
+      "compositionId": "TitleFade",
       "props": {
-        "headline": "Built for product reels.",
-        "subtitle": ""
+        "headline": "Tell stories with data.",
+        "subtitle": "Charts that animate themselves."
       },
-      "durationInFrames": 96,
+      "durationInFrames": 108,
       "transition": {
-        "kind": "swipe-left",
-        "durationInFrames": 18
+        "kind": "swipe-up",
+        "durationInFrames": 14
       }
     },
     {
@@ -133,29 +133,14 @@
         "showGrid": true,
         "showValues": true
       },
-      "durationInFrames": 180,
+      "durationInFrames": 144,
       "transition": {
         "kind": "fade",
-        "durationInFrames": 18
+        "durationInFrames": 14
       }
     },
     {
       "id": "clip-7",
-      "compositionId": "StatCounter",
-      "props": {
-        "target": 12847,
-        "label": "developers shipping",
-        "prefix": "",
-        "suffix": "+"
-      },
-      "durationInFrames": 138,
-      "transition": {
-        "kind": "zoom-in",
-        "durationInFrames": 18
-      }
-    },
-    {
-      "id": "clip-8",
       "compositionId": "RadialChart",
       "props": {
         "title": "Conversion lift",
@@ -165,10 +150,25 @@
         "max": 100,
         "unit": "%"
       },
-      "durationInFrames": 150,
+      "durationInFrames": 120,
+      "transition": {
+        "kind": "zoom-in",
+        "durationInFrames": 14
+      }
+    },
+    {
+      "id": "clip-8",
+      "compositionId": "StatCounter",
+      "props": {
+        "target": 12847,
+        "label": "developers shipping",
+        "prefix": "",
+        "suffix": "+"
+      },
+      "durationInFrames": 120,
       "transition": {
         "kind": "fade",
-        "durationInFrames": 18
+        "durationInFrames": 14
       }
     },
     {
@@ -182,23 +182,23 @@
         "showAxes": true,
         "showGrid": true
       },
-      "durationInFrames": 156,
+      "durationInFrames": 132,
       "transition": {
         "kind": "swipe-right",
-        "durationInFrames": 18
+        "durationInFrames": 14
       }
     },
     {
       "id": "clip-10",
-      "compositionId": "TitleFade",
+      "compositionId": "TitlePopup",
       "props": {
-        "headline": "Brand-faithful UI.",
-        "subtitle": ""
+        "headline": "Pixel-faithful UI.",
+        "subtitle": "Tweet, GitHub, every chat platform."
       },
-      "durationInFrames": 96,
+      "durationInFrames": 108,
       "transition": {
         "kind": "fade",
-        "durationInFrames": 18
+        "durationInFrames": 14
       }
     },
     {
@@ -208,13 +208,13 @@
         "owner": "theexperiencecompany",
         "repo": "motion-studio",
         "startCount": 1240,
-        "endCount": 1289,
+        "endCount": 1872,
         "theme": "light"
       },
-      "durationInFrames": 180,
+      "durationInFrames": 156,
       "transition": {
         "kind": "zoom-out",
-        "durationInFrames": 18
+        "durationInFrames": 14
       }
     },
     {
@@ -225,141 +225,277 @@
         "handle": "@motionstudio",
         "avatarUrl": "https://github.com/theexperiencecompany.png?size=200",
         "verified": "yes",
-        "text": "Just shipped — 60+ Remotion scenes, in-browser MP4 export, open source.",
+        "text": "shipped: 60+ Remotion scenes, in-browser MP4 export, fully typed.\n\nopen source. MIT.",
         "timestamp": "10:30 PM · Today",
-        "replies": 28,
-        "retweets": 73,
-        "likes": 482,
-        "views": 21400,
+        "replies": 84,
+        "retweets": 412,
+        "likes": 1893,
+        "views": 84200,
         "theme": "light",
         "backgroundColor": "#ffffff"
       },
       "durationInFrames": 180,
       "transition": {
         "kind": "swipe-down",
-        "durationInFrames": 18
+        "durationInFrames": 14
       }
     },
     {
       "id": "clip-13",
+      "compositionId": "TitleType",
+      "props": {
+        "headline": "Every chat. Every brand.",
+        "subtitle": "iMessage. WhatsApp. Telegram. Slack. Discord."
+      },
+      "durationInFrames": 144,
+      "transition": {
+        "kind": "fade",
+        "durationInFrames": 14
+      }
+    },
+    {
+      "id": "clip-14",
       "compositionId": "MessageBubbles",
       "props": {
-        "contactName": "shipped",
+        "contactName": "design",
         "contactAvatar": "https://github.com/theexperiencecompany.png",
         "messages": [
           {
-            "text": "you see motion studio yet?",
+            "text": "saw the new reel?",
+            "side": "left",
+            "typingFrames": 45,
+            "delay": 24
+          },
+          {
+            "text": "yeah just rendered in browser 🔥",
+            "side": "right",
+            "typingFrames": 50,
+            "delay": 130
+          },
+          {
+            "text": "how long did it take?",
+            "side": "left",
+            "typingFrames": 45,
+            "delay": 240
+          },
+          {
+            "text": "12 seconds",
+            "side": "right",
+            "typingFrames": 30,
+            "delay": 340
+          }
+        ],
+        "theme": "light"
+      },
+      "durationInFrames": 252,
+      "transition": {
+        "kind": "fade",
+        "durationInFrames": 14
+      }
+    },
+    {
+      "id": "clip-15",
+      "compositionId": "WhatsAppMessages",
+      "props": {
+        "contactName": "shipping",
+        "contactAvatar": "https://github.com/theexperiencecompany.png",
+        "messages": [
+          {
+            "text": "is it really open source?",
+            "side": "left",
+            "typingFrames": 45,
+            "delay": 24
+          },
+          {
+            "text": "MIT licensed",
+            "side": "right",
+            "typingFrames": 30,
+            "delay": 130
+          },
+          {
+            "text": "zero servers, zero SDK",
+            "side": "right",
+            "typingFrames": 45,
+            "delay": 230
+          },
+          {
+            "text": "you're kidding",
+            "side": "left",
+            "typingFrames": 35,
+            "delay": 340
+          }
+        ],
+        "theme": "light"
+      },
+      "durationInFrames": 252,
+      "transition": {
+        "kind": "swipe-left",
+        "durationInFrames": 14
+      }
+    },
+    {
+      "id": "clip-16",
+      "compositionId": "TelegramMessages",
+      "props": {
+        "contactName": "launch",
+        "contactAvatar": "https://github.com/theexperiencecompany.png",
+        "messages": [
+          {
+            "text": "demo's recorded",
             "side": "left",
             "typingFrames": 40,
             "delay": 24
           },
           {
-            "text": "yeah just exported a demo in browser 😳",
+            "text": "via the browser?",
             "side": "right",
-            "typingFrames": 50,
-            "delay": 110
+            "typingFrames": 35,
+            "delay": 130
           },
           {
-            "text": "no way it's open source?",
+            "text": "WebCodecs + mp4-muxer",
             "side": "left",
-            "typingFrames": 42,
-            "delay": 220
+            "typingFrames": 50,
+            "delay": 240
           },
           {
-            "text": "MIT license. zero servers.",
+            "text": "no FFmpeg needed 🎉",
             "side": "right",
-            "typingFrames": 44,
-            "delay": 320
+            "typingFrames": 45,
+            "delay": 350
           }
         ],
         "theme": "light"
       },
-      "durationInFrames": 360,
+      "durationInFrames": 252,
       "transition": {
-        "kind": "fade",
-        "durationInFrames": 18
+        "kind": "swipe-left",
+        "durationInFrames": 14
       }
     },
     {
-      "id": "clip-14",
+      "id": "clip-17",
+      "compositionId": "SlackMessages",
+      "props": {
+        "contactName": "general",
+        "messages": [
+          {
+            "text": "ship motion studio v1?",
+            "side": "left",
+            "typingFrames": 45,
+            "delay": 24
+          },
+          {
+            "text": "lgtm 🚀",
+            "side": "right",
+            "typingFrames": 30,
+            "delay": 130
+          },
+          {
+            "text": "60+ scenes, all typed",
+            "side": "left",
+            "typingFrames": 45,
+            "delay": 230
+          },
+          {
+            "text": "merging now",
+            "side": "right",
+            "typingFrames": 35,
+            "delay": 340
+          }
+        ],
+        "theme": "light"
+      },
+      "durationInFrames": 252,
+      "transition": {
+        "kind": "swipe-left",
+        "durationInFrames": 14
+      }
+    },
+    {
+      "id": "clip-18",
+      "compositionId": "DiscordMessages",
+      "props": {
+        "contactName": "motion-studio",
+        "messages": [
+          {
+            "text": "anyone tried the new charts?",
+            "side": "left",
+            "typingFrames": 50,
+            "delay": 24
+          },
+          {
+            "text": "the radar one goes hard",
+            "side": "right",
+            "typingFrames": 45,
+            "delay": 140
+          },
+          {
+            "text": "bar + line + area + pie + radial too",
+            "side": "left",
+            "typingFrames": 60,
+            "delay": 260
+          },
+          {
+            "text": "all animated. all configurable.",
+            "side": "right",
+            "typingFrames": 55,
+            "delay": 380
+          }
+        ],
+        "theme": "dark"
+      },
+      "durationInFrames": 252,
+      "transition": {
+        "kind": "swipe-left",
+        "durationInFrames": 14
+      }
+    },
+    {
+      "id": "clip-19",
+      "compositionId": "TitleSlideUp",
+      "props": {
+        "headline": "Export in the browser.",
+        "subtitle": "WebCodecs + mp4-muxer. No servers. No SDK."
+      },
+      "durationInFrames": 144,
+      "transition": {
+        "kind": "fade",
+        "durationInFrames": 14
+      }
+    },
+    {
+      "id": "clip-20",
       "compositionId": "Toast",
       "props": {
         "title": "Render complete",
-        "description": "Your 30-second video is ready to download.",
+        "description": "Your MP4 is ready to download.",
         "position": "bottom-right",
         "variant": "success",
         "showIcon": true,
         "durationVisibleSec": 2.4
       },
-      "durationInFrames": 180,
-      "transition": {
-        "kind": "fade",
-        "durationInFrames": 18
-      }
-    },
-    {
-      "id": "clip-15",
-      "compositionId": "TitleType",
-      "props": {
-        "headline": "Trusted by builders.",
-        "subtitle": ""
-      },
-      "durationInFrames": 132,
+      "durationInFrames": 156,
       "transition": {
         "kind": "swipe-up",
-        "durationInFrames": 18
+        "durationInFrames": 14
       }
     },
     {
-      "id": "clip-16",
-      "compositionId": "LogoCloud",
-      "props": {
-        "headline": "Trusted by teams at",
-        "logos": [
-          {
-            "name": "Vercel",
-            "url": ""
-          },
-          {
-            "name": "Linear",
-            "url": ""
-          },
-          {
-            "name": "Stripe",
-            "url": ""
-          },
-          {
-            "name": "Notion",
-            "url": ""
-          },
-          {
-            "name": "Figma",
-            "url": ""
-          }
-        ],
-        "theme": "light"
-      },
-      "durationInFrames": 144,
-      "transition": {
-        "kind": "fade",
-        "durationInFrames": 18
-      }
-    },
-    {
-      "id": "clip-17",
+      "id": "clip-21",
       "compositionId": "TextMaskRevealUp",
       "props": {
         "headline": "Open source.\nForever.",
-        "subtitle": "MIT licensed"
+        "subtitle": "MIT licensed."
       },
-      "durationInFrames": 144,
+      "durationInFrames": 132,
       "transition": {
         "kind": "fade",
-        "durationInFrames": 18
+        "durationInFrames": 14
       }
     },
     {
-      "id": "clip-18",
+      "id": "clip-22",
       "compositionId": "TitleSlideUp",
       "props": {
         "headline": "Ship the reel.",
@@ -368,7 +504,7 @@
       "durationInFrames": 144,
       "transition": {
         "kind": "zoom-in",
-        "durationInFrames": 18
+        "durationInFrames": 14
       }
     }
   ]

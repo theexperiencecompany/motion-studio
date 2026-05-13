@@ -16,11 +16,11 @@ export type WhatsAppMessagesProps = {
   theme: "light" | "dark";
 };
 
-const ROW_GAP = 14;
-const BOTTOM_PADDING = 28;
-const COMPOSER_HEIGHT = 80;
-const HEADER_HEIGHT = 96;
-const SIDE_PADDING = 36;
+const ROW_GAP = 22;
+const BOTTOM_PADDING = 60;
+const COMPOSER_HEIGHT = 120;
+const HEADER_HEIGHT = 144;
+const SIDE_PADDING = 80;
 
 type Palette = {
   bg: string;
@@ -40,8 +40,6 @@ type Palette = {
   composerPlaceholder: string;
   dot: string;
   check: string;
-  replyAccent: string;
-  replyMuted: string;
 };
 
 function getPalette(theme: "light" | "dark"): Palette {
@@ -56,7 +54,7 @@ function getPalette(theme: "light" | "dark"): Palette {
       receivedBg: "#202C33",
       sentBg: "#005C4B",
       bubbleText: "#E9EDEF",
-      bubbleMeta: "rgba(233,237,239,0.5)",
+      bubbleMeta: "rgba(233,237,239,0.6)",
       bubbleShadow: "0 1px 0.5px rgba(0,0,0,0.35)",
       composerBg: "#202C33",
       composerInputBg: "#2A3942",
@@ -64,8 +62,6 @@ function getPalette(theme: "light" | "dark"): Palette {
       composerPlaceholder: "rgba(233,237,239,0.45)",
       dot: "rgba(233,237,239,0.55)",
       check: "#53BDEB",
-      replyAccent: "#06CF9C",
-      replyMuted: "rgba(233,237,239,0.55)",
     };
   }
   return {
@@ -76,9 +72,9 @@ function getPalette(theme: "light" | "dark"): Palette {
     headerSub: "rgba(17,27,33,0.55)",
     headerIcon: "rgba(17,27,33,0.55)",
     receivedBg: "#FFFFFF",
-    sentBg: "#D9FDD3",
+    sentBg: "#DCF8C6",
     bubbleText: "#111B21",
-    bubbleMeta: "rgba(17,27,33,0.45)",
+    bubbleMeta: "rgba(17,27,33,0.5)",
     bubbleShadow: "0 1px 0.5px rgba(11,20,26,0.13)",
     composerBg: "#F0F2F5",
     composerInputBg: "#FFFFFF",
@@ -86,8 +82,6 @@ function getPalette(theme: "light" | "dark"): Palette {
     composerPlaceholder: "rgba(17,27,33,0.4)",
     dot: "rgba(17,27,33,0.45)",
     check: "#53BDEB",
-    replyAccent: "#06CF9C",
-    replyMuted: "rgba(17,27,33,0.55)",
   };
 }
 
@@ -118,9 +112,9 @@ export const WhatsAppMessages: React.FC<WhatsAppMessagesProps> = ({
         style={{
           // eslint-disable-next-line @remotion/no-background-image -- intentional tiled wallpaper
           backgroundImage: `url(${WALLPAPER_URL})`,
-          backgroundSize: "540px 981px",
+          backgroundSize: "720px 1308px",
           backgroundRepeat: "repeat",
-          opacity: isDark ? 0.6 : 0.15,
+          opacity: isDark ? 0.6 : 0.18,
           filter: isDark ? undefined : "invert(1)",
         }}
       />
@@ -176,10 +170,10 @@ function Header({
         height: HEADER_HEIGHT,
         background: palette.headerBg,
         borderBottom: `1px solid ${palette.headerBorder}`,
-        padding: "0 24px",
+        padding: "0 40px",
         display: "flex",
         alignItems: "center",
-        gap: 16,
+        gap: 24,
         opacity: enter,
         transform: `translateY(${(1 - enter) * -8}px)`,
         flexShrink: 0,
@@ -187,8 +181,8 @@ function Header({
     >
       <div
         style={{
-          width: 56,
-          height: 56,
+          width: 84,
+          height: 84,
           borderRadius: "50%",
           overflow: "hidden",
           background:
@@ -206,7 +200,7 @@ function Header({
         <div
           style={{
             color: palette.headerText,
-            fontSize: 22,
+            fontSize: 34,
             fontWeight: 500,
             letterSpacing: "-0.005em",
             lineHeight: 1.2,
@@ -220,57 +214,14 @@ function Header({
         <div
           style={{
             color: palette.headerSub,
-            fontSize: 14,
-            marginTop: 2,
+            fontSize: 22,
+            marginTop: 4,
             fontWeight: 400,
           }}
         >
           online
         </div>
       </div>
-
-      <HeaderIconButton color={palette.headerIcon}>
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-          <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
-          <path
-            d="M16.5 16.5 L21 21"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-        </svg>
-      </HeaderIconButton>
-      <HeaderIconButton color={palette.headerIcon}>
-        <svg width="6" height="22" viewBox="0 0 6 24" fill="currentColor">
-          <circle cx="3" cy="5" r="2" />
-          <circle cx="3" cy="12" r="2" />
-          <circle cx="3" cy="19" r="2" />
-        </svg>
-      </HeaderIconButton>
-    </div>
-  );
-}
-
-function HeaderIconButton({
-  color,
-  children,
-}: {
-  color: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div
-      style={{
-        width: 40,
-        height: 40,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        color,
-        flexShrink: 0,
-      }}
-    >
-      {children}
     </div>
   );
 }
@@ -281,110 +232,29 @@ function Composer({ palette }: { palette: Palette }) {
       style={{
         height: COMPOSER_HEIGHT,
         background: palette.composerBg,
-        padding: "0 16px",
+        padding: "0 28px",
         display: "flex",
         alignItems: "center",
-        gap: 10,
+        gap: 14,
         flexShrink: 0,
       }}
     >
-      <ComposerIcon color={palette.composerIcon}>
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M12 5v14M5 12h14"
-            stroke="currentColor"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-          />
-        </svg>
-      </ComposerIcon>
       <div
         style={{
           flex: 1,
-          height: 48,
-          borderRadius: 24,
+          height: 70,
+          borderRadius: 36,
           background: palette.composerInputBg,
           display: "flex",
           alignItems: "center",
-          padding: "0 16px",
-          gap: 12,
+          padding: "0 26px",
+          gap: 16,
+          color: palette.composerPlaceholder,
+          fontSize: 24,
         }}
       >
-        <ComposerIcon color={palette.composerIcon} inline>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-            <circle
-              cx="12"
-              cy="12"
-              r="9"
-              stroke="currentColor"
-              strokeWidth="2"
-            />
-            <circle cx="9" cy="10" r="1.2" fill="currentColor" />
-            <circle cx="15" cy="10" r="1.2" fill="currentColor" />
-            <path
-              d="M9 14.5c1.2 1.4 4.8 1.4 6 0"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              fill="none"
-            />
-          </svg>
-        </ComposerIcon>
-        <span
-          style={{
-            color: palette.composerPlaceholder,
-            fontSize: 17,
-            flex: 1,
-          }}
-        >
-          Type a message
-        </span>
+        Type a message
       </div>
-      <ComposerIcon color={palette.composerIcon}>
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-          <rect
-            x="9"
-            y="3"
-            width="6"
-            height="12"
-            rx="3"
-            stroke="currentColor"
-            strokeWidth="2"
-          />
-          <path
-            d="M5 11a7 7 0 0 0 14 0M12 18v3"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-        </svg>
-      </ComposerIcon>
-    </div>
-  );
-}
-
-function ComposerIcon({
-  color,
-  inline,
-  children,
-}: {
-  color: string;
-  inline?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <div
-      style={{
-        width: inline ? "auto" : 40,
-        height: inline ? "auto" : 40,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        color,
-        flexShrink: 0,
-      }}
-    >
-      {children}
     </div>
   );
 }
@@ -408,13 +278,7 @@ function Conversation({
   });
 
   return (
-    <div
-      style={{
-        flex: 1,
-        position: "relative",
-        overflow: "hidden",
-      }}
-    >
+    <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
       {messages.map((msg, i) => (
         <MessageRow
           key={i}
@@ -467,6 +331,11 @@ function MessageRow({
 
   const bottom = BOTTOM_PADDING + stackOffset;
 
+  // Tail only on the most-recent bubble of each side run.
+  const next = messages[index + 1];
+  const nextVisible = next && frame >= next.delay && next.side === msg.side;
+  const showTail = !nextVisible;
+
   return (
     <div
       style={{
@@ -493,13 +362,14 @@ function MessageRow({
           localFrame={local - msg.typingFrames}
           fps={fps}
           palette={palette}
+          showTail={showTail}
         />
       )}
     </div>
   );
 }
 
-const TYPING_BUBBLE_HEIGHT = 56;
+const TYPING_BUBBLE_HEIGHT = 92;
 
 function estimateBubbleHeight(text: string): number {
   const charsPerLine = 38;
@@ -508,7 +378,7 @@ function estimateBubbleHeight(text: string): number {
     1,
     Math.ceil(text.length / charsPerLine) + explicitNewlines,
   );
-  return 50 + (lines - 1) * 32;
+  return 84 + (lines - 1) * 50;
 }
 
 function TypingBubble({
@@ -534,12 +404,12 @@ function TypingBubble({
       style={{
         position: "relative",
         background: isRight ? palette.sentBg : palette.receivedBg,
-        padding: "14px 18px",
-        borderRadius: 8,
-        borderBottomRightRadius: isRight ? 0 : 8,
-        borderBottomLeftRadius: isRight ? 8 : 0,
+        padding: "22px 28px",
+        borderRadius: 14,
+        borderBottomRightRadius: isRight ? 0 : 14,
+        borderBottomLeftRadius: isRight ? 14 : 0,
         display: "flex",
-        gap: 8,
+        gap: 12,
         alignItems: "center",
         opacity: enter,
         transform: `scale(${0.85 + enter * 0.15})`,
@@ -556,8 +426,8 @@ function TypingBubble({
           <span
             key={i}
             style={{
-              width: 9,
-              height: 9,
+              width: 14,
+              height: 14,
               borderRadius: "50%",
               background: palette.dot,
               transform: `translateY(${-Math.abs(yBob)}px)`,
@@ -576,12 +446,14 @@ function MessageBubble({
   localFrame,
   fps,
   palette,
+  showTail,
 }: {
   side: ChatMessage["side"];
   text: string;
   localFrame: number;
   fps: number;
   palette: Palette;
+  showTail: boolean;
 }) {
   const pop = spring({
     frame: localFrame,
@@ -596,13 +468,13 @@ function MessageBubble({
         position: "relative",
         background: isRight ? palette.sentBg : palette.receivedBg,
         color: palette.bubbleText,
-        padding: "8px 12px 10px",
-        borderRadius: 8,
-        borderBottomRightRadius: isRight ? 0 : 8,
-        borderBottomLeftRadius: isRight ? 8 : 0,
-        maxWidth: 760,
-        minWidth: 80,
-        fontSize: 22,
+        padding: "14px 22px 18px",
+        borderRadius: 14,
+        borderBottomRightRadius: isRight && showTail ? 0 : 14,
+        borderBottomLeftRadius: !isRight && showTail ? 0 : 14,
+        maxWidth: "62%",
+        minWidth: 140,
+        fontSize: 34,
         fontWeight: 400,
         lineHeight: 1.35,
         letterSpacing: "-0.005em",
@@ -613,10 +485,10 @@ function MessageBubble({
         boxShadow: palette.bubbleShadow,
       }}
     >
-      <BubbleTail side={side} palette={palette} />
+      {showTail ? <BubbleTail side={side} palette={palette} /> : null}
       <div
         style={{
-          paddingRight: isRight ? 64 : 44,
+          paddingRight: isRight ? 110 : 80,
           whiteSpace: "pre-wrap",
         }}
       >
@@ -625,12 +497,12 @@ function MessageBubble({
       <div
         style={{
           position: "absolute",
-          right: 10,
-          bottom: 6,
+          right: 18,
+          bottom: 10,
           display: "flex",
           alignItems: "center",
-          gap: 4,
-          fontSize: 12,
+          gap: 8,
+          fontSize: 20,
           color: palette.bubbleMeta,
         }}
       >
@@ -656,24 +528,24 @@ function BubbleTail({
         style={{
           position: "absolute",
           bottom: 0,
-          height: 13,
-          width: 14,
+          height: 22,
+          width: 24,
           backgroundColor: bubbleColor,
           ...(isRight
-            ? { right: -5, borderBottomLeftRadius: "11px 10px" }
-            : { left: -5, borderBottomRightRadius: 11 }),
+            ? { right: -9, borderBottomLeftRadius: "18px 16px" }
+            : { left: -9, borderBottomRightRadius: 18 }),
         }}
       />
       <div
         style={{
           position: "absolute",
           bottom: 0,
-          height: 13,
-          width: 18,
+          height: 22,
+          width: 30,
           backgroundColor: palette.bg,
           ...(isRight
-            ? { right: -18, borderBottomLeftRadius: 7 }
-            : { left: -18, borderBottomRightRadius: 7 }),
+            ? { right: -30, borderBottomLeftRadius: 12 }
+            : { left: -30, borderBottomRightRadius: 12 }),
         }}
       />
     </>
@@ -682,7 +554,8 @@ function BubbleTail({
 
 function DoubleCheck({ color }: { color: string }) {
   return (
-    <svg width="18" height="11" viewBox="0 0 18 11" fill="none">
+    <svg width="28" height="18" viewBox="0 0 18 11" fill="none">
+      <title>read</title>
       <path
         d="M1 6 L4 9 L10 2"
         stroke={color}

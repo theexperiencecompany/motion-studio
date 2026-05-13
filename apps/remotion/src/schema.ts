@@ -29,6 +29,11 @@ export type ShapeField =
       label: string;
       itemLabel?: string;
       max?: number;
+    }
+  | {
+      kind: "terminalLines";
+      key: string;
+      label: string;
     };
 
 // A collapsible section that groups primitive fields under a label.
