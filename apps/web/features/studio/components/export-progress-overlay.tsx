@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@workspace/ui/components/button";
+import { useEffect } from "react";
 import type { ExportState } from "../hooks/use-export-render";
 
 type Props = {
@@ -9,20 +10,52 @@ type Props = {
 };
 
 export function ExportProgressOverlay({ state, onClose }: Props) {
-  if (state.phase === "idle") return null;
+  const phase = state.phase;
+  const dismissable = phase === "done" || phase === "error";
+
+  // Auto-dismiss 1.5s after a successful render completes.
+  useEffect(() => {
+    if (phase !== "done") return;
+    const timer = setTimeout(() => {
+      onClose();
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [phase, onClose]);
+
+  // Escape key closes the modal once render is done or errored.
+  useEffect(() => {
+    if (!dismissable) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [dismissable, onClose]);
+
+  if (phase === "idle") return null;
 
   const pct = Math.round(state.progress * 100);
-  const dismissable = state.phase === "done" || state.phase === "error";
+
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target !== e.currentTarget) return;
+    if (dismissable) onClose();
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Export progress"
+      onClick={handleBackdropClick}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+    >
       <div className="w-full max-w-sm rounded-xl border border-border bg-background p-6 shadow-2xl">
         <div className="mb-1 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-foreground">
-            {state.phase === "starting" && "Preparing render…"}
-            {state.phase === "rendering" && "Rendering video"}
-            {state.phase === "done" && "Render complete"}
-            {state.phase === "error" && "Render failed"}
+            {phase === "starting" && "Preparing render…"}
+            {phase === "rendering" && "Rendering video"}
+            {phase === "done" && "Render complete"}
+            {phase === "error" && "Render failed"}
           </h2>
           {dismissable && (
             <Button
@@ -36,29 +69,26 @@ export function ExportProgressOverlay({ state, onClose }: Props) {
           )}
         </div>
 
-        {state.phase !== "error" && (
+        {phase !== "error" && (
           <p className="mb-4 text-[12px] text-muted-foreground">
-            {state.phase === "starting" &&
+            {phase === "starting" &&
               "Bundling your composition. First render may take longer."}
-            {state.phase === "rendering" &&
-              `Encoding frames — ${pct}% complete`}
-            {state.phase === "done" && "Your MP4 is downloading now."}
+            {phase === "rendering" && `Encoding frames — ${pct}% complete`}
+            {phase === "done" && "Your MP4 is downloading now."}
           </p>
         )}
 
-        {state.phase === "error" && (
+        {phase === "error" && (
           <p className="mb-4 break-words text-[12px] text-red-400">
             {state.error ?? "Unknown error"}
           </p>
         )}
 
-        <ProgressBar phase={state.phase} pct={pct} />
+        <ProgressBar phase={phase} pct={pct} />
 
         <div className="mt-3 flex items-center justify-between">
           <span className="text-[11px] tabular-nums text-muted-foreground">
-            {state.phase === "rendering" || state.phase === "done"
-              ? `${pct}%`
-              : "—"}
+            {phase === "rendering" || phase === "done" ? `${pct}%` : "—"}
           </span>
           {dismissable && (
             <Button variant="outline" size="xs" onClick={onClose}>
