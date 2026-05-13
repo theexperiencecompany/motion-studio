@@ -14,6 +14,7 @@ export type ExportState = {
   phase: ExportPhase;
   progress: number;
   error: string | null;
+  errorStack?: string | null;
 };
 
 /**
@@ -40,45 +41,67 @@ export function useExportRender() {
 
   const start = useCallback(async (project: Project) => {
     const myGeneration = ++generationRef.current;
+    console.info("[export-hook] start", {
+      width: project.width,
+      height: project.height,
+      fps: project.fps,
+      clips: project.clips?.length,
+    });
 
     if (!isBrowserExportSupported()) {
+      console.warn("[export-hook] WebCodecs unavailable");
       setState({
         phase: "error",
         progress: 0,
         error:
           "Your browser does not support in-browser MP4 export (WebCodecs unavailable). Try the latest Chrome or Edge.",
+        errorStack: null,
       });
       return;
     }
 
-    setState({ phase: "starting", progress: 0, error: null });
+    setState({ phase: "starting", progress: 0, error: null, errorStack: null });
 
     // Give React one tick to paint the "Preparing render…" UI before the
     // encoder hogs the main thread.
     await new Promise<void>((r) => setTimeout(r, 0));
     if (generationRef.current !== myGeneration) return;
 
-    setState({ phase: "rendering", progress: 0, error: null });
+    setState({
+      phase: "rendering",
+      progress: 0,
+      error: null,
+      errorStack: null,
+    });
 
     try {
       const blob = await renderProjectInBrowser({
         project,
         onProgress: (progress) => {
           if (generationRef.current !== myGeneration) return;
-          setState({ phase: "rendering", progress, error: null });
+          setState({
+            phase: "rendering",
+            progress,
+            error: null,
+            errorStack: null,
+          });
         },
       });
 
       if (generationRef.current !== myGeneration) return;
 
-      setState({ phase: "done", progress: 1, error: null });
+      console.info("[export-hook] done", blob.size, "bytes");
+      setState({ phase: "done", progress: 1, error: null, errorStack: null });
       downloadMp4Blob(blob, "project.mp4");
     } catch (e) {
       if (generationRef.current !== myGeneration) return;
+      console.error("[export-hook] failed", e);
+      const err = e instanceof Error ? e : new Error(String(e));
       setState({
         phase: "error",
         progress: 0,
-        error: e instanceof Error ? e.message : "Render failed",
+        error: err.message || "Render failed",
+        errorStack: err.stack ?? null,
       });
     }
   }, []);

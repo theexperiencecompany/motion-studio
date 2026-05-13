@@ -1,10 +1,10 @@
 import type { CompositionInfo } from "../../schema";
 import type { TelegramMessagesProps } from "./TelegramMessages";
 
-export const TELEGRAM_MESSAGES_DURATION = 600;
+export const TELEGRAM_MESSAGES_DURATION = 660;
 export const TELEGRAM_MESSAGES_FPS = 60;
-export const TELEGRAM_MESSAGES_WIDTH = 1920;
-export const TELEGRAM_MESSAGES_HEIGHT = 1080;
+export const TELEGRAM_MESSAGES_WIDTH = 1280;
+export const TELEGRAM_MESSAGES_HEIGHT = 720;
 
 export const telegramMessagesDefaultProps: TelegramMessagesProps = {
   contactName: "sanku",

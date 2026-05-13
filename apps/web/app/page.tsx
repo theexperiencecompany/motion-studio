@@ -15,7 +15,7 @@ import { SiteFooter } from "@/components/site-footer";
 const HERO_STICKERS: HeroStickerProps[] = [
   // Left wall — top to bottom
   {
-    src: "/images/stickers/sticker_03.png",
+    src: "/images/stickers/sticker_03.webp",
     width: 96,
     rotate: -16,
     position: { left: "2%", top: "5%" },
@@ -24,7 +24,7 @@ const HERO_STICKERS: HeroStickerProps[] = [
     delay: 0,
   },
   {
-    src: "/images/stickers/sticker_13.png",
+    src: "/images/stickers/sticker_13.webp",
     width: 84,
     rotate: 8,
     position: { left: "12%", top: "16%" },
@@ -33,7 +33,7 @@ const HERO_STICKERS: HeroStickerProps[] = [
     delay: 0.4,
   },
   {
-    src: "/images/stickers/sticker_05.png",
+    src: "/images/stickers/sticker_05.webp",
     width: 100,
     rotate: -10,
     position: { left: "1%", top: "30%" },
@@ -42,7 +42,7 @@ const HERO_STICKERS: HeroStickerProps[] = [
     delay: 0.8,
   },
   {
-    src: "/images/stickers/sticker_06.png",
+    src: "/images/stickers/sticker_06.webp",
     width: 92,
     rotate: 14,
     position: { left: "15%", top: "44%" },
@@ -51,7 +51,7 @@ const HERO_STICKERS: HeroStickerProps[] = [
     delay: 1.2,
   },
   {
-    src: "/images/stickers/sticker_17.png",
+    src: "/images/stickers/sticker_17.webp",
     width: 86,
     rotate: -7,
     position: { left: "3%", top: "58%" },
@@ -60,7 +60,7 @@ const HERO_STICKERS: HeroStickerProps[] = [
     delay: 1.6,
   },
   {
-    src: "/images/stickers/sticker_11.png",
+    src: "/images/stickers/sticker_11.webp",
     width: 96,
     rotate: 12,
     position: { left: "13%", top: "73%" },
@@ -69,7 +69,7 @@ const HERO_STICKERS: HeroStickerProps[] = [
     delay: 0.2,
   },
   {
-    src: "/images/stickers/sticker_18.png",
+    src: "/images/stickers/sticker_18.webp",
     width: 80,
     rotate: -22,
     position: { left: "5%", bottom: "4%" },
@@ -80,7 +80,7 @@ const HERO_STICKERS: HeroStickerProps[] = [
 
   // Right wall — top to bottom
   {
-    src: "/images/stickers/sticker_04.png",
+    src: "/images/stickers/sticker_04.webp",
     width: 102,
     rotate: 18,
     position: { right: "2%", top: "6%" },
@@ -89,7 +89,7 @@ const HERO_STICKERS: HeroStickerProps[] = [
     delay: 0.3,
   },
   {
-    src: "/images/stickers/sticker_15.png",
+    src: "/images/stickers/sticker_15.webp",
     width: 80,
     rotate: -10,
     position: { right: "13%", top: "18%" },
@@ -98,7 +98,7 @@ const HERO_STICKERS: HeroStickerProps[] = [
     delay: 0.7,
   },
   {
-    src: "/images/stickers/sticker_07.png",
+    src: "/images/stickers/sticker_07.webp",
     width: 96,
     rotate: 9,
     position: { right: "1%", top: "32%" },
@@ -107,7 +107,7 @@ const HERO_STICKERS: HeroStickerProps[] = [
     delay: 1.1,
   },
   {
-    src: "/images/stickers/sticker_10.png",
+    src: "/images/stickers/sticker_10.webp",
     width: 88,
     rotate: -15,
     position: { right: "16%", top: "45%" },
@@ -116,7 +116,7 @@ const HERO_STICKERS: HeroStickerProps[] = [
     delay: 1.5,
   },
   {
-    src: "/images/stickers/sticker_08.png",
+    src: "/images/stickers/sticker_08.webp",
     width: 102,
     rotate: 7,
     position: { right: "3%", top: "58%" },
@@ -125,7 +125,7 @@ const HERO_STICKERS: HeroStickerProps[] = [
     delay: 1.9,
   },
   {
-    src: "/images/stickers/sticker_19.png",
+    src: "/images/stickers/sticker_19.webp",
     width: 78,
     rotate: 20,
     position: { right: "11%", top: "72%" },
@@ -134,7 +134,7 @@ const HERO_STICKERS: HeroStickerProps[] = [
     delay: 0.5,
   },
   {
-    src: "/images/stickers/sticker_20.png",
+    src: "/images/stickers/sticker_20.webp",
     width: 86,
     rotate: -13,
     position: { right: "4%", bottom: "5%" },
@@ -145,7 +145,7 @@ const HERO_STICKERS: HeroStickerProps[] = [
 
   // Top stripe — above the centered content
   {
-    src: "/images/stickers/sticker_01.png",
+    src: "/images/stickers/sticker_01.webp",
     width: 110,
     rotate: -6,
     position: { left: "26%", top: "2%" },
@@ -154,7 +154,7 @@ const HERO_STICKERS: HeroStickerProps[] = [
     delay: 0.1,
   },
   {
-    src: "/images/stickers/sticker_02.png",
+    src: "/images/stickers/sticker_02.webp",
     width: 96,
     rotate: 4,
     position: { right: "27%", top: "3%" },
@@ -165,7 +165,7 @@ const HERO_STICKERS: HeroStickerProps[] = [
 
   // Bottom stripe — below the buttons
   {
-    src: "/images/stickers/sticker_09.png",
+    src: "/images/stickers/sticker_09.webp",
     width: 84,
     rotate: 11,
     position: { left: "30%", bottom: "3%" },
@@ -174,7 +174,7 @@ const HERO_STICKERS: HeroStickerProps[] = [
     delay: 0.6,
   },
   {
-    src: "/images/stickers/sticker_12.png",
+    src: "/images/stickers/sticker_12.webp",
     width: 86,
     rotate: -14,
     position: { right: "30%", bottom: "2%" },
@@ -183,7 +183,7 @@ const HERO_STICKERS: HeroStickerProps[] = [
     delay: 1.7,
   },
   {
-    src: "/images/stickers/sticker_14.png",
+    src: "/images/stickers/sticker_14.webp",
     width: 70,
     rotate: 17,
     position: { left: "42%", bottom: "8%" },
@@ -192,7 +192,7 @@ const HERO_STICKERS: HeroStickerProps[] = [
     delay: 0.9,
   },
   {
-    src: "/images/stickers/sticker_16.png",
+    src: "/images/stickers/sticker_16.webp",
     width: 72,
     rotate: -19,
     position: { right: "44%", top: "4%" },

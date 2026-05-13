@@ -69,6 +69,25 @@ function buildSearchGroups(): SearchGroup[] {
 
 const searchGroups = buildSearchGroups();
 
+// Rank items so title substring matches always beat keyword/fuzzy matches.
+// cmdk's default fuzzy scorer happily matches "whatsapp" against any string
+// containing those letters in order (e.g. "monospaced typewriter…"), which
+// pushes unrelated entries above the obvious result.
+function scoreItem(value: string, search: string, keywords?: string[]): number {
+  if (!search) return 1;
+  const v = value.toLowerCase();
+  const s = search.toLowerCase().trim();
+  if (!s) return 1;
+  if (v === s) return 1;
+  if (v.startsWith(s)) return 0.95;
+  // Word-boundary match in title (e.g. "whatsapp messages" matches "messages").
+  const titleWords = v.split(/\s+/);
+  if (titleWords.some((w) => w.startsWith(s))) return 0.9;
+  if (v.includes(s)) return 0.8;
+  if (keywords?.some((k) => k.toLowerCase().includes(s))) return 0.3;
+  return 0;
+}
+
 interface DocsSearchProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -88,6 +107,7 @@ export function DocsSearch({ open, onOpenChange }: DocsSearchProps) {
       onOpenChange={onOpenChange}
       title="Search docs"
       description="Search documentation pages"
+      filter={scoreItem}
     >
       <CommandInput placeholder="Search docs..." />
       <CommandList>
@@ -97,7 +117,8 @@ export function DocsSearch({ open, onOpenChange }: DocsSearchProps) {
             {group.items.map((item) => (
               <CommandItem
                 key={item.href}
-                value={`${item.title} ${item.description}`}
+                value={item.title}
+                keywords={item.description ? [item.description] : undefined}
                 onSelect={() => handleSelect(item.href)}
               >
                 <HugeiconsIcon

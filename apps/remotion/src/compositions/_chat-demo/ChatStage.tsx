@@ -3,14 +3,9 @@ import type { ReactNode } from "react";
 import { AbsoluteFill } from "remotion";
 
 /**
- * Wraps a ChatDemo in a centered, scaled container so the platform UI
- * (sized for a typical ~960px web preview) reads at the proper scale on
- * the 1920x1080 video canvas.
- *
- * Mobile platforms (iMessage / WhatsApp / Telegram) render in a portrait
- * "phone screenshot" frame with a soft shadow on a neutral backdrop.
- * Desktop platforms (Slack / Discord) render in a centered "desktop window"
- * frame with the same shadow treatment.
+ * Wraps a ChatDemo in a centered card so the platform UI reads at the
+ * proper scale on a 1280x720 video canvas — matching InstagramMessages'
+ * dimensions for consistency across all chat compositions.
  */
 type Variant = "mobile" | "desktop";
 
@@ -20,14 +15,13 @@ type Props = {
   children: ReactNode;
 };
 
-// Inner design sizes — content scales 2x to fill 1920x1080-ish areas.
+// Container sizes tuned for a 1280x720 canvas with margin for the backdrop
+// to show through.
 const SIZES: Record<Variant, { w: number; h: number; scale: number }> = {
-  // 720x1080 portrait card, scaled 1.0 — leaves room for whitespace either
-  // side of the phone. The chat UI was designed for ~720px wide.
-  mobile: { w: 720, h: 1040, scale: 0.97 },
-  // 1600x1000 landscape card, scaled 1.0 — Slack/Discord are designed for
-  // desktop widths. Content reads at native size.
-  desktop: { w: 1600, h: 1000, scale: 1 },
+  // Portrait phone-shaped card. The chat UI was designed for ~720px wide.
+  mobile: { w: 520, h: 680, scale: 1 },
+  // Landscape desktop window card. Slack / Discord look right at this size.
+  desktop: { w: 1180, h: 660, scale: 1 },
 };
 
 export function ChatStage({ variant, backdrop, children }: Props) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@workspace/ui/lib/utils";
-import { Img, staticFile } from "remotion";
+import { Img, spring, staticFile, useVideoConfig } from "remotion";
 
 // Remotion's bundle server only serves public/ assets through `staticFile()`
 // — literal "/foo.png" strings fail with 404 inside `remotion render`. This
@@ -30,6 +30,51 @@ export interface ChatMessageItem {
   status?: "sent" | "delivered" | "read";
   reactions?: { emoji: string; count: number }[];
   typing?: boolean;
+  /** Frames since this message first became visible. Drives the pop-in animation. */
+  enterFrames?: number;
+}
+
+function BubbleEnter({
+  enterFrames,
+  from,
+  children,
+}: {
+  enterFrames?: number;
+  from?: "me" | "them";
+  children: React.ReactNode;
+}) {
+  const { fps } = useVideoConfig();
+  const frame = Math.max(0, enterFrames ?? 9999);
+  const s = spring({
+    frame,
+    fps,
+    config: { damping: 12, mass: 0.5, stiffness: 180 },
+    durationInFrames: 16,
+  });
+  const scale = 0.85 + 0.15 * s;
+  const translateY = (1 - s) * 10;
+  const opacity = Math.min(1, s * 1.6);
+  return (
+    <div
+      style={{
+        display: "flex",
+        width: "100%",
+        justifyContent: from === "me" ? "flex-end" : "flex-start",
+      }}
+    >
+      <div
+        style={{
+          maxWidth: "78%",
+          transform: `translateY(${translateY}px) scale(${scale})`,
+          transformOrigin: "center",
+          opacity,
+          willChange: "transform, opacity",
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
 }
 
 export interface ChatDemoProps {
@@ -149,7 +194,7 @@ function CurvedBubble({
   color,
   children,
   meta,
-  maxWidthPct = 78,
+  maxWidthPct = 100,
 }: CurvedBubbleProps) {
   const isMe = from === "me";
   return (
@@ -322,24 +367,29 @@ function IMessageDemo({
                   const isLast = i === group.items.length - 1;
                   const isMe = group.from === "me";
                   return (
-                    <CurvedBubble
+                    <BubbleEnter
                       key={m.id ?? `${gi}-${i}`}
+                      enterFrames={m.enterFrames}
                       from={group.from}
-                      tail={isLast}
-                      background={isMe ? IMESSAGE_GRADIENT : IMESSAGE_THEM_BG}
-                      tailColor={
-                        isMe ? IMESSAGE_TAIL_ME_COLOR : IMESSAGE_THEM_BG
-                      }
-                      color={isMe ? "#fff" : "#000"}
                     >
-                      {m.typing ? (
-                        <TypingDots
-                          color={isMe ? "rgba(255,255,255,0.9)" : "#8e8e93"}
-                        />
-                      ) : (
-                        m.text
-                      )}
-                    </CurvedBubble>
+                      <CurvedBubble
+                        from={group.from}
+                        tail={isLast}
+                        background={isMe ? IMESSAGE_GRADIENT : IMESSAGE_THEM_BG}
+                        tailColor={
+                          isMe ? IMESSAGE_TAIL_ME_COLOR : IMESSAGE_THEM_BG
+                        }
+                        color={isMe ? "#fff" : "#000"}
+                      >
+                        {m.typing ? (
+                          <TypingDots
+                            color={isMe ? "rgba(255,255,255,0.9)" : "#8e8e93"}
+                          />
+                        ) : (
+                          m.text
+                        )}
+                      </CurvedBubble>
+                    </BubbleEnter>
                   );
                 })}
               </div>
@@ -422,7 +472,7 @@ function IMessageDemo({
 function WhatsAppDemo({
   messages,
   title,
-  subtitle,
+  subtitle: _subtitle,
   headerAvatar,
   showComposer,
   className,
@@ -563,33 +613,38 @@ function WhatsAppDemo({
                 const isLast = i === group.items.length - 1;
                 const showMeta = !m.typing && (m.time || (isMe && m.status));
                 return (
-                  <CurvedBubble
+                  <BubbleEnter
                     key={m.id ?? `${gi}-${i}`}
+                    enterFrames={m.enterFrames}
                     from={group.from}
-                    tail={isLast}
-                    background={isMe ? myBubble : theirBubble}
-                    tailColor={isMe ? myBubble : theirBubble}
-                    color={textColor}
-                    meta={
-                      showMeta ? (
-                        <span
-                          style={{
-                            color: metaColor,
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 3,
-                          }}
-                        >
-                          {m.time ?? ""}
-                          {isMe && m.status && (
-                            <WhatsAppTicks status={m.status} />
-                          )}
-                        </span>
-                      ) : undefined
-                    }
                   >
-                    {m.typing ? <TypingDots color={metaColor} /> : m.text}
-                  </CurvedBubble>
+                    <CurvedBubble
+                      from={group.from}
+                      tail={isLast}
+                      background={isMe ? myBubble : theirBubble}
+                      tailColor={isMe ? myBubble : theirBubble}
+                      color={textColor}
+                      meta={
+                        showMeta ? (
+                          <span
+                            style={{
+                              color: metaColor,
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 3,
+                            }}
+                          >
+                            {m.time ?? ""}
+                            {isMe && m.status && (
+                              <WhatsAppTicks status={m.status} />
+                            )}
+                          </span>
+                        ) : undefined
+                      }
+                    >
+                      {m.typing ? <TypingDots color={metaColor} /> : m.text}
+                    </CurvedBubble>
+                  </BubbleEnter>
                 );
               })}
             </div>
@@ -826,37 +881,42 @@ function TelegramDemo({
                 const isLast = i === group.items.length - 1;
                 const showMeta = !m.typing && (m.time || (isMe && m.status));
                 return (
-                  <CurvedBubble
+                  <BubbleEnter
                     key={m.id ?? `${gi}-${i}`}
+                    enterFrames={m.enterFrames}
                     from={group.from}
-                    tail={isLast}
-                    background={isMe ? myBubble : theirBubble}
-                    tailColor={isMe ? myBubble : theirBubble}
-                    color={textColor}
-                    meta={
-                      showMeta ? (
-                        <span
-                          style={{
-                            color: isMe ? myMeta : metaColor,
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 3,
-                          }}
-                        >
-                          {m.time ?? ""}
-                          {isMe && m.status && (
-                            <TelegramTicks status={m.status} color={myMeta} />
-                          )}
-                        </span>
-                      ) : undefined
-                    }
                   >
-                    {m.typing ? (
-                      <TypingDots color={isMe ? myMeta : metaColor} />
-                    ) : (
-                      m.text
-                    )}
-                  </CurvedBubble>
+                    <CurvedBubble
+                      from={group.from}
+                      tail={isLast}
+                      background={isMe ? myBubble : theirBubble}
+                      tailColor={isMe ? myBubble : theirBubble}
+                      color={textColor}
+                      meta={
+                        showMeta ? (
+                          <span
+                            style={{
+                              color: isMe ? myMeta : metaColor,
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 3,
+                            }}
+                          >
+                            {m.time ?? ""}
+                            {isMe && m.status && (
+                              <TelegramTicks status={m.status} color={myMeta} />
+                            )}
+                          </span>
+                        ) : undefined
+                      }
+                    >
+                      {m.typing ? (
+                        <TypingDots color={isMe ? myMeta : metaColor} />
+                      ) : (
+                        m.text
+                      )}
+                    </CurvedBubble>
+                  </BubbleEnter>
                 );
               })}
             </div>
@@ -1113,22 +1173,27 @@ function SlackDemo({
               </div>
               <div className="flex flex-col" style={{ gap: 2 }}>
                 {g.items.map((m, i) => (
-                  <div
+                  <BubbleEnter
                     key={m.id ?? `${gi}-${i}`}
-                    style={{
-                      fontSize: 15,
-                      lineHeight: "22px",
-                      color: fg,
-                      wordBreak: "break-word",
-                      whiteSpace: "pre-wrap",
-                    }}
+                    enterFrames={m.enterFrames}
+                    from={m.from}
                   >
-                    {m.typing ? (
-                      <TypingDots color={muted} />
-                    ) : (
-                      renderSlackText(m.text ?? "", isDark)
-                    )}
-                  </div>
+                    <div
+                      style={{
+                        fontSize: 15,
+                        lineHeight: "22px",
+                        color: fg,
+                        wordBreak: "break-word",
+                        whiteSpace: "pre-wrap",
+                      }}
+                    >
+                      {m.typing ? (
+                        <TypingDots color={muted} />
+                      ) : (
+                        renderSlackText(m.text ?? "", isDark)
+                      )}
+                    </div>
+                  </BubbleEnter>
                 ))}
               </div>
               {g.items.some((m) => m.reactions?.length) && (
@@ -1474,7 +1539,7 @@ function renderSlackText(text: string, dark: boolean) {
 function DiscordDemo({
   messages,
   title,
-  subtitle,
+  subtitle: _subtitle,
   showComposer,
   className,
 }: {
@@ -1625,22 +1690,27 @@ function DiscordDemo({
               </div>
               <div className="flex flex-col" style={{ gap: 4 }}>
                 {g.items.map((m, i) => (
-                  <div
+                  <BubbleEnter
                     key={m.id ?? `${gi}-${i}`}
-                    style={{
-                      fontSize: 15,
-                      lineHeight: "1.375",
-                      color: fg,
-                      wordBreak: "break-word",
-                      whiteSpace: "pre-wrap",
-                    }}
+                    enterFrames={m.enterFrames}
+                    from={m.from}
                   >
-                    {m.typing ? (
-                      <TypingDots color={muted} />
-                    ) : (
-                      renderDiscordText(m.text ?? "")
-                    )}
-                  </div>
+                    <div
+                      style={{
+                        fontSize: 15,
+                        lineHeight: "1.375",
+                        color: fg,
+                        wordBreak: "break-word",
+                        whiteSpace: "pre-wrap",
+                      }}
+                    >
+                      {m.typing ? (
+                        <TypingDots color={muted} />
+                      ) : (
+                        renderDiscordText(m.text ?? "")
+                      )}
+                    </div>
+                  </BubbleEnter>
                 ))}
               </div>
               {g.items.some((m) => m.reactions?.length) && (

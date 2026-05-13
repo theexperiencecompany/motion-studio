@@ -92,9 +92,39 @@ export async function renderComponentInBrowser<
     bitrate = DEFAULT_BITRATE,
   } = options;
 
+  console.info("[export] start", {
+    width,
+    height,
+    fps,
+    durationInFrames,
+    bitrate,
+  });
+
   if (!isBrowserExportSupported()) {
     throw new Error(
       "Your browser does not support in-browser MP4 export (WebCodecs unavailable). Try the latest Chrome or Edge.",
+    );
+  }
+
+  // Probe codec support so we fail with a clear message instead of a
+  // cryptic "Failed to execute 'configure' on 'VideoEncoder'".
+  let avcSupported = false;
+  try {
+    const probe = await VideoEncoder.isConfigSupported({
+      codec: "avc1.640033",
+      width,
+      height,
+      bitrate,
+      framerate: fps,
+    });
+    avcSupported = probe.supported === true;
+    console.info("[export] codec probe", probe);
+  } catch (probeErr) {
+    console.warn("[export] codec probe threw", probeErr);
+  }
+  if (!avcSupported) {
+    throw new Error(
+      `H.264 (avc1.640033) at ${width}x${height}@${fps}fps is not supported by this browser's VideoEncoder. Try Chrome/Edge with hardware acceleration enabled.`,
     );
   }
 
@@ -142,20 +172,31 @@ export async function renderComponentInBrowser<
     output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
     error: (e) => {
       encoderError = e instanceof Error ? e : new Error(String(e));
+      console.error("[export] VideoEncoder error", encoderError);
     },
   });
 
-  // H.264 High profile, level 5.1 — supports 1080p60 and beyond. Browsers
-  // will negotiate down if the exact level isn't supported.
-  encoder.configure({
-    codec: "avc1.640033",
-    width,
-    height,
-    bitrate,
-    framerate: fps,
-    bitrateMode: "variable",
-    latencyMode: "quality",
-  });
+  try {
+    // H.264 High profile, level 5.1 — supports 1080p60 and beyond. Browsers
+    // will negotiate down if the exact level isn't supported.
+    encoder.configure({
+      codec: "avc1.640033",
+      width,
+      height,
+      bitrate,
+      framerate: fps,
+      bitrateMode: "variable",
+      latencyMode: "quality",
+    });
+    console.info("[export] encoder configured");
+  } catch (configErr) {
+    console.error("[export] encoder.configure threw", configErr);
+    throw new Error(
+      `VideoEncoder.configure failed: ${
+        configErr instanceof Error ? configErr.message : String(configErr)
+      }`,
+    );
+  }
 
   // ---------------------------------------------------------------------
   // 3. Frame loop. Remotion's <Thumbnail> renders a single static frame
@@ -168,36 +209,64 @@ export async function renderComponentInBrowser<
     for (let frame = 0; frame < durationInFrames; frame++) {
       if (encoderError) throw encoderError;
 
-      await renderFrame(root, {
-        component,
-        inputProps,
-        durationInFrames,
-        fps,
-        width,
-        height,
-        frame,
-      });
+      try {
+        await renderFrame(root, {
+          component,
+          inputProps,
+          durationInFrames,
+          fps,
+          width,
+          height,
+          frame,
+        });
+      } catch (renderErr) {
+        console.error("[export] renderFrame failed at frame", frame, renderErr);
+        throw new Error(
+          `Failed to render frame ${frame}/${durationInFrames}: ${
+            renderErr instanceof Error ? renderErr.message : String(renderErr)
+          }`,
+        );
+      }
 
-      const canvas = await toCanvas(host, {
-        width,
-        height,
-        canvasWidth: width,
-        canvasHeight: height,
-        pixelRatio: 1,
-        cacheBust: false,
-        skipFonts: false,
-      });
+      let canvas: HTMLCanvasElement;
+      try {
+        canvas = await toCanvas(host, {
+          width,
+          height,
+          canvasWidth: width,
+          canvasHeight: height,
+          pixelRatio: 1,
+          cacheBust: false,
+          skipFonts: false,
+        });
+      } catch (rasterErr) {
+        console.error("[export] toCanvas failed at frame", frame, rasterErr);
+        throw new Error(
+          `Snapshot to canvas failed at frame ${frame}: ${
+            rasterErr instanceof Error ? rasterErr.message : String(rasterErr)
+          }. Common cause: a tainted cross-origin image in the composition.`,
+        );
+      }
 
-      const videoFrame = new VideoFrame(canvas, {
-        timestamp: frame * microsPerFrame,
-        duration: microsPerFrame,
-      });
+      try {
+        const videoFrame = new VideoFrame(canvas, {
+          timestamp: frame * microsPerFrame,
+          duration: microsPerFrame,
+        });
 
-      // Force a keyframe once per second so the resulting MP4 has
-      // reasonable seek points.
-      const keyFrame = frame % fps === 0;
-      encoder.encode(videoFrame, { keyFrame });
-      videoFrame.close();
+        // Force a keyframe once per second so the resulting MP4 has
+        // reasonable seek points.
+        const keyFrame = frame % fps === 0;
+        encoder.encode(videoFrame, { keyFrame });
+        videoFrame.close();
+      } catch (encErr) {
+        console.error("[export] encoder.encode failed at frame", frame, encErr);
+        throw new Error(
+          `Encoding frame ${frame} failed: ${
+            encErr instanceof Error ? encErr.message : String(encErr)
+          }`,
+        );
+      }
 
       // Crude back-pressure so we don't pile up frames in the encoder
       // queue on a slower machine.
@@ -206,14 +275,27 @@ export async function renderComponentInBrowser<
       }
 
       onProgress?.((frame + 1) / durationInFrames);
+
+      if (frame === 0 || frame % Math.max(1, Math.floor(fps)) === 0) {
+        console.debug(
+          "[export] frame",
+          frame + 1,
+          "/",
+          durationInFrames,
+          "queueSize=",
+          encoder.encodeQueueSize,
+        );
+      }
     }
 
+    console.info("[export] flushing encoder");
     await encoder.flush();
     if (encoderError) throw encoderError;
     encoder.close();
 
     muxer.finalize();
     const { buffer } = muxer.target;
+    console.info("[export] complete — mp4 bytes:", buffer.byteLength);
     return new Blob([buffer], { type: "video/mp4" });
   } finally {
     try {

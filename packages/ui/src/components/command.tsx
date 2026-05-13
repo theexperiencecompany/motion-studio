@@ -28,11 +28,15 @@ function CommandDialog({
   description = "Search for a command",
   children,
   className,
+  filter,
+  shouldFilter,
   ...props
 }: React.ComponentProps<typeof Dialog.Root> & {
   title?: string;
   description?: string;
   className?: string;
+  filter?: React.ComponentProps<typeof CommandPrimitive>["filter"];
+  shouldFilter?: React.ComponentProps<typeof CommandPrimitive>["shouldFilter"];
 }) {
   return (
     <Dialog.Root {...props}>
@@ -49,7 +53,11 @@ function CommandDialog({
           <Dialog.Description className="sr-only">
             {description}
           </Dialog.Description>
-          <Command className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:pb-1.5 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-4 [&_[cmdk-input-wrapper]_svg]:w-4 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-2.5">
+          <Command
+            filter={filter}
+            shouldFilter={shouldFilter}
+            className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:pb-1.5 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-4 [&_[cmdk-input-wrapper]_svg]:w-4 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-2.5"
+          >
             {children}
           </Command>
         </Dialog.Content>

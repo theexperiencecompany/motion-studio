@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   ArrowLeft02Icon,
+  ArrowRight01Icon,
   ArrowRight02Icon,
   Books02Icon,
 } from "@hugeicons/core-free-icons";
@@ -161,15 +162,15 @@ export function DocsShell({ doc }: { doc: Doc }) {
             href="https://heygaia.io"
             target="_blank"
             rel="noopener noreferrer"
-            className="group block rounded-lg border border-border bg-muted/30 p-4 transition-colors hover:border-foreground/30 hover:bg-muted/50"
+            className="group block rounded-lg bg-muted/30 p-4 transition-colors hover:bg-muted/50"
           >
             <div className="mb-2 flex items-center gap-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/gaia_logo.png"
+                src="/gaiaui_logo.png"
                 alt="GAIA"
-                width={20}
-                height={20}
+                width={24}
+                height={24}
                 className="rounded-sm"
               />
               <span className="text-[12px] font-semibold text-foreground">
@@ -177,11 +178,12 @@ export function DocsShell({ doc }: { doc: Doc }) {
               </span>
             </div>
             <p className="text-[11px] leading-relaxed text-muted-foreground">
-              Motion Studio is the commercial reel kit for GAIA — the personal
-              AI assistant.
+              Motion Studio is the commercial reel kit for GAIA, the personal AI
+              assistant.
             </p>
-            <span className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-foreground/80 transition-colors group-hover:text-foreground">
-              heygaia.io →
+            <span className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-medium text-foreground/80 transition-colors group-hover:text-foreground">
+              heygaia.io
+              <HugeiconsIcon icon={ArrowRight01Icon} size={13} />
             </span>
           </Link>
         </div>

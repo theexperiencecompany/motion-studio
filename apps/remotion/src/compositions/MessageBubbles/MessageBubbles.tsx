@@ -1,7 +1,8 @@
 "use client";
-import { AbsoluteFill, useCurrentFrame } from "remotion";
+import { useCurrentFrame } from "remotion";
 import type { ChatMessage } from "../../editors/types";
 import { ChatDemo, type ChatMessageItem } from "../_chat-demo/ChatDemo";
+import { ChatFill } from "../_chat-demo/ChatFill";
 
 export type MessageBubblesProps = {
   contactName: string;
@@ -22,6 +23,7 @@ function buildItems(messages: ChatMessage[], frame: number): ChatMessageItem[] {
       from: m.side === "right" ? "me" : "them",
       text: m.text,
       typing: isTyping,
+      enterFrames: local,
     });
   }
   return out;
@@ -37,13 +39,13 @@ export const MessageBubbles: React.FC<MessageBubblesProps> = ({
   const items = buildItems(messages, frame);
 
   return (
-    <AbsoluteFill style={{ background: "#ffffff" }}>
+    <ChatFill backdrop="#ffffff" scale={1.6}>
       <ChatDemo
         platform="imessage"
         title={contactName}
         headerAvatar={contactAvatar}
         messages={items}
       />
-    </AbsoluteFill>
+    </ChatFill>
   );
 };

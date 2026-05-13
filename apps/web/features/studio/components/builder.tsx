@@ -224,7 +224,11 @@ export function Builder() {
           )}
         </div>
 
-        <ExportProgressOverlay state={exportState} onClose={resetExport} />
+        <ExportProgressOverlay
+          state={exportState}
+          onClose={resetExport}
+          onRetry={() => startExport(project)}
+        />
       </div>
     </PlayerProvider>
   );

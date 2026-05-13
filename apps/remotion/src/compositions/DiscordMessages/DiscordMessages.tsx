@@ -1,7 +1,8 @@
 "use client";
-import { AbsoluteFill, useCurrentFrame } from "remotion";
+import { useCurrentFrame } from "remotion";
 import type { ChatMessage } from "../../editors/types";
 import { ChatDemo, type ChatMessageItem } from "../_chat-demo/ChatDemo";
+import { ChatFill } from "../_chat-demo/ChatFill";
 
 export type DiscordMessagesProps = {
   contactName: string;
@@ -10,7 +11,7 @@ export type DiscordMessagesProps = {
 };
 
 const LEFT_AVATAR = "https://github.com/aryanranderiya.png";
-const RIGHT_AVATAR = "/gaia-glow.png";
+const RIGHT_AVATAR = "gaia-glow.png";
 
 function buildItems(messages: ChatMessage[], frame: number): ChatMessageItem[] {
   const out: ChatMessageItem[] = [];
@@ -29,6 +30,7 @@ function buildItems(messages: ChatMessage[], frame: number): ChatMessageItem[] {
       text: m.text,
       typing: isTyping,
       time: "now",
+      enterFrames: local,
     });
   }
   return out;
@@ -43,8 +45,8 @@ export const DiscordMessages: React.FC<DiscordMessagesProps> = ({
   const items = buildItems(messages, frame);
 
   return (
-    <AbsoluteFill style={{ background: "#1E1F22" }}>
+    <ChatFill backdrop="#1E1F22" scale={1.5}>
       <ChatDemo platform="discord" title={contactName} messages={items} />
-    </AbsoluteFill>
+    </ChatFill>
   );
 };

@@ -39,11 +39,13 @@ type NavItem = {
 
 const TEXT_PREFIXES = ["Title", "Text"];
 const CHAT_IDS = new Set([
-  "MessagePopup",
   "MessageBubbles",
   "WhatsAppMessages",
+  "TelegramMessages",
   "SlackMessages",
   "DiscordMessages",
+  "InstagramMessages",
+  "MessagePopup",
 ]);
 const SOCIAL_IDS = new Set(["TweetCard", "TwitterFollow", "GitHubStarButton"]);
 const FRAME_IDS = new Set(["BrowserWindow", "LaptopFrame", "PhoneFrame"]);

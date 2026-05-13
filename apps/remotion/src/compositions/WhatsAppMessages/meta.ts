@@ -1,10 +1,10 @@
 import type { CompositionInfo } from "../../schema";
 import type { WhatsAppMessagesProps } from "./WhatsAppMessages";
 
-export const WHATSAPP_MESSAGES_DURATION = 600;
+export const WHATSAPP_MESSAGES_DURATION = 660;
 export const WHATSAPP_MESSAGES_FPS = 60;
-export const WHATSAPP_MESSAGES_WIDTH = 1920;
-export const WHATSAPP_MESSAGES_HEIGHT = 1080;
+export const WHATSAPP_MESSAGES_WIDTH = 1280;
+export const WHATSAPP_MESSAGES_HEIGHT = 720;
 
 export const whatsappMessagesDefaultProps: WhatsAppMessagesProps = {
   contactName: "sanku",

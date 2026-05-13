@@ -2,7 +2,7 @@
 import { useCurrentFrame } from "remotion";
 import type { ChatMessage } from "../../editors/types";
 import { ChatDemo, type ChatMessageItem } from "../_chat-demo/ChatDemo";
-import { ChatStage } from "../_chat-demo/ChatStage";
+import { ChatFill } from "../_chat-demo/ChatFill";
 
 export type WhatsAppMessagesProps = {
   contactName: string;
@@ -23,6 +23,7 @@ function buildItems(messages: ChatMessage[], frame: number): ChatMessageItem[] {
       from: m.side === "right" ? "me" : "them",
       text: m.text,
       typing: isTyping,
+      enterFrames: local,
     });
   }
   return out;
@@ -38,13 +39,13 @@ export const WhatsAppMessages: React.FC<WhatsAppMessagesProps> = ({
   const items = buildItems(messages, frame);
 
   return (
-    <ChatStage variant="mobile">
+    <ChatFill backdrop="#EFEFF4" scale={1.6}>
       <ChatDemo
         platform="whatsapp"
         title={contactName}
         headerAvatar={contactAvatar}
         messages={items}
       />
-    </ChatStage>
+    </ChatFill>
   );
 };

@@ -2,7 +2,7 @@
 import { useCurrentFrame } from "remotion";
 import type { ChatMessage } from "../../editors/types";
 import { ChatDemo, type ChatMessageItem } from "../_chat-demo/ChatDemo";
-import { ChatStage } from "../_chat-demo/ChatStage";
+import { ChatFill } from "../_chat-demo/ChatFill";
 
 export type SlackMessagesProps = {
   contactName: string;
@@ -11,7 +11,7 @@ export type SlackMessagesProps = {
 };
 
 const LEFT_AVATAR = "https://github.com/aryanranderiya.png";
-const RIGHT_AVATAR = "/gaia-glow.png";
+const RIGHT_AVATAR = "gaia-glow.png";
 
 function buildItems(messages: ChatMessage[], frame: number): ChatMessageItem[] {
   const out: ChatMessageItem[] = [];
@@ -28,6 +28,7 @@ function buildItems(messages: ChatMessage[], frame: number): ChatMessageItem[] {
       avatar: isMe ? RIGHT_AVATAR : LEFT_AVATAR,
       text: m.text,
       typing: isTyping,
+      enterFrames: local,
     });
   }
   return out;
@@ -42,16 +43,13 @@ export const SlackMessages: React.FC<SlackMessagesProps> = ({
   const items = buildItems(messages, frame);
 
   return (
-    <ChatStage
-      variant="desktop"
-      backdrop="linear-gradient(135deg, #f5f3ee 0%, #eee6d8 100%)"
-    >
+    <ChatFill backdrop={theme === "dark" ? "#1A1D21" : "#FFFFFF"} scale={1.5}>
       <ChatDemo
         platform="slack"
         title={contactName}
         theme={theme}
         messages={items}
       />
-    </ChatStage>
+    </ChatFill>
   );
 };
