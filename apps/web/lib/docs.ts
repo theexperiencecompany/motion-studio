@@ -29,9 +29,6 @@ import FeatureCardMDX, {
 import GaiaScenarioMDX, {
   meta as gaiaScenarioMeta,
 } from "@/content/docs/gaia-scenario.mdx";
-import GitHubFollowerCountMDX, {
-  meta as githubFollowerCountMeta,
-} from "@/content/docs/github-follower-count.mdx";
 import GitHubStarButtonMDX, {
   meta as githubStarButtonMeta,
 } from "@/content/docs/github-star-button.mdx";
@@ -555,12 +552,6 @@ export const docs: Doc[] = [
     href: "/docs/GitHubStarButton",
     meta: githubStarButtonMeta,
     Content: GitHubStarButtonMDX,
-  },
-  {
-    slug: "GitHubFollowerCount",
-    href: "/docs/GitHubFollowerCount",
-    meta: githubFollowerCountMeta,
-    Content: GitHubFollowerCountMDX,
   },
   {
     slug: "Toast",

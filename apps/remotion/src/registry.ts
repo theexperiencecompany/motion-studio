@@ -6,7 +6,6 @@ import { cursorWalkthroughInfo } from "./compositions/CursorWalkthrough/meta";
 import { discordMessagesInfo } from "./compositions/DiscordMessages/meta";
 import { featureCardInfo } from "./compositions/FeatureCard/meta";
 import { gaiaScenarioInfo } from "./compositions/GaiaScenario/meta";
-import { githubFollowerCountInfo } from "./compositions/GitHubFollowerCount/meta";
 import { githubStarButtonInfo } from "./compositions/GitHubStarButton/meta";
 import { instagramMessagesInfo } from "./compositions/InstagramMessages/meta";
 import { instagramPostInfo } from "./compositions/InstagramPost/meta";
@@ -121,7 +120,6 @@ export const compositions: AnyCompositionInfo[] = [
   pricingCardInfo,
   terminalInfo,
   githubStarButtonInfo,
-  githubFollowerCountInfo,
   toastInfo,
   perspectiveMarqueeInfo,
   barChartInfo,
