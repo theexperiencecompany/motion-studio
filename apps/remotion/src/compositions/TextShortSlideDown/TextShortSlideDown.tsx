@@ -1,7 +1,7 @@
 "use client";
 import { AbsoluteFill, Easing, interpolate } from "remotion";
 import { useDesignFrame } from "../../use-design-frame";
-import { BlurCrossfade } from "../blur-crossfade";
+import { useFontReady } from "../../use-font-ready";
 import {
   getSubtitleColor,
   resolveTitleStyle,
@@ -17,6 +17,7 @@ const PUSH_FRAMES = 30;
 const ENTER_FRAMES = 31;
 const ENTER_EASE = Easing.bezier(0.2, 0.8, 0.2, 1);
 const APPLE_EASE = Easing.bezier(0.16, 1, 0.3, 1);
+const MAX_BLUR_PX = 8;
 
 export const TextShortSlideDown: React.FC<TextShortSlideDownProps> = ({
   headline,
@@ -25,10 +26,23 @@ export const TextShortSlideDown: React.FC<TextShortSlideDownProps> = ({
 }) => {
   const frame = useDesignFrame();
   const s = resolveTitleStyle(clipStyle);
+  useFontReady(s.fontFamily);
   const words = headline.trim().split(/\s+/).filter(Boolean);
 
   const lastWordStart = HEADLINE_START + (words.length - 1) * PUSH_FRAMES;
   const lastWordEnd = lastWordStart + ENTER_FRAMES;
+  const headlineProgress = interpolate(
+    frame,
+    [HEADLINE_START, lastWordEnd],
+    [0, 1],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: APPLE_EASE,
+    },
+  );
+  const headlineBlurPx = Math.round((1 - headlineProgress) * MAX_BLUR_PX);
+
   const subtitleStart = lastWordEnd + 14;
   const subtitleProgress = interpolate(
     frame,
@@ -61,6 +75,7 @@ export const TextShortSlideDown: React.FC<TextShortSlideDownProps> = ({
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
+          filter: headlineBlurPx > 0 ? `blur(${headlineBlurPx}px)` : undefined,
         }}
       >
         {words.map((word, i) => {
@@ -78,16 +93,16 @@ export const TextShortSlideDown: React.FC<TextShortSlideDownProps> = ({
           const y = -28 * (1 - progress);
           const scale = snapNear(0.992 + 0.008 * progress, 1);
           return (
-            <BlurCrossfade
+            <span
               key={i}
-              progress={progress}
-              blurPx={2.4}
-              curve="bell"
-              display="block"
-              transform={`translate3d(0, ${snap(y)}px, 0) scale(${scale})`}
+              style={{
+                display: "block",
+                opacity: progress,
+                transform: `translate3d(0, ${snap(y)}px, 0) scale(${scale})`,
+              }}
             >
               {word}
-            </BlurCrossfade>
+            </span>
           );
         })}
       </h1>

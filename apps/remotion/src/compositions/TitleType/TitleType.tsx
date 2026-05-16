@@ -1,6 +1,7 @@
 "use client";
 import { AbsoluteFill, Easing, interpolate } from "remotion";
 import { useDesignFrame } from "../../use-design-frame";
+import { useFontReady } from "../../use-font-ready";
 import {
   getSubtitleColor,
   resolveTitleStyle,
@@ -25,6 +26,7 @@ export const TitleType: React.FC<TitleTypeProps> = ({
 }) => {
   const frame = useDesignFrame();
   const s = resolveTitleStyle(clipStyle);
+  useFontReady(s.fontFamily);
   const elapsed = Math.max(0, frame - HEADLINE_START);
   const visibleChars = Math.min(
     headline.length,

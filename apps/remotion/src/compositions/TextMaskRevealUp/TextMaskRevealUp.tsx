@@ -1,7 +1,7 @@
 "use client";
 import { AbsoluteFill, Easing, interpolate } from "remotion";
 import { useDesignFrame } from "../../use-design-frame";
-import { BlurCrossfade } from "../blur-crossfade";
+import { useFontReady } from "../../use-font-ready";
 import {
   getSubtitleColor,
   resolveTitleStyle,
@@ -17,6 +17,7 @@ const LINE_EASE = Easing.bezier(0.22, 1, 0.36, 1);
 const HEADLINE_START = 8;
 const LINE_STAGGER = 5.4;
 const LINE_DURATION = 46;
+const MAX_BLUR_PX = 12;
 
 export const TextMaskRevealUp: React.FC<TextMaskRevealUpProps> = ({
   headline,
@@ -25,11 +26,25 @@ export const TextMaskRevealUp: React.FC<TextMaskRevealUpProps> = ({
 }) => {
   const frame = useDesignFrame();
   const s = resolveTitleStyle(clipStyle);
+  useFontReady(s.fontFamily);
 
   const lines = headline.split("\n").filter((l) => l.trim());
 
   const lastLineStart = HEADLINE_START + (lines.length - 1) * LINE_STAGGER;
-  const subtitleStart = lastLineStart + LINE_DURATION + 14;
+  const lastLineEnd = lastLineStart + LINE_DURATION;
+  const headlineProgress = interpolate(
+    frame,
+    [HEADLINE_START, lastLineEnd],
+    [0, 1],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: APPLE_EASE,
+    },
+  );
+  const headlineBlurPx = Math.round((1 - headlineProgress) * MAX_BLUR_PX);
+
+  const subtitleStart = lastLineEnd + 14;
   const subtitleProgress = interpolate(
     frame,
     [subtitleStart, subtitleStart + 26],
@@ -61,6 +76,7 @@ export const TextMaskRevealUp: React.FC<TextMaskRevealUpProps> = ({
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
+          filter: headlineBlurPx > 0 ? `blur(${headlineBlurPx}px)` : undefined,
         }}
       >
         {lines.map((line, i) => {
@@ -76,17 +92,17 @@ export const TextMaskRevealUp: React.FC<TextMaskRevealUpProps> = ({
             },
           );
           return (
-            <BlurCrossfade
+            <span
               key={i}
-              progress={progress}
-              blurPx={6}
-              curve="bell"
-              display="block"
-              transform={`translate3d(0, ${snap(30 * (1 - progress))}px, 0)`}
-              whiteSpace="nowrap"
+              style={{
+                display: "block",
+                opacity: progress,
+                transform: `translate3d(0, ${snap(30 * (1 - progress))}px, 0)`,
+                whiteSpace: "nowrap",
+              }}
             >
               {line}
-            </BlurCrossfade>
+            </span>
           );
         })}
       </h1>

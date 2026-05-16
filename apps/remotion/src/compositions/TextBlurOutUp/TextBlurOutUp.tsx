@@ -1,7 +1,7 @@
 "use client";
 import { AbsoluteFill, Easing, interpolate } from "remotion";
 import { useDesignFrame } from "../../use-design-frame";
-import { BlurCrossfade } from "../blur-crossfade";
+import { useFontReady } from "../../use-font-ready";
 import {
   getSubtitleColor,
   resolveTitleStyle,
@@ -17,6 +17,7 @@ const EASE = Easing.bezier(0.22, 1, 0.36, 1);
 const HEADLINE_START = 8;
 const WORD_STAGGER = 1.68;
 const WORD_DURATION = 34;
+const MAX_BLUR_PX = 12;
 
 export const TextBlurOutUp: React.FC<TextBlurOutUpProps> = ({
   headline,
@@ -25,10 +26,23 @@ export const TextBlurOutUp: React.FC<TextBlurOutUpProps> = ({
 }) => {
   const frame = useDesignFrame();
   const s = resolveTitleStyle(clipStyle);
+  useFontReady(s.fontFamily);
   const words = headline.trim().split(/\s+/).filter(Boolean);
 
   const lastWordEnd =
     HEADLINE_START + (words.length - 1) * WORD_STAGGER + WORD_DURATION;
+  const headlineProgress = interpolate(
+    frame,
+    [HEADLINE_START, lastWordEnd],
+    [0, 1],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: APPLE_EASE,
+    },
+  );
+  const headlineBlurPx = Math.round((1 - headlineProgress) * MAX_BLUR_PX);
+
   const subtitleStart = lastWordEnd + 14;
   const subtitleProgress = interpolate(
     frame,
@@ -66,6 +80,7 @@ export const TextBlurOutUp: React.FC<TextBlurOutUpProps> = ({
           flexWrap: "wrap",
           justifyContent: "center",
           gap: "0 0.28em",
+          filter: headlineBlurPx > 0 ? `blur(${headlineBlurPx}px)` : undefined,
         }}
       >
         {words.map((word, i) => {
@@ -82,15 +97,16 @@ export const TextBlurOutUp: React.FC<TextBlurOutUpProps> = ({
           );
           const y = 10 * (1 - progress);
           return (
-            <BlurCrossfade
+            <span
               key={i}
-              progress={progress}
-              blurPx={6}
-              curve="bell"
-              transform={`translate3d(0, ${snap(y)}px, 0)`}
+              style={{
+                display: "inline-block",
+                opacity: progress,
+                transform: `translate3d(0, ${snap(y)}px, 0)`,
+              }}
             >
               {word}
-            </BlurCrossfade>
+            </span>
           );
         })}
       </h1>

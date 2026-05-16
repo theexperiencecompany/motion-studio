@@ -1,6 +1,7 @@
 "use client";
 import { AbsoluteFill, Easing, interpolate } from "remotion";
 import { useDesignFrame } from "../../use-design-frame";
+import { useFontReady } from "../../use-font-ready";
 import {
   getSubtitleColor,
   resolveTitleStyle,
@@ -15,6 +16,7 @@ const SWEEP_EASE = Easing.bezier(0.22, 1, 0.36, 1);
 
 const HEADLINE_START = 8;
 const HEADLINE_DURATION = 51;
+const MAX_BLUR_PX = 10;
 
 export const TextShimmerSweep: React.FC<TextShimmerSweepProps> = ({
   headline,
@@ -23,6 +25,7 @@ export const TextShimmerSweep: React.FC<TextShimmerSweepProps> = ({
 }) => {
   const frame = useDesignFrame();
   const s = resolveTitleStyle(clipStyle);
+  useFontReady(s.fontFamily);
 
   const headlineProgress = interpolate(
     frame,
@@ -30,6 +33,7 @@ export const TextShimmerSweep: React.FC<TextShimmerSweepProps> = ({
     [0, 1],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: SWEEP_EASE },
   );
+  const headlineBlurPx = Math.round((1 - headlineProgress) * MAX_BLUR_PX);
 
   const x = -22 * (1 - headlineProgress);
 
@@ -55,41 +59,20 @@ export const TextShimmerSweep: React.FC<TextShimmerSweepProps> = ({
         textAlign: "center",
       }}
     >
-      <div
+      <h1
         style={{
-          position: "relative",
+          fontSize: 132,
+          fontWeight: 700,
+          letterSpacing: "-0.045em",
+          lineHeight: 1.05,
+          margin: 0,
+          opacity: headlineProgress,
           transform: `translate3d(${snap(x)}px, 0, 0)`,
+          filter: headlineBlurPx > 0 ? `blur(${headlineBlurPx}px)` : undefined,
         }}
       >
-        <h1
-          style={{
-            fontSize: 132,
-            fontWeight: 700,
-            letterSpacing: "-0.045em",
-            lineHeight: 1.05,
-            margin: 0,
-            opacity: headlineProgress,
-          }}
-        >
-          {headline}
-        </h1>
-        <div
-          aria-hidden
-          style={{
-            position: "absolute",
-            inset: 0,
-            fontSize: 132,
-            fontWeight: 700,
-            letterSpacing: "-0.045em",
-            lineHeight: 1.05,
-            opacity: 1 - headlineProgress,
-            filter: "blur(8px)",
-            pointerEvents: "none",
-          }}
-        >
-          {headline}
-        </div>
-      </div>
+        {headline}
+      </h1>
 
       {subtitle.trim() && (
         <p

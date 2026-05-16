@@ -1,7 +1,7 @@
 "use client";
 import { AbsoluteFill, Easing, interpolate } from "remotion";
 import { useDesignFrame } from "../../use-design-frame";
-import { BlurCrossfade } from "../blur-crossfade";
+import { useFontReady } from "../../use-font-ready";
 import {
   getSubtitleColor,
   resolveTitleStyle,
@@ -18,6 +18,7 @@ const ENTER_FRAMES = 22;
 const ENTRY_OFFSET = 88;
 const ENTER_EASE = Easing.bezier(0.2, 0.8, 0.2, 1);
 const APPLE_EASE = Easing.bezier(0.16, 1, 0.3, 1);
+const MAX_BLUR_PX = 10;
 
 export const TextKineticCenterBuild: React.FC<TextKineticCenterBuildProps> = ({
   headline,
@@ -26,10 +27,23 @@ export const TextKineticCenterBuild: React.FC<TextKineticCenterBuildProps> = ({
 }) => {
   const frame = useDesignFrame();
   const s = resolveTitleStyle(clipStyle);
+  useFontReady(s.fontFamily);
   const words = headline.trim().split(/\s+/).filter(Boolean);
 
   const lastWordStart = HEADLINE_START + (words.length - 1) * PUSH_FRAMES;
   const lastWordEnd = lastWordStart + ENTER_FRAMES;
+  const headlineProgress = interpolate(
+    frame,
+    [HEADLINE_START, lastWordEnd],
+    [0, 1],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: APPLE_EASE,
+    },
+  );
+  const headlineBlurPx = Math.round((1 - headlineProgress) * MAX_BLUR_PX);
+
   const subtitleStart = lastWordEnd + 14;
   const subtitleProgress = interpolate(
     frame,
@@ -63,6 +77,7 @@ export const TextKineticCenterBuild: React.FC<TextKineticCenterBuildProps> = ({
           flexWrap: "wrap",
           justifyContent: "center",
           gap: "0 0.28em",
+          filter: headlineBlurPx > 0 ? `blur(${headlineBlurPx}px)` : undefined,
         }}
       >
         {words.map((word, i) => {
@@ -82,15 +97,16 @@ export const TextKineticCenterBuild: React.FC<TextKineticCenterBuildProps> = ({
           const x = ENTRY_OFFSET * restRemainder;
           const scale = 1 - 0.008 * restRemainder;
           return (
-            <BlurCrossfade
+            <span
               key={i}
-              progress={progress}
-              blurPx={3.5}
-              curve="bell"
-              transform={`translate3d(${snap(x)}px, 0, 0) scale(${scale})`}
+              style={{
+                display: "inline-block",
+                opacity: progress,
+                transform: `translate3d(${snap(x)}px, 0, 0) scale(${scale})`,
+              }}
             >
               {word}
-            </BlurCrossfade>
+            </span>
           );
         })}
       </h1>

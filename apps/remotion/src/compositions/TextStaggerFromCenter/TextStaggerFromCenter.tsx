@@ -1,7 +1,7 @@
 "use client";
 import { AbsoluteFill, Easing, interpolate } from "remotion";
 import { useDesignFrame } from "../../use-design-frame";
-import { BlurCrossfade } from "../blur-crossfade";
+import { useFontReady } from "../../use-font-ready";
 import {
   getSubtitleColor,
   resolveTitleStyle,
@@ -17,6 +17,7 @@ const CHAR_EASE = Easing.bezier(0.22, 1, 0.36, 1);
 const HEADLINE_START = 8;
 const CHAR_DURATION = 37;
 const CHAR_STAGGER = 1.32;
+const MAX_BLUR_PX = 10;
 
 export const TextStaggerFromCenter: React.FC<TextStaggerFromCenterProps> = ({
   headline,
@@ -25,11 +26,24 @@ export const TextStaggerFromCenter: React.FC<TextStaggerFromCenterProps> = ({
 }) => {
   const frame = useDesignFrame();
   const s = resolveTitleStyle(clipStyle);
+  useFontReady(s.fontFamily);
   const chars = headline.split("");
   const center = (chars.length - 1) / 2;
   const maxDist = center;
 
   const lastCharEnd = HEADLINE_START + maxDist * CHAR_STAGGER + CHAR_DURATION;
+  const headlineProgress = interpolate(
+    frame,
+    [HEADLINE_START, lastCharEnd],
+    [0, 1],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: APPLE_EASE,
+    },
+  );
+  const headlineBlurPx = Math.round((1 - headlineProgress) * MAX_BLUR_PX);
+
   const subtitleStart = lastCharEnd + 14;
   const subtitleProgress = interpolate(
     frame,
@@ -66,6 +80,7 @@ export const TextStaggerFromCenter: React.FC<TextStaggerFromCenterProps> = ({
           display: "flex",
           flexWrap: "wrap",
           justifyContent: "center",
+          filter: headlineBlurPx > 0 ? `blur(${headlineBlurPx}px)` : undefined,
         }}
       >
         {chars.map((char, i) => {
@@ -83,16 +98,17 @@ export const TextStaggerFromCenter: React.FC<TextStaggerFromCenterProps> = ({
           );
           const y = (1 - progress) * 12;
           return (
-            <BlurCrossfade
+            <span
               key={i}
-              progress={progress}
-              blurPx={3}
-              curve="bell"
-              transform={`translate3d(0, ${snap(y)}px, 0)`}
-              whiteSpace="pre"
+              style={{
+                display: "inline-block",
+                opacity: progress,
+                transform: `translate3d(0, ${snap(y)}px, 0)`,
+                whiteSpace: "pre",
+              }}
             >
               {char === " " ? " " : char}
-            </BlurCrossfade>
+            </span>
           );
         })}
       </h1>

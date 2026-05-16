@@ -1,6 +1,7 @@
 "use client";
 import { AbsoluteFill, Easing, interpolate } from "remotion";
 import { useDesignFrame } from "../../use-design-frame";
+import { useFontReady } from "../../use-font-ready";
 import {
   getSubtitleColor,
   resolveTitleStyle,
@@ -16,6 +17,7 @@ const FADE_EASE = Easing.bezier(0.2, 0, 0, 1);
 
 const HEADLINE_START = 8;
 const HEADLINE_DURATION = 25;
+const MAX_BLUR_PX = 6;
 
 export const TextFadeThrough: React.FC<TextFadeThroughProps> = ({
   headline,
@@ -24,6 +26,7 @@ export const TextFadeThrough: React.FC<TextFadeThroughProps> = ({
 }) => {
   const frame = useDesignFrame();
   const s = resolveTitleStyle(clipStyle);
+  useFontReady(s.fontFamily);
 
   const headlineProgress = interpolate(
     frame,
@@ -31,6 +34,7 @@ export const TextFadeThrough: React.FC<TextFadeThroughProps> = ({
     [0, 1],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: FADE_EASE },
   );
+  const headlineBlurPx = Math.round((1 - headlineProgress) * MAX_BLUR_PX);
 
   const scale = snapNear(0.99 + headlineProgress * 0.01, 1);
   const y = 6 * (1 - headlineProgress);
@@ -57,41 +61,20 @@ export const TextFadeThrough: React.FC<TextFadeThroughProps> = ({
         textAlign: "center",
       }}
     >
-      <div
+      <h1
         style={{
-          position: "relative",
+          fontSize: 132,
+          fontWeight: 700,
+          letterSpacing: "-0.045em",
+          lineHeight: 1.05,
+          margin: 0,
+          opacity: headlineProgress,
           transform: `translate3d(0, ${snap(y)}px, 0) scale(${scale})`,
+          filter: headlineBlurPx > 0 ? `blur(${headlineBlurPx}px)` : undefined,
         }}
       >
-        <h1
-          style={{
-            fontSize: 132,
-            fontWeight: 700,
-            letterSpacing: "-0.045em",
-            lineHeight: 1.05,
-            margin: 0,
-            opacity: headlineProgress,
-          }}
-        >
-          {headline}
-        </h1>
-        <div
-          aria-hidden
-          style={{
-            position: "absolute",
-            inset: 0,
-            fontSize: 132,
-            fontWeight: 700,
-            letterSpacing: "-0.045em",
-            lineHeight: 1.05,
-            opacity: 1 - headlineProgress,
-            filter: "blur(2px)",
-            pointerEvents: "none",
-          }}
-        >
-          {headline}
-        </div>
-      </div>
+        {headline}
+      </h1>
 
       {subtitle.trim() && (
         <p

@@ -1,6 +1,7 @@
 "use client";
 import { AbsoluteFill, Easing, interpolate } from "remotion";
 import { useDesignFrame } from "../../use-design-frame";
+import { useFontReady } from "../../use-font-ready";
 import {
   getSubtitleColor,
   resolveTitleStyle,
@@ -16,6 +17,7 @@ const AXIS_EASE = Easing.bezier(0.2, 0, 0, 1);
 
 const HEADLINE_START = 8;
 const HEADLINE_DURATION = 31;
+const MAX_BLUR_PX = 6;
 
 export const TextSharedAxisZ: React.FC<TextSharedAxisZProps> = ({
   headline,
@@ -24,6 +26,7 @@ export const TextSharedAxisZ: React.FC<TextSharedAxisZProps> = ({
 }) => {
   const frame = useDesignFrame();
   const s = resolveTitleStyle(clipStyle);
+  useFontReady(s.fontFamily);
 
   const headlineProgress = interpolate(
     frame,
@@ -31,6 +34,7 @@ export const TextSharedAxisZ: React.FC<TextSharedAxisZProps> = ({
     [0, 1],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: AXIS_EASE },
   );
+  const headlineBlurPx = Math.round((1 - headlineProgress) * MAX_BLUR_PX);
 
   const scale = snapNear(0.9 + headlineProgress * 0.1, 1);
 
@@ -56,36 +60,20 @@ export const TextSharedAxisZ: React.FC<TextSharedAxisZProps> = ({
         textAlign: "center",
       }}
     >
-      <div style={{ position: "relative", transform: `scale(${scale})` }}>
-        <h1
-          style={{
-            fontSize: 132,
-            fontWeight: 700,
-            letterSpacing: "-0.045em",
-            lineHeight: 1.05,
-            margin: 0,
-            opacity: headlineProgress,
-          }}
-        >
-          {headline}
-        </h1>
-        <div
-          aria-hidden
-          style={{
-            position: "absolute",
-            inset: 0,
-            fontSize: 132,
-            fontWeight: 700,
-            letterSpacing: "-0.045em",
-            lineHeight: 1.05,
-            opacity: 1 - headlineProgress,
-            filter: "blur(2px)",
-            pointerEvents: "none",
-          }}
-        >
-          {headline}
-        </div>
-      </div>
+      <h1
+        style={{
+          fontSize: 132,
+          fontWeight: 700,
+          letterSpacing: "-0.045em",
+          lineHeight: 1.05,
+          margin: 0,
+          opacity: headlineProgress,
+          transform: `scale(${scale})`,
+          filter: headlineBlurPx > 0 ? `blur(${headlineBlurPx}px)` : undefined,
+        }}
+      >
+        {headline}
+      </h1>
 
       {subtitle.trim() && (
         <p
