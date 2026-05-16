@@ -16,7 +16,7 @@ import {
   RadioGroup,
   RadioGroupItem,
 } from "@workspace/ui/components/radio-group";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   applyPreset,
   DEFAULT_EXPORT_OPTIONS,
@@ -75,17 +75,27 @@ export function ExportSettingsModal({
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [zipBusy, setZipBusy] = useState(false);
   const [zipError, setZipError] = useState<string | null>(null);
+  const [zipStartedAt, setZipStartedAt] = useState<number | null>(null);
+  const [zipFinishedAt, setZipFinishedAt] = useState<number | null>(null);
+  const zipElapsedMs = useTicker(zipStartedAt, zipFinishedAt, zipBusy);
 
   async function handleDownloadZip() {
-    setZipBusy(true);
     setZipError(null);
+    setZipFinishedAt(null);
+    const startedAt = Date.now();
+    setZipStartedAt(startedAt);
+    setZipBusy(true);
     try {
       const blob = await buildExportZip({ project });
       const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
       downloadBlob(blob, `motion-studio-render-${stamp}.zip`);
-      onOpenChange(false);
+      setZipFinishedAt(Date.now());
+      // Leave the modal open briefly so the user sees the final time before
+      // it disappears. They can close it manually too.
+      window.setTimeout(() => onOpenChange(false), 1500);
     } catch (err) {
       setZipError(err instanceof Error ? err.message : String(err));
+      setZipFinishedAt(Date.now());
     } finally {
       setZipBusy(false);
     }
@@ -251,7 +261,11 @@ export function ExportSettingsModal({
             onClick={handleDownloadZip}
             disabled={zipBusy}
           >
-            {zipBusy ? "Packaging…" : "Download fast renderer (zip)"}
+            {zipBusy
+              ? `Packaging… ${formatElapsed(zipElapsedMs)}`
+              : zipFinishedAt && !zipError
+                ? `Downloaded · packaged in ${formatElapsed(zipElapsedMs)}`
+                : "Download fast renderer (zip)"}
           </Button>
         </div>
 
@@ -272,6 +286,29 @@ export function ExportSettingsModal({
       </DialogContent>
     </Dialog>
   );
+}
+
+function useTicker(
+  startedAt: number | null,
+  finishedAt: number | null,
+  ticking: boolean,
+): number {
+  const [, force] = useState(0);
+  useEffect(() => {
+    if (!ticking || startedAt == null || finishedAt != null) return;
+    const id = window.setInterval(() => force((n) => n + 1), 100);
+    return () => window.clearInterval(id);
+  }, [ticking, startedAt, finishedAt]);
+  if (startedAt == null) return 0;
+  return (finishedAt ?? Date.now()) - startedAt;
+}
+
+function formatElapsed(ms: number): string {
+  if (ms < 0) return "0.0s";
+  if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`;
+  const min = Math.floor(ms / 60_000);
+  const sec = Math.round((ms % 60_000) / 1000);
+  return `${min}m ${sec}s`;
 }
 
 function Field({
