@@ -16,17 +16,17 @@ const CHAR_EASE = Easing.bezier(0.22, 1, 0.36, 1);
 const HEADLINE_START = 8;
 const CHAR_DURATION = 54;
 const CHAR_STAGGER = 1.5;
-const BLUR_RADIUS = 8;
+const MAX_BLUR_PX = 12;
+const MAX_RISE_PX = 16;
 
-// "Soft blur in" without rendering jitter. The traditional approach
-// — animating filter: blur(N) on each character — produces 1-px AA
-// wobble during animation because Chromium's Gaussian filter is
-// unstable when the kernel radius changes sub-pixel each frame. We
-// avoid that by never animating the filter value: a STATIC blurred
-// ghost is overlaid on each sharp character and the two crossfade by
-// opacity. Crossfading opacity does not allocate filter buffers, so
-// adjacent frames produce byte-identical-ish output and the eye sees
-// a smooth focus-pull instead of glyph-edge shimmer.
+// Each character fades in, rises up, and de-blurs over its own
+// stagger window. To avoid the 1-px AA flutter that smooth filter:
+// blur radius changes cause, the radius is snapped to integer pixels
+// — adjacent frames share the same Gaussian kernel until the rounded
+// radius actually changes, so the rasterized glyph stays stable
+// between those steps. Visually it still reads as a smooth focus-in
+// because integer-px blur steps at this radius (12→0) are small
+// relative to the glyph size.
 export const TextSoftBlurIn: React.FC<TextSoftBlurInProps> = ({
   headline,
   subtitle,
@@ -88,37 +88,20 @@ export const TextSoftBlurIn: React.FC<TextSoftBlurInProps> = ({
               easing: CHAR_EASE,
             },
           );
-          // Sharp character fades 0 → 1 over its window.
-          const sharpOpacity = progress;
-          // Static-blur ghost rides a bell curve so it appears AND
-          // disappears within the same window: at progress=0 it is
-          // invisible (so unstarted chars aren't pre-rendered) and at
-          // progress=1 it is invisible (only the sharp version remains).
-          const blurOpacity = 4 * progress * (1 - progress);
+          const y = Math.round((1 - progress) * MAX_RISE_PX);
+          const blurPx = Math.round((1 - progress) * MAX_BLUR_PX);
           return (
             <span
               key={i}
               style={{
                 display: "inline-block",
-                position: "relative",
+                opacity: progress,
+                transform: `translate3d(0, ${y}px, 0)`,
+                filter: blurPx > 0 ? `blur(${blurPx}px)` : undefined,
                 whiteSpace: "pre",
               }}
             >
-              <span style={{ opacity: sharpOpacity }}>
-                {char === " " ? " " : char}
-              </span>
-              <span
-                aria-hidden
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  opacity: blurOpacity,
-                  filter: `blur(${BLUR_RADIUS}px)`,
-                  pointerEvents: "none",
-                }}
-              >
-                {char === " " ? " " : char}
-              </span>
+              {char === " " ? " " : char}
             </span>
           );
         })}
