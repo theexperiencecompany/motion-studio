@@ -43,6 +43,15 @@ const exportFps = fpsArg ? Number(fpsArg.slice("--fps=".length)) : project.fps;
 if (![30, 60, 120].includes(exportFps)) {
   throw new Error(\`Unsupported --fps=\${exportFps}. Allowed: 30, 60, 120.\`);
 }
+
+// Optional resolution multiplier. Pass --scale=2 to render at 2× the
+// composition's native dimensions (1080p → 4K, 720p → 1440p). Render time
+// scales roughly with pixel count, so 4K is ~4× slower than 1080p.
+const scaleArg = process.argv.find((a) => a.startsWith("--scale="));
+const renderScale = scaleArg ? Number(scaleArg.slice("--scale=".length)) : 1;
+if (!(renderScale >= 0.25 && renderScale <= 4)) {
+  throw new Error(\`Unsupported --scale=\${renderScale}. Allowed: 0.25–4.\`);
+}
 if (exportFps !== project.fps) {
   const scale = exportFps / project.fps;
   console.log(\`[render] scaling \${project.fps}fps -> \${exportFps}fps (\${scale}x)\`);
@@ -149,8 +158,11 @@ const composition = await selectComposition({
   inputProps: inlined,
 });
 
+const outW = Math.round(composition.width * renderScale);
+const outH = Math.round(composition.height * renderScale);
 console.log(
-  \`[render] starting — \${composition.width}x\${composition.height} @ \${composition.fps}fps, \${composition.durationInFrames} frames\`,
+  \`[render] starting — \${outW}x\${outH} @ \${composition.fps}fps, \${composition.durationInFrames} frames\` +
+    (renderScale !== 1 ? \` (\${renderScale}x scale)\` : ""),
 );
 
 let lastPct = -1;
@@ -160,6 +172,7 @@ await renderMedia({
   codec: "h264",
   outputLocation: outPath,
   inputProps: inlined,
+  scale: renderScale,
   // JPEG intermediate (the default) re-quantises each frame slightly,
   // feeding noise into h264 which then encodes it as visible glyph-edge
   // shimmer on at-rest text. PNG is lossless from Chromium → ffmpeg.
@@ -248,6 +261,17 @@ node render.mjs --fps=120
 Supported values: \`--fps=30\`, \`--fps=60\`, \`--fps=120\`. The compositions are
 fps-agnostic via the \`useDesignFrame()\` hook, so animation timing stays
 tied to wall-clock time regardless of which fps you pick.
+
+To render at a higher resolution (e.g. 4K from a 1080p project), pass
+\`--scale\`:
+
+\`\`\`bash
+node render.mjs --scale=2          # 1080p → 4K (3840×2160)
+node render.mjs --scale=2 --fps=60 # same, explicit fps
+\`\`\`
+
+Supported values: any number between 0.25 and 4. Render time scales
+roughly with pixel count; \`--scale=2\` takes ~4× as long as the default.
 
 The first run will:
 
