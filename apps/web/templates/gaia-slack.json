@@ -106,7 +106,7 @@
       "compositionId": "QrCode",
       "durationInFrames": 280,
       "props": {
-        "value": "https://heygaia.io/bots",
+        "value": "https://heygaia.io/slack-bot",
         "caption": "heygaia.io/bots",
         "moduleStyle": "dots",
         "logoPreset": "slack",
