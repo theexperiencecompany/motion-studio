@@ -232,22 +232,22 @@ function NotificationBanner({
             fontWeight: 400,
             lineHeight: 1.3,
             letterSpacing: "-0.005em",
-            wordSpacing: "0.05em",
+            display: "flex",
+            flexWrap: "wrap",
           }}
         >
-          {bodyWords.flatMap((word, i) => {
-            const node = (
-              <PopText
-                key={`w-${i}`}
-                frame={frame}
-                fps={fps}
-                delay={D_BODY_START + i * WORD_STAGGER}
-              >
+          {bodyWords.map((word, i) => (
+            <PopText
+              key={i}
+              frame={frame}
+              fps={fps}
+              delay={D_BODY_START + i * WORD_STAGGER}
+            >
+              <span style={{ display: "inline-block", marginRight: "0.28em" }}>
                 {word}
-              </PopText>
-            );
-            return i === 0 ? [node] : [" ", node];
-          })}
+              </span>
+            </PopText>
+          ))}
         </div>
       </div>
     </div>
