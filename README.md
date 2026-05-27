@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 <p align="center">
   <img src="apps/web/public/images/clapperboard.png" alt="Motion Studio" width="160" />
 </p>
@@ -32,9 +31,24 @@
 <br />
 
 <p align="center">
-  <picture>
-    <img src="apps/web/public/images/screenshots/components.jpg" alt="Browse the Motion Studio component library" width="100%" />
-  </picture>
+  <video
+    src="https://github.com/theexperiencecompany/motion-studio/raw/refs/heads/master/apps/remotion/public/motion.mp4"
+    poster="apps/web/public/images/screenshots/studio.jpg"
+    controls
+    autoplay
+    loop
+    muted
+    playsinline
+    width="100%"
+  >
+    <a href="https://github.com/theexperiencecompany/motion-studio/raw/refs/heads/master/apps/remotion/public/motion.mp4">▶ Watch the Motion Studio showcase</a>
+  </video>
+</p>
+
+<br />
+
+<p align="center">
+  <img src="apps/web/public/images/screenshots/components.jpg" alt="Browse the Motion Studio component library" width="100%" />
   <br />
   <sub><i>Browse 70+ animated scenes — every preview is a one-click drop onto the timeline.</i></sub>
 </p>
@@ -42,9 +56,7 @@
 <br />
 
 <p align="center">
-  <picture>
-    <img src="apps/web/public/images/screenshots/studio.jpg" alt="The Motion Studio editor — timeline, preview and inspector" width="100%" />
-  </picture>
+  <img src="apps/web/public/images/screenshots/studio.jpg" alt="The Motion Studio editor — timeline, preview and inspector" width="100%" />
   <br />
   <sub><i>Assemble scenes on a timeline, edit per-clip styling and transitions, export to MP4.</i></sub>
 </p>
@@ -92,6 +104,7 @@ Then open [http://localhost:3000/studio](http://localhost:3000/studio).
 ## License
 
 MIT.
+<<<<<<< HEAD
 =======
 # Motion Studio
 By [TheExperienceCompany](https://github.com/theexperiencecompany)
@@ -103,3 +116,5 @@ By [TheExperienceCompany](https://github.com/theexperiencecompany)
 <p align="center">
   <a href="apps/remotion/public/motion.mp4">▶ Watch the showcase</a>
 </p>
+=======
+>>>>>>> 5d08826 (feat(readme): add video showcase to README and update component library section)
