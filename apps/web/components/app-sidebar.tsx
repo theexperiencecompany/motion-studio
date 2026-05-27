@@ -4,6 +4,7 @@ import {
   AnalyticsUpIcon,
   Book01Icon,
   BrowserIcon,
+  CameraVideoIcon,
   CursorMagicSelection02Icon,
   CursorTextIcon,
   DashedLineCircleIcon,
@@ -84,6 +85,7 @@ const gettingStarted: NavItem[] = [
   },
   { title: "Using the studio", href: "/docs/using-the-studio", icon: PlayIcon },
   { title: "Components", href: "/docs/components", icon: DashedLineCircleIcon },
+  { title: "Creators", href: "/creators", icon: CameraVideoIcon },
   { title: "Contributors", href: "/docs/contributors", icon: UserLove02Icon },
 ];
 
