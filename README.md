@@ -104,17 +104,3 @@ Then open [http://localhost:3000/studio](http://localhost:3000/studio).
 ## License
 
 MIT.
-<<<<<<< HEAD
-=======
-# Motion Studio
-By [TheExperienceCompany](https://github.com/theexperiencecompany)
-
-<p align="center">
-  <video src="https://github.com/theexperiencecompany/motion-studio/raw/master/apps/remotion/public/motion.mp4" controls autoplay loop muted playsinline width="100%"></video>
-</p>
-
-<p align="center">
-  <a href="apps/remotion/public/motion.mp4">▶ Watch the showcase</a>
-</p>
-=======
->>>>>>> 5d08826 (feat(readme): add video showcase to README and update component library section)
