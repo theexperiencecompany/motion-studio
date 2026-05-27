@@ -1,7 +1,6 @@
 "use client";
-import { AbsoluteFill, Audio, useVideoConfig } from "remotion";
+import { AbsoluteFill, Audio, useCurrentFrame, useVideoConfig } from "remotion";
 import { type ClipStyle, resolveClipStyle } from "../../clip-style";
-import { useDesignFrame } from "../../use-design-frame";
 import { FONTS, fontKeyFromFamily, type HAlign, type VAlign } from "./config";
 
 export type CaptionWord = {
@@ -21,6 +20,12 @@ export type TikTokCaptionProps = {
 };
 
 const BASE_FONT_SIZE = 132;
+// Group consecutive words into a phrase until either a noticeable speech
+// gap (the speaker pauses) or the phrase grows too long to read in one
+// glance. Tuned for short-form voiceover pacing.
+const PHRASE_MAX_GAP_SECONDS = 0.5;
+const PHRASE_MAX_WORDS = 6;
+const INACTIVE_COLOR = "#a1a1aa";
 
 const VERT_TO_JUSTIFY: Record<VAlign, string> = {
   top: "flex-start",
@@ -40,6 +45,24 @@ const HORIZ_TO_TEXT_ALIGN: Record<HAlign, "left" | "center" | "right"> = {
   right: "right",
 };
 
+function groupIntoPhrases(words: CaptionWord[]): CaptionWord[][] {
+  const phrases: CaptionWord[][] = [];
+  let current: CaptionWord[] = [];
+  for (const w of words) {
+    const prev = current[current.length - 1];
+    const shouldBreak =
+      current.length >= PHRASE_MAX_WORDS ||
+      (prev && w.start - prev.end > PHRASE_MAX_GAP_SECONDS);
+    if (shouldBreak && current.length > 0) {
+      phrases.push(current);
+      current = [];
+    }
+    current.push(w);
+  }
+  if (current.length > 0) phrases.push(current);
+  return phrases;
+}
+
 export const TikTokCaption: React.FC<TikTokCaptionProps> = ({
   words,
   audioUrl,
@@ -48,7 +71,9 @@ export const TikTokCaption: React.FC<TikTokCaptionProps> = ({
   fontScale = 1,
   clipStyle,
 }) => {
-  const frame = useDesignFrame();
+  // Real frame — word timestamps from Whisper are wall-clock seconds, so
+  // they must be compared against real time, not the 60fps design frame.
+  const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
 
   const s = resolveClipStyle(clipStyle, {
@@ -80,7 +105,11 @@ export const TikTokCaption: React.FC<TikTokCaptionProps> = ({
     }
   }
 
-  const activeWord = activeIndex >= 0 ? words[activeIndex] : undefined;
+  const phrases = groupIntoPhrases(words);
+  const activePhrase =
+    activeIndex >= 0
+      ? phrases.find((p) => p.some((w) => w === words[activeIndex]))
+      : undefined;
 
   const shortSide = Math.min(width, height);
   const baseSize = (BASE_FONT_SIZE * shortSide) / 1080;
@@ -104,26 +133,41 @@ export const TikTokCaption: React.FC<TikTokCaptionProps> = ({
     >
       {audioUrl ? <Audio src={audioUrl} /> : null}
 
-      {activeWord ? (
-        <span
-          key={activeIndex}
+      {activePhrase ? (
+        <div
           style={{
-            display: "inline-block",
-            fontSize,
-            fontWeight: font.weight,
-            letterSpacing: "-0.01em",
-            color: s.color,
-            WebkitTextStroke: `${strokeWidth}px #000`,
-            paintOrder: "stroke fill",
-            textShadow: isTransparent
-              ? `0 ${fontSize * 0.025}px ${fontSize * 0.06}px rgba(0,0,0,0.55)`
-              : `0 ${fontSize * 0.02}px ${fontSize * 0.04}px rgba(0,0,0,0.5)`,
+            display: "flex",
+            flexWrap: "wrap",
+            gap: `${fontSize * 0.12}px ${fontSize * 0.28}px`,
+            justifyContent: HORIZ_TO_ALIGN[captionHAlign],
             textAlign: HORIZ_TO_TEXT_ALIGN[captionHAlign],
+            maxWidth: width * 0.88,
             lineHeight: 1.05,
           }}
         >
-          {activeWord.text}
-        </span>
+          {activePhrase.map((w, i) => {
+            const isActive = w === words[activeIndex];
+            return (
+              <span
+                key={`${w.start}-${i}`}
+                style={{
+                  display: "inline-block",
+                  fontSize,
+                  fontWeight: font.weight,
+                  letterSpacing: "-0.01em",
+                  color: isActive ? s.accent : INACTIVE_COLOR,
+                  WebkitTextStroke: `${strokeWidth}px #000`,
+                  paintOrder: "stroke fill",
+                  textShadow: isTransparent
+                    ? `0 ${fontSize * 0.025}px ${fontSize * 0.06}px rgba(0,0,0,0.55)`
+                    : `0 ${fontSize * 0.02}px ${fontSize * 0.04}px rgba(0,0,0,0.5)`,
+                }}
+              >
+                {w.text}
+              </span>
+            );
+          })}
+        </div>
       ) : null}
     </AbsoluteFill>
   );
