@@ -5,6 +5,7 @@ import type { TextFocusBlurResolveProps } from "./TextFocusBlurResolve";
 export const textFocusBlurResolveInfo: CompositionInfo<TextFocusBlurResolveProps> =
   {
     id: "TextFocusBlurResolve",
+    category: "text",
     title: "Focus Pull",
     description:
       "A premium focus pull from heavy blur to crisp text, then a soft blur-out exit.",

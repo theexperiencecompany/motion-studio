@@ -15,6 +15,7 @@ export const textTopDownLettersDefaultProps: TextTopDownLettersProps = {
 export const textTopDownLettersInfo: CompositionInfo<TextTopDownLettersProps> =
   {
     id: "TextTopDownLetters",
+    category: "text",
     title: "Letters Drop Down",
     description:
       "Letters descend from above in a pronounced staircase, one symbol at a time, with zero blur.",

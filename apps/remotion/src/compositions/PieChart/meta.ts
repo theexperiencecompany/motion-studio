@@ -12,6 +12,7 @@ export const pieChartDefaultProps: PieChartProps = {
 
 export const pieChartInfo: CompositionInfo<PieChartProps> = {
   id: "PieChart",
+  category: "data",
   title: "Pie Chart",
   description:
     "A pie / donut chart that sweeps each slice in clockwise, with a legend and an optional total in the center.",

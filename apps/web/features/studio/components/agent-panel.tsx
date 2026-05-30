@@ -324,9 +324,9 @@ function runClientTool(
       dispatch({ type: "DELETE_CLIP", clipId });
       return { ok: true };
     }
-    // Server-executed tools (listScenes, getSceneDetails) come through
-    // onToolCall as well, but their result is already produced upstream —
-    // returning undefined tells the caller to skip addToolResult.
+    // Server-executed tools (listScenesInCategory, getSceneDetails) come
+    // through onToolCall too, but their result is already produced
+    // upstream — returning undefined tells the caller to skip addToolResult.
     default:
       return undefined;
   }

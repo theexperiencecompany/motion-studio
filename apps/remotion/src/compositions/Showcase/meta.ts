@@ -26,6 +26,7 @@ const COMPOSITION_EXCLUDES = [
 
 export const showcaseInfo: CompositionInfo<ShowcaseProps> = {
   id: "Showcase",
+  category: "layout",
   title: "Showcase Frame",
   description:
     "A presentation frame with eyebrow, title, caption, and a configurable backdrop — wraps any other scene inside a video / browser / minimal / floating frame.",

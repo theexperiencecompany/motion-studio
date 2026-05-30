@@ -10,6 +10,7 @@ export const radarChartDefaultProps: RadarChartProps = {
 
 export const radarChartInfo: CompositionInfo<RadarChartProps> = {
   id: "RadarChart",
+  category: "data",
   title: "Radar Chart",
   description:
     "A radar chart that expands each axis outward simultaneously to reveal a filled polygon footprint.",

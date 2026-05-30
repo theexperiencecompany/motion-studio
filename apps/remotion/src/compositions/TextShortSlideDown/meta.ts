@@ -15,6 +15,7 @@ export const textShortSlideDownDefaultProps: TextShortSlideDownProps = {
 export const textShortSlideDownInfo: CompositionInfo<TextShortSlideDownProps> =
   {
     id: "TextShortSlideDown",
+    category: "text",
     title: "Short Slide Down",
     description:
       "Each new word drops in from above into its own line and pushes the existing stack downward until a centered three-line composition locks in place.",

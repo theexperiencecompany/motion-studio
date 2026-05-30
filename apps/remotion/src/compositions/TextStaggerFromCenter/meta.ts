@@ -15,6 +15,7 @@ export const textStaggerFromCenterDefaultProps: TextStaggerFromCenterProps = {
 export const textStaggerFromCenterInfo: CompositionInfo<TextStaggerFromCenterProps> =
   {
     id: "TextStaggerFromCenter",
+    category: "text",
     title: "Center Stagger",
     description:
       "Characters reveal from the center outward to emphasize the keyword core.",

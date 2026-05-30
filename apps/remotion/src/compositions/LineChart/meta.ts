@@ -13,6 +13,7 @@ export const lineChartDefaultProps: LineChartProps = {
 
 export const lineChartInfo: CompositionInfo<LineChartProps> = {
   id: "LineChart",
+  category: "data",
   title: "Line Chart",
   description:
     "A smooth line chart that draws itself in left-to-right with springy data point dots and optional gridlines.",

@@ -14,6 +14,7 @@ export const titleTypeDefaultProps: TitleTypeProps = {
 
 export const titleTypeInfo: CompositionInfo<TitleTypeProps> = {
   id: "TitleType",
+  category: "text",
   title: "Typewriter",
   description:
     "A monospaced typewriter intro: characters reveal one at a time with a blinking caret, ending with an optional subtitle that fades in below.",

@@ -13,6 +13,7 @@ export const typingComposerDefaultProps: TypingComposerProps = {
 
 export const typingComposerInfo: CompositionInfo<TypingComposerProps> = {
   id: "TypingComposer",
+  category: "devtools",
   title: "Typing Composer",
   description:
     "A GAIA-style chat composer that types out a prompt character-by-character, then a mouse cursor flies in and clicks the send button.",

@@ -15,6 +15,7 @@ export const featureCardDefaultProps: FeatureCardProps = {
 
 export const featureCardInfo: CompositionInfo<FeatureCardProps> = {
   id: "FeatureCard",
+  category: "marketing",
   title: "Feature Card",
   description:
     "A clean Linear/Vercel-style feature card with icon, title, and body — staggered reveal animation.",

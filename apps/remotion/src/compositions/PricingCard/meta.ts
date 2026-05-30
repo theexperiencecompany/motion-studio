@@ -19,6 +19,7 @@ export const pricingCardDefaultProps: PricingCardProps = {
 
 export const pricingCardInfo: CompositionInfo<PricingCardProps> = {
   id: "PricingCard",
+  category: "marketing",
   title: "Pricing Card",
   description:
     "A pricing tier card with title, big price, feature list with checkmarks, and CTA — supports a 'most popular' highlighted variant.",

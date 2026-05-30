@@ -28,6 +28,7 @@ export const whatsappMessagesDefaultProps: WhatsAppMessagesProps = {
 
 export const whatsappMessagesInfo: CompositionInfo<WhatsAppMessagesProps> = {
   id: "WhatsAppMessages",
+  category: "social",
   title: "WhatsApp Messages",
   description:
     "An animated WhatsApp-style chat conversation with green bubbles, read receipts, and stacking spring physics.",

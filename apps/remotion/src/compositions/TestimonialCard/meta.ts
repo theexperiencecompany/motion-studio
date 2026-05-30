@@ -18,6 +18,7 @@ export const testimonialCardDefaultProps: TestimonialCardProps = {
 
 export const testimonialCardInfo: CompositionInfo<TestimonialCardProps> = {
   id: "TestimonialCard",
+  category: "marketing",
   title: "Testimonial Card",
   description:
     "A polished testimonial — quote with scaling quote mark, avatar, name, role, and company.",

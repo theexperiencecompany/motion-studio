@@ -14,6 +14,7 @@ export const textTypewriterDefaultProps: TextTypewriterProps = {
 
 export const textTypewriterInfo: CompositionInfo<TextTypewriterProps> = {
   id: "TextTypewriter",
+  category: "text",
   title: "Typewriter",
   description:
     "Per-character stepped reveal with a minimal editorial typing rhythm.",

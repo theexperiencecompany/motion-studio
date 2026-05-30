@@ -23,6 +23,7 @@ export const slackMessagesDefaultProps: SlackMessagesProps = {
 
 export const slackMessagesInfo: CompositionInfo<SlackMessagesProps> = {
   id: "SlackMessages",
+  category: "social",
   title: "Slack Messages",
   description:
     "An animated Slack-style channel conversation with avatars, sender names, and a typing indicator.",

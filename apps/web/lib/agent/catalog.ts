@@ -1,36 +1,104 @@
 import { compositions } from "@workspace/compositions/registry";
-import type { AnyCompositionInfo, Field } from "@workspace/compositions/schema";
+import type {
+  AnyCompositionInfo,
+  CompositionCategory,
+} from "@workspace/compositions/schema";
 
 /**
- * Serializes the composition registry into a compact reference block the
- * agent reads from its system prompt. Generated once per process; the
- * registry is static at runtime.
+ * Lean category index for the agent's system prompt.
  *
- * Each entry includes:
- *   • id          — PascalCase composition id (used in clips[].compositionId)
- *   • title       — human label
- *   • description — registry one-liner (what the scene is for)
- *   • fps / size  — defaults the project's fps/width/height should match if
- *                   this is the only scene type used
- *   • defaultDur  — default durationInFrames
- *   • brandMode   — "locked" scenes ignore clipStyle (Twitter/Slack/etc.)
- *   • propKeys    — the props field keys, so the model knows what to fill in
- *   • defaultProps — JSON-stringified default values, so the agent can copy
- *                    and patch instead of inventing prop shapes
+ * The catalog is intentionally tiny — just the category names with a
+ * short description and a count of scenes in each. The agent drills
+ * into a category with `listScenesInCategory` (returns one-line scene
+ * summaries) and then fetches `getSceneDetails(id)` for any scene it
+ * actually wants to use.
+ *
+ * This keeps the system prompt constant-size as the registry grows.
+ * Inlining every composition's `defaultProps` (the previous approach)
+ * spent ~20k tokens before the first user message.
+ */
+
+const CATEGORY_DESCRIPTIONS: Record<CompositionCategory, string> = {
+  text: "Title & body text animations — Headlines, type-on, fades, slides, kinetic builds.",
+  social:
+    "Social-app impersonators — Tweet/Slack/Discord/WhatsApp/Telegram/Instagram/iMessage UI (brand-locked).",
+  data: "Charts, counters, and stats — Line/Bar/Pie/Radar/Radial, MetricCard, StatCounter.",
+  devtools:
+    "Code & product walkthroughs — Terminal, Browser window, cursor walkthrough, typing demos.",
+  marketing:
+    "Promotional UI — Feature/Pricing/Testimonial cards, LogoCloud, GitHub star button, Toast.",
+  layout:
+    "Wrapper compositions that embed other scenes — PhoneFrame, LaptopFrame, SplitScene, Showcase.",
+  captions:
+    "Voiceover-driven caption tracks — TikTok-style word highlight, CaptionTrack.",
+  media:
+    "Images, QR codes, marquees, scenario players (GaiaScenario, ImageScene, PerspectiveMarquee, QrCode).",
+};
+
+const CATEGORY_ORDER: CompositionCategory[] = [
+  "text",
+  "social",
+  "data",
+  "devtools",
+  "marketing",
+  "layout",
+  "captions",
+  "media",
+];
+
+/**
+ * Catalog block injected into the system prompt. Tiny by design.
  */
 export function buildCatalogText(): string {
-  return compositions.map(formatEntry).join("\n");
+  const counts = countByCategory();
+  const lines = CATEGORY_ORDER.map((cat) => {
+    const n = counts.get(cat) ?? 0;
+    return `- **${cat}** (${n} scene${n === 1 ? "" : "s"}) — ${CATEGORY_DESCRIPTIONS[cat]}`;
+  });
+  return lines.join("\n");
 }
 
-function formatEntry(c: AnyCompositionInfo): string {
-  const fieldKeys = c.fields.map((f: Field) => `${f.key}:${f.kind}`).join(", ");
+/**
+ * Structured payload for the `listScenesInCategory` tool. The agent uses
+ * the returned id + description to shortlist scenes, then calls
+ * `getSceneDetails` for the few it actually wants to build with.
+ */
+export function listScenesInCategory(category: CompositionCategory): Array<{
+  id: string;
+  title: string;
+  description: string;
+  durationInFrames: number;
+  fps: number;
+  width: number;
+  height: number;
+  brandLocked: boolean;
+}> {
+  return compositions
+    .filter((c) => c.category === category)
+    .map((c) => ({
+      id: c.id,
+      title: c.title,
+      description: c.description,
+      durationInFrames: c.durationInFrames,
+      fps: c.fps,
+      width: c.width,
+      height: c.height,
+      brandLocked: c.brandMode === "locked",
+    }));
+}
+
+export const KNOWN_CATEGORIES = CATEGORY_ORDER;
+
+function countByCategory(): Map<CompositionCategory, number> {
+  const out = new Map<CompositionCategory, number>();
+  for (const c of compositions) {
+    out.set(c.category, (out.get(c.category) ?? 0) + 1);
+  }
+  return out;
+}
+
+// Kept so debug callers / docs surfaces can render a one-line list if needed.
+export function formatSceneOneLine(c: AnyCompositionInfo): string {
   const locked = c.brandMode === "locked" ? " [brand-locked]" : "";
-  const defaults = JSON.stringify(c.defaultProps);
-  return [
-    `### ${c.id}${locked}`,
-    `${c.title} — ${c.description}`,
-    `dims: ${c.width}x${c.height} @ ${c.fps}fps, defaultDuration: ${c.durationInFrames}f`,
-    `fields: ${fieldKeys || "(none)"}`,
-    `defaultProps: ${defaults}`,
-  ].join("\n");
+  return `- **${c.id}**${locked} — ${c.description}`;
 }

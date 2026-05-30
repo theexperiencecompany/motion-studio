@@ -12,6 +12,7 @@ export const radialChartDefaultProps: RadialChartProps = {
 
 export const radialChartInfo: CompositionInfo<RadialChartProps> = {
   id: "RadialChart",
+  category: "data",
   title: "Radial Chart",
   description:
     "A single-stat radial gauge that sweeps an arc to a target percentage with the count rolling up in the middle.",

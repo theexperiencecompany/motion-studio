@@ -17,6 +17,7 @@ export const metricCardDefaultProps: MetricCardProps = {
 
 export const metricCardInfo: CompositionInfo<MetricCardProps> = {
   id: "MetricCard",
+  category: "data",
   title: "Metric Card",
   description:
     "A polished card that counts up to a big number with a label and sublabel — perfect for 'by the numbers' sections.",

@@ -27,6 +27,7 @@ export const instagramMessagesDefaultProps: InstagramMessagesProps = {
 
 export const instagramMessagesInfo: CompositionInfo<InstagramMessagesProps> = {
   id: "InstagramMessages",
+  category: "social",
   title: "Instagram Messages",
   description:
     "An animated Instagram DM conversation with the gradient sent bubble, typing dots, and stacking spring physics.",

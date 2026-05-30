@@ -17,6 +17,7 @@ export const toastDefaultProps: ToastProps = {
 
 export const toastInfo: CompositionInfo<ToastProps> = {
   id: "Toast",
+  category: "marketing",
   title: "Toast",
   description:
     "A configurable notification toast that slides in from any corner with a spring, holds, then fades out.",

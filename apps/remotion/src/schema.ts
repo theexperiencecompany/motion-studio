@@ -130,6 +130,31 @@ export type BrandMode = "branded" | "locked";
  */
 export type PhoneFitMode = "cover" | "width" | "contain";
 
+/**
+ * Coarse grouping used by the agent's discovery flow. The system prompt
+ * lists categories; the agent calls `listScenesInCategory` to drill in,
+ * then `getSceneDetails` for the specific compositions it picks. Keeps
+ * the prompt constant-size as the registry grows.
+ *
+ *   text         — title/text animations (TextX, TitleX)
+ *   social       — chat & post impersonators (Tweet, Slack, WhatsApp, …)
+ *   data         — charts, counters, stats
+ *   devtools     — terminal, browser, cursor, typing demos
+ *   marketing    — feature/pricing/testimonial cards, logos, toast
+ *   layout       — wrapper compositions (PhoneFrame, LaptopFrame, Split)
+ *   captions     — voiceover-driven caption tracks
+ *   media        — images, QR codes, marquees, scenario players
+ */
+export type CompositionCategory =
+  | "text"
+  | "social"
+  | "data"
+  | "devtools"
+  | "marketing"
+  | "layout"
+  | "captions"
+  | "media";
+
 export type CompositionInfo<P extends Record<string, unknown>> = {
   id: string;
   title: string;
@@ -142,6 +167,11 @@ export type CompositionInfo<P extends Record<string, unknown>> = {
   fields: Field[];
   brandMode?: BrandMode;
   phoneFitMode?: PhoneFitMode;
+  /**
+   * Coarse category for agent discovery. Required so the agent's catalog
+   * stays comprehensive as new compositions land.
+   */
+  category: CompositionCategory;
   // Optional callback Remotion runs at studio load + every prop edit.
   // Use this to recompute durationInFrames (or any metadata) from
   // current props — e.g. GaiaScenario derives its length from the

@@ -23,6 +23,7 @@ export const tweetCardDefaultProps: TweetCardProps = {
 
 export const tweetCardInfo: CompositionInfo<TweetCardProps> = {
   id: "TweetCard",
+  category: "social",
   title: "Tweet Card",
   description:
     "An animated X / Twitter post card. Customize the author, copy, theme, and engagement counts.",

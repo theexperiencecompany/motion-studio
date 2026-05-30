@@ -16,6 +16,7 @@ export const perspectiveMarqueeDefaultProps: PerspectiveMarqueeProps = {
 export const perspectiveMarqueeInfo: CompositionInfo<PerspectiveMarqueeProps> =
   {
     id: "PerspectiveMarquee",
+    category: "media",
     title: "Perspective Marquee",
     description:
       "A single tilted row of display type that scrolls toward a vanishing point with per-item depth-of-field blur.",

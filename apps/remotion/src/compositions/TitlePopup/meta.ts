@@ -14,6 +14,7 @@ export const titlePopupDefaultProps: TitlePopupProps = {
 
 export const titlePopupInfo: CompositionInfo<TitlePopupProps> = {
   id: "TitlePopup",
+  category: "text",
   title: "Pop In",
   description:
     "A punchy spring-driven title: the headline scales and bounces in as a single unit. Best for short, high-impact one-liners.",

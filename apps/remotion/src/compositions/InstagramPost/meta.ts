@@ -21,6 +21,7 @@ export const instagramPostDefaultProps: InstagramPostProps = {
 
 export const instagramPostInfo: CompositionInfo<InstagramPostProps> = {
   id: "InstagramPost",
+  category: "social",
   title: "Instagram Post",
   description:
     "An animated Instagram post card. Customize the author, photo, caption, and like count.",

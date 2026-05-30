@@ -20,6 +20,7 @@ export const logoCloudDefaultProps: LogoCloudProps = {
 
 export const logoCloudInfo: CompositionInfo<LogoCloudProps> = {
   id: "LogoCloud",
+  category: "marketing",
   title: "Logo Cloud",
   description:
     "A 'trusted by' section with a row of company logos that stagger in.",

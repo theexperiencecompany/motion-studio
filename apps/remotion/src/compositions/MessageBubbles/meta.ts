@@ -27,6 +27,7 @@ export const messageBubblesDefaultProps: MessageBubblesProps = {
 
 export const messageBubblesInfo: CompositionInfo<MessageBubblesProps> = {
   id: "MessageBubbles",
+  category: "social",
   title: "Message Bubbles",
   description:
     "An animated iMessage-style chat conversation with grouped bubble corners, tails, and spring-stacked rows.",

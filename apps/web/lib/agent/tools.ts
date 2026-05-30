@@ -1,9 +1,8 @@
-import {
-  compositions,
-  compositionsById,
-} from "@workspace/compositions/registry";
+import { compositionsById } from "@workspace/compositions/registry";
+import type { CompositionCategory } from "@workspace/compositions/schema";
 import { tool } from "ai";
 import { z } from "zod";
+import { KNOWN_CATEGORIES, listScenesInCategory } from "./catalog";
 
 /**
  * Two-track tool surface for the studio agent:
@@ -86,28 +85,32 @@ export const tools = {
     // No execute — runs client-side in AgentPanel.onToolCall.
   }),
 
-  // ───── DISCOVERY (fallback; the catalog is inlined in the prompt) ─────
-  listScenes: tool({
+  // ───── DISCOVERY (category → scenes → details funnel) ────────────────
+  // The system prompt lists categories. The agent calls
+  // `listScenesInCategory` to drill in, then `getSceneDetails` for the
+  // few scenes it wants to use. This keeps the prompt constant-size as
+  // the registry grows.
+  listScenesInCategory: tool({
     description:
-      "Returns the full registry catalog (id, title, description, dimensions, defaultDuration). The same info is already in your system prompt — call this only if you need to verify ids at runtime.",
-    inputSchema: z.object({}),
-    execute: async () => ({
-      scenes: compositions.map((c) => ({
-        id: c.id,
-        title: c.title,
-        description: c.description,
-        defaultDurationFrames: c.durationInFrames,
-        fps: c.fps,
-        width: c.width,
-        height: c.height,
-        brandLocked: c.brandMode === "locked",
-      })),
+      "Returns every scene in a category as `{ id, title, description, durationInFrames, fps, width, height, brandLocked }`. Call this for each category that fits the user's brief; then call getSceneDetails for the scenes you actually want to build with.",
+    inputSchema: z.object({
+      category: z
+        .enum(
+          KNOWN_CATEGORIES as [CompositionCategory, ...CompositionCategory[]],
+        )
+        .describe(
+          "One of the category slugs from the prompt: text, social, data, devtools, marketing, layout, captions, media.",
+        ),
+    }),
+    execute: async ({ category }) => ({
+      category,
+      scenes: listScenesInCategory(category),
     }),
   }),
 
   getSceneDetails: tool({
     description:
-      "Returns the full defaultProps and field schema for one composition. Useful if you need to double-check the prop shape before calling updateClipProps.",
+      "Returns the full defaultProps and field schema for one composition. Call this for every scene you plan to use in buildProject so your props match the actual schema instead of being invented.",
     inputSchema: z.object({
       compositionId: z.string(),
     }),
@@ -118,6 +121,8 @@ export const tools = {
         id: info.id,
         title: info.title,
         description: info.description,
+        category: info.category,
+        brandLocked: info.brandMode === "locked",
         defaultProps: info.defaultProps,
         fields: info.fields,
       };

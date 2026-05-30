@@ -36,6 +36,7 @@ export const terminalDefaultProps: TerminalProps = {
 
 export const terminalInfo: CompositionInfo<TerminalProps> = {
   id: "Terminal",
+  category: "devtools",
   title: "Terminal",
   description:
     "A macOS-style terminal that types out CLI commands line by line. Highly configurable: chrome style, cursor, font size, padding, line kinds.",

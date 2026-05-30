@@ -14,6 +14,7 @@ export const titleFadeDefaultProps: TitleFadeProps = {
 
 export const titleFadeInfo: CompositionInfo<TitleFadeProps> = {
   id: "TitleFade",
+  category: "text",
   title: "Fade In",
   description:
     "The simplest, most restrained intro: the headline fades up and the subtitle follows. Reach for this when the words should do the work.",

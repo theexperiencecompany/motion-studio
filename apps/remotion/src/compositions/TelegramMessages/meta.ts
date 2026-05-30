@@ -32,6 +32,7 @@ export const telegramMessagesDefaultProps: TelegramMessagesProps = {
 
 export const telegramMessagesInfo: CompositionInfo<TelegramMessagesProps> = {
   id: "TelegramMessages",
+  category: "social",
   title: "Telegram Messages",
   description:
     "An animated Telegram-style chat conversation with tailed bubbles, in-bubble timestamps, and the signature blue check marks.",

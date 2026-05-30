@@ -19,6 +19,7 @@ export const cursorWalkthroughDefaultProps: CursorWalkthroughProps = {
 
 export const cursorWalkthroughInfo: CompositionInfo<CursorWalkthroughProps> = {
   id: "CursorWalkthrough",
+  category: "devtools",
   title: "Cursor Walkthrough",
   description:
     "A cursor that demonstrates a click → type → click flow over a screenshot. Drop in a background image and pin the click coordinates.",

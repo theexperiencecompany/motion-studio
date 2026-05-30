@@ -12,6 +12,7 @@ export const areaChartDefaultProps: AreaChartProps = {
 
 export const areaChartInfo: CompositionInfo<AreaChartProps> = {
   id: "AreaChart",
+  category: "data",
   title: "Area Chart",
   description:
     "A line chart filled with a soft gradient underneath, sweeping up from the baseline as the data reveals.",

@@ -23,6 +23,7 @@ export const tikTokCaptionDefaultProps: TikTokCaptionProps = {
 
 export const tikTokCaptionInfo: CompositionInfo<TikTokCaptionProps> = {
   id: "TikTokCaption",
+  category: "captions",
   title: "TikTok Caption",
   description:
     "Caption track driven by word-level timestamps (e.g. from Whisper). Highlights the current word, ghosts the surrounding context — built for voiceover content.",
