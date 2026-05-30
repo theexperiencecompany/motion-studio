@@ -37,6 +37,19 @@ const SUGGESTIONS = [
   "Intro title → browser walkthrough → outro",
 ];
 
+// Cap on how many times the AI SDK will auto-continue the conversation
+// per user message. Without this, a model that keeps emitting tool calls
+// without final text triggers an infinite loop of auto-sends — each one
+// starts a fresh server-side step counter, so the server's stepCountIs
+// limit never gets us out. Resets when the user types.
+//
+// A normal build runs: listTemplates (1) → listScenesInCategory ×N (~3)
+// → getSceneDetails ×M (~5–8) → buildFromTemplate (1) → final-text turn.
+// That can easily be 12–15 auto-continuations on long builds, so the
+// cap has to be generous. We rely on the model's own stop discipline
+// (per the system prompt) and use the cap only as a runaway safety net.
+const MAX_AUTO_CONTINUATIONS_PER_USER_MESSAGE = 25;
+
 export function AgentPanel({ project, dispatch, onClose }: Props) {
   // Keep the latest project in a ref so onToolCall (closed over at mount)
   // always sees current clips/ids instead of a stale snapshot.
@@ -44,6 +57,11 @@ export function AgentPanel({ project, dispatch, onClose }: Props) {
   useEffect(() => {
     projectRef.current = project;
   }, [project]);
+
+  // Tracks how many times the SDK has auto-continued since the user
+  // last sent a message. We compare to the cap inside
+  // `sendAutomaticallyWhen` to break runaway loops.
+  const autoContinuationCount = useRef(0);
 
   const {
     messages,
@@ -54,7 +72,19 @@ export function AgentPanel({ project, dispatch, onClose }: Props) {
     regenerate,
     addToolResult,
   } = useChat({
-    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
+    sendAutomaticallyWhen: (args) => {
+      const ready = lastAssistantMessageIsCompleteWithToolCalls(args);
+      if (!ready) return false;
+      if (
+        autoContinuationCount.current >= MAX_AUTO_CONTINUATIONS_PER_USER_MESSAGE
+      ) {
+        // Hit the cap — refuse to auto-continue. Status will fall back
+        // to "ready" and the input re-enables.
+        return false;
+      }
+      autoContinuationCount.current += 1;
+      return true;
+    },
     onToolCall: async ({ toolCall }) => {
       const name = toolCall.toolName;
       const input = toolCall.input as Record<string, unknown>;
@@ -91,6 +121,7 @@ export function AgentPanel({ project, dispatch, onClose }: Props) {
   function send(text: string) {
     const trimmed = text.trim();
     if (!trimmed || isBusy) return;
+    autoContinuationCount.current = 0;
     sendMessage({ text: trimmed });
     setInput("");
   }
@@ -479,6 +510,26 @@ function MessageBubble({
     .join("");
   const toolCalls = isUser ? [] : extractToolCalls(message);
 
+  // If the model never emitted final text after a build (some models
+  // forget despite the system-prompt rule), synthesize a fallback so
+  // the user isn't staring at a wall of tool calls with no summary.
+  const buildResult = toolCalls.find(
+    (c) =>
+      (c.toolName === "buildFromTemplate" || c.toolName === "buildProject") &&
+      c.output !== undefined,
+  );
+  const buildOk =
+    buildResult?.output && typeof buildResult.output === "object"
+      ? (buildResult.output as { ok?: boolean }).ok === true
+      : false;
+  const fallbackText =
+    !text && !isStreaming && toolCalls.length > 0 && buildOk
+      ? "Build complete."
+      : !text && !isStreaming && toolCalls.length > 0
+        ? "Done — see tool calls above for details."
+        : "";
+  const displayText = text || fallbackText;
+
   return (
     <li className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
       <div
@@ -491,16 +542,16 @@ function MessageBubble({
         {toolCalls.length > 0 ? (
           <ToolCallsSection toolCalls={toolCalls} />
         ) : null}
-        {text ? (
+        {displayText ? (
           isUser ? (
-            <div className="whitespace-pre-wrap">{text}</div>
+            <div className="whitespace-pre-wrap">{displayText}</div>
           ) : (
             <div className="prose prose-sm prose-invert max-w-none [&_pre]:my-2 [&_pre]:rounded-md [&_pre]:text-[12px] [&_code]:text-[12px] [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_h1]:text-base [&_h2]:text-sm [&_h3]:text-sm">
               <Streamdown
                 isAnimating={isStreaming}
                 animated={{ animation: "blurIn", duration: 150 }}
               >
-                {text}
+                {displayText}
               </Streamdown>
             </div>
           )
