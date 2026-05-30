@@ -265,17 +265,25 @@ export function AgentPanel({ project, dispatch, onClose }: Props) {
           <EmptyState onPick={send} />
         ) : (
           <ul className="space-y-3">
-            {messages.map((m, i) => (
-              <MessageBubble
-                key={m.id}
-                message={m}
-                isStreaming={
-                  status === "streaming" &&
-                  i === messages.length - 1 &&
-                  m.role === "assistant"
-                }
-              />
-            ))}
+            {messages.map((m, i) => {
+              const isLast = i === messages.length - 1;
+              // Only the LAST assistant message can be "thinking", and
+              // only if the parent considers the chat busy (which folds
+              // in status, lastAssistantSettled and forceIdle). This
+              // means the shimmer disappears the moment the response
+              // is effectively done — never lingers.
+              const isThinking = isBusy && isLast && m.role === "assistant";
+              return (
+                <MessageBubble
+                  key={m.id}
+                  message={m}
+                  isStreaming={
+                    status === "streaming" && isLast && m.role === "assistant"
+                  }
+                  isThinking={isThinking}
+                />
+              );
+            })}
             {status === "submitted" ? (
               <li className="flex items-center gap-2 py-1">
                 <WaveSpinner size="sm" pattern="square3x3" color="primary" />
@@ -649,9 +657,17 @@ type ChatMessage = ReturnType<typeof useChat>["messages"][number];
 function MessageBubble({
   message,
   isStreaming,
+  isThinking,
 }: {
   message: ChatMessage;
+  /** Raw SDK streaming flag — drives Streamdown's animation only. */
   isStreaming: boolean;
+  /**
+   * Effective "agent is still working on this message" signal from the
+   * parent — folds in status, lastAssistantSettled, and forceIdle.
+   * Drives the shimmer + spinner indicator inside the bubble.
+   */
+  isThinking: boolean;
 }) {
   const isUser = message.role === "user";
   const text = message.parts
@@ -677,6 +693,19 @@ function MessageBubble({
       : false;
   const buildFailed = buildResult !== undefined && !buildOk;
 
+  // Any tool returning ok:true counts as a terminal-result success —
+  // includes addClip / updateClipProps / deleteClip etc. for surgical
+  // edits, not just buildProject. Used to hide the working shimmer
+  // even when the model never emits a follow-up text turn.
+  const anyTerminalSuccess = toolCalls.some((c) => {
+    const out = c.output;
+    return (
+      typeof out === "object" &&
+      out !== null &&
+      (out as { ok?: unknown }).ok === true
+    );
+  });
+
   let fallbackText = "";
   if (!text && toolCalls.length > 0) {
     if (buildOk) {
@@ -697,9 +726,13 @@ function MessageBubble({
       fallbackText = errMsg
         ? `Build failed: ${errMsg}`
         : "Build failed — see tool output above.";
+    } else if (anyTerminalSuccess) {
+      // Surgical edit (addClip / updateClipProps / etc.) succeeded but
+      // the model didn't follow up with text. Surface a generic done
+      // so the shimmer hides immediately.
+      fallbackText = "Done.";
     } else if (!isStreaming) {
-      // Tools ran but no buildProject and no text yet — show a generic
-      // closing only once streaming has settled.
+      // Tools ran but no terminal success and stream has ended.
       fallbackText = "Done — see tool calls above for details.";
     }
   }
@@ -716,15 +749,20 @@ function MessageBubble({
     );
   }
 
-  // Assistant: no card. Tool calls + flowing text directly in the
-  // column so the conversation feels like ChatGPT/Claude, not like a
-  // forum thread.
-  const showWorkingShimmer =
-    isStreaming && !displayText && toolCalls.length > 0;
+  // Assistant: no card. Working indicator on top, then tool calls,
+  // then text — the indicator hides as soon as the parent says the
+  // chat isn't busy anymore (covers raw streaming AND lastAssistantSettled
+  // AND forceIdle) OR as soon as displayText fills in.
+  const showWorkingShimmer = isThinking && !displayText;
   return (
     <li className="flex flex-col gap-2 py-1 text-[13px] leading-relaxed text-foreground">
+      {showWorkingShimmer ? (
+        <div className="flex items-center gap-2">
+          <WaveSpinner size="sm" pattern="square3x3" color="primary" />
+          <ThinkingPhrase pool="working" />
+        </div>
+      ) : null}
       {toolCalls.length > 0 ? <ToolCallsSection toolCalls={toolCalls} /> : null}
-      {showWorkingShimmer ? <ThinkingPhrase pool="working" /> : null}
       {displayText ? (
         <div className="prose prose-sm prose-invert max-w-none [&_pre]:my-2 [&_pre]:rounded-md [&_pre]:text-[12px] [&_code]:text-[12px] [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_h1]:text-base [&_h2]:text-sm [&_h3]:text-sm">
           <Streamdown
@@ -800,19 +838,14 @@ function ThinkingPhrase({ pool }: { pool: "planning" | "working" }) {
 
   return (
     <span
-      className="bg-clip-text text-[12px] font-medium text-transparent"
-      style={{
-        backgroundImage:
-          "linear-gradient(90deg, hsl(var(--muted-foreground) / 0.45) 0%, hsl(var(--foreground)) 50%, hsl(var(--muted-foreground) / 0.45) 100%)",
-        backgroundSize: "200% 100%",
-        animation: "agent-shimmer 2.2s linear infinite",
-      }}
+      className="text-[12px] font-medium text-foreground"
+      style={{ animation: "agent-pulse 1.8s ease-in-out infinite" }}
     >
       {phrase}
       <style>{`
-        @keyframes agent-shimmer {
-          0%   { background-position: 200% 0; }
-          100% { background-position: -200% 0; }
+        @keyframes agent-pulse {
+          0%, 100% { opacity: 0.45; }
+          50% { opacity: 1; }
         }
       `}</style>
     </span>
