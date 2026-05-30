@@ -17,6 +17,8 @@ export const githubStarButtonDefaultProps: GitHubStarButtonProps = {
 export const githubStarButtonInfo: CompositionInfo<GitHubStarButtonProps> = {
   id: "GitHubStarButton",
   category: "marketing",
+  agentNotes:
+    "Animated GitHub star button with star count incrementing. Use ONLY for open-source / dev-tool launches. Pair the repo name with the actual product. Best for CTA or social-proof beats.",
   title: "GitHub Star Button",
   description:
     "A pixel-faithful GitHub 'Star' button that animates a click, fills the star, bursts particles, and rolls the star count.",

@@ -16,6 +16,8 @@ export const textStaggerFromCenterInfo: CompositionInfo<TextStaggerFromCenterPro
   {
     id: "TextStaggerFromCenter",
     category: "text",
+    agentNotes:
+      "Each word springs out from the center sequentially. Use for kinetic mid-beat reveals — tagline → demo transition, or short statements ('Faster. Cheaper. Better.'). Keep to 3–7 words.",
     title: "Center Stagger",
     description:
       "Characters reveal from the center outward to emphasize the keyword core.",

@@ -10,7 +10,6 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import type { Project } from "@workspace/compositions/project";
-import { compositionsById } from "@workspace/compositions/registry";
 import { Button } from "@workspace/ui/components/button";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { lastAssistantMessageIsCompleteWithToolCalls } from "ai";
@@ -20,7 +19,6 @@ import {
   type ToolCallEntry,
   ToolCallsSection,
 } from "@/components/agent/tool-calls-section";
-import { TEMPLATES_BY_ID } from "@/lib/agent/templates";
 import { getToolMeta, toolMessageFor } from "@/lib/agent/tool-categories";
 import { parseProjectJson } from "../lib/project-io";
 import type { StudioAction } from "../state/reducer";
@@ -37,18 +35,14 @@ const SUGGESTIONS = [
   "Intro title → browser walkthrough → outro",
 ];
 
-// Cap on how many times the AI SDK will auto-continue the conversation
-// per user message. Without this, a model that keeps emitting tool calls
-// without final text triggers an infinite loop of auto-sends — each one
-// starts a fresh server-side step counter, so the server's stepCountIs
-// limit never gets us out. Resets when the user types.
-//
-// A normal build runs: listTemplates (1) → listScenesInCategory ×N (~3)
-// → getSceneDetails ×M (~5–8) → buildFromTemplate (1) → final-text turn.
-// That can easily be 12–15 auto-continuations on long builds, so the
-// cap has to be generous. We rely on the model's own stop discipline
-// (per the system prompt) and use the cap only as a runaway safety net.
-const MAX_AUTO_CONTINUATIONS_PER_USER_MESSAGE = 25;
+// Cap on how many times the SDK will auto-continue per user message.
+// Server-side stepCountIs(60) already lets a build complete in ONE turn
+// — listScenesInCategory + getSceneDetails ×N + buildProject + final
+// text all fit. Auto-continuation only kicks in when the assistant
+// message ended on tool calls with no final text (model forgot to emit
+// the summary). We give it 2 nudges max, then bail so the user isn't
+// stuck on a spinner.
+const MAX_AUTO_CONTINUATIONS_PER_USER_MESSAGE = 2;
 
 export function AgentPanel({ project, dispatch, onClose }: Props) {
   // Keep the latest project in a ref so onToolCall (closed over at mount)
@@ -118,9 +112,16 @@ export function AgentPanel({ project, dispatch, onClose }: Props) {
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages, status]);
 
-  function send(text: string) {
+  async function send(text: string) {
     const trimmed = text.trim();
-    if (!trimmed || isBusy) return;
+    if (!trimmed) return;
+    // If a build is still in flight, cancel it before queuing the new
+    // message. Without this the new sendMessage call gets dropped by
+    // useChat ("can't send while not ready") and the user's input
+    // disappears into the void.
+    if (isBusy) {
+      await stop();
+    }
     autoContinuationCount.current = 0;
     sendMessage({ text: trimmed });
     setInput("");
@@ -213,12 +214,15 @@ export function AgentPanel({ project, dispatch, onClose }: Props) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Describe the video you want…"
+            placeholder={
+              isBusy
+                ? "Compose your next message — Stop to send now…"
+                : "Describe the video you want…"
+            }
             rows={1}
-            disabled={isBusy}
-            className="min-h-0 flex-1 resize-none border-0 bg-transparent p-1 text-[13px] focus-visible:ring-0 focus-visible:outline-none disabled:cursor-not-allowed"
+            className="min-h-0 flex-1 resize-none border-0 bg-transparent p-1 text-[13px] focus-visible:ring-0 focus-visible:outline-none"
           />
-          {isBusy ? (
+          {isBusy && input.trim().length === 0 ? (
             <Button
               type="button"
               size="icon"
@@ -235,7 +239,7 @@ export function AgentPanel({ project, dispatch, onClose }: Props) {
               size="icon"
               disabled={input.trim().length === 0}
               className="size-7 shrink-0 rounded-md"
-              title="Send"
+              title={isBusy ? "Stop current run and send" : "Send"}
             >
               <HugeiconsIcon icon={ArrowUp01Icon} className="size-3.5" />
             </Button>
@@ -279,92 +283,6 @@ function runClientTool(
       return {
         ok: true,
         clipsLoaded: parsed.project.clips.length,
-        warnings: parsed.warnings,
-      };
-    }
-    case "buildFromTemplate": {
-      const templateId = String(input.templateId ?? "");
-      const template = TEMPLATES_BY_ID[templateId];
-      if (!template) {
-        return {
-          error: `Unknown templateId: ${templateId}. Call listTemplates for valid ids.`,
-        };
-      }
-      const rawPicks = (input.slotPicks ?? []) as Array<{
-        slotId?: unknown;
-        compositionId?: unknown;
-        props?: unknown;
-      }>;
-      const picksBySlot = new Map<
-        string,
-        { compositionId: string; props: Record<string, unknown> }
-      >();
-      for (const p of rawPicks) {
-        if (typeof p?.slotId !== "string") continue;
-        picksBySlot.set(p.slotId, {
-          compositionId: String(p.compositionId ?? ""),
-          props: (p.props ?? {}) as Record<string, unknown>,
-        });
-      }
-
-      // Validate every slot has a pick whose composition is in the slot's category.
-      const issues: string[] = [];
-      for (const slot of template.slots) {
-        const pick = picksBySlot.get(slot.id);
-        if (!pick) {
-          issues.push(`Missing pick for slot "${slot.id}".`);
-          continue;
-        }
-        const info = compositionsById[pick.compositionId];
-        if (!info) {
-          issues.push(
-            `slot "${slot.id}": unknown composition "${pick.compositionId}".`,
-          );
-          continue;
-        }
-        if (info.category !== slot.category) {
-          issues.push(
-            `slot "${slot.id}" requires a ${slot.category} scene; got ${info.id} (${info.category}).`,
-          );
-        }
-      }
-      if (issues.length > 0) {
-        return { error: `Slot validation failed:\n- ${issues.join("\n- ")}` };
-      }
-
-      // Assemble the project. Slot order is the source of truth; durations
-      // come from the template, not from the picked scene's default.
-      const style = input.style as Record<string, string> | undefined;
-      const hasStyle = style && Object.values(style).some(Boolean);
-      const projectJson = {
-        fps: template.fps,
-        width: template.width,
-        height: template.height,
-        defaultTransition: template.defaultTransition,
-        clips: template.slots.map((slot) => {
-          const pick = picksBySlot.get(slot.id);
-          if (!pick) throw new Error("unreachable: validated above");
-          return {
-            id: slot.id,
-            compositionId: pick.compositionId,
-            props: pick.props,
-            durationInFrames: slot.durationInFrames,
-            ...(hasStyle ? { style } : {}),
-          };
-        }),
-      };
-
-      const parsed = parseProjectJson(JSON.stringify(projectJson));
-      if (!parsed.ok) return { error: parsed.error };
-      dispatch({ type: "LOAD_PROJECT", project: parsed.project });
-      return {
-        ok: true,
-        templateId,
-        clipsLoaded: parsed.project.clips.length,
-        totalDurationFrames: template.slots.reduce(
-          (s, sl) => s + sl.durationInFrames,
-          0,
-        ),
         warnings: parsed.warnings,
       };
     }
@@ -513,6 +431,9 @@ function MessageBubble({
   // If the model never emitted final text after a build (some models
   // forget despite the system-prompt rule), synthesize a fallback so
   // the user isn't staring at a wall of tool calls with no summary.
+  // We show the fallback as soon as buildProject returns ok — no need
+  // to wait for isStreaming to flip off, since at that point the model
+  // is just being nudged to write the summary it forgot to write.
   const buildResult = toolCalls.find(
     (c) =>
       (c.toolName === "buildFromTemplate" || c.toolName === "buildProject") &&
@@ -522,12 +443,34 @@ function MessageBubble({
     buildResult?.output && typeof buildResult.output === "object"
       ? (buildResult.output as { ok?: boolean }).ok === true
       : false;
-  const fallbackText =
-    !text && !isStreaming && toolCalls.length > 0 && buildOk
-      ? "Build complete."
-      : !text && !isStreaming && toolCalls.length > 0
-        ? "Done — see tool calls above for details."
-        : "";
+  const buildFailed = buildResult !== undefined && !buildOk;
+
+  let fallbackText = "";
+  if (!text && toolCalls.length > 0) {
+    if (buildOk) {
+      const clipCount =
+        buildResult?.output && typeof buildResult.output === "object"
+          ? Number(
+              (buildResult.output as { clipsLoaded?: number }).clipsLoaded ?? 0,
+            )
+          : 0;
+      fallbackText = clipCount
+        ? `Built a ${clipCount}-clip project. Tweak it from the inspector or ask me to change something.`
+        : "Build complete.";
+    } else if (buildFailed) {
+      const errMsg =
+        buildResult?.output && typeof buildResult.output === "object"
+          ? String((buildResult.output as { error?: string }).error ?? "")
+          : "";
+      fallbackText = errMsg
+        ? `Build failed: ${errMsg}`
+        : "Build failed — see tool output above.";
+    } else if (!isStreaming) {
+      // Tools ran but no buildProject and no text yet — show a generic
+      // closing only once streaming has settled.
+      fallbackText = "Done — see tool calls above for details.";
+    }
+  }
   const displayText = text || fallbackText;
 
   return (

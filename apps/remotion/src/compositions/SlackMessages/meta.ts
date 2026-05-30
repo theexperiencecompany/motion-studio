@@ -24,6 +24,8 @@ export const slackMessagesDefaultProps: SlackMessagesProps = {
 export const slackMessagesInfo: CompositionInfo<SlackMessagesProps> = {
   id: "SlackMessages",
   category: "social",
+  agentNotes:
+    "Authentic Slack channel/DM with avatar + name + timestamp + message text. Use for B2B/devtools briefs implying team chat, 'PR merged in #engineering' beats, or product-collab demos. messages is an array of { name, text, side, typingFrames }.",
   title: "Slack Messages",
   description:
     "An animated Slack-style channel conversation with avatars, sender names, and a typing indicator.",

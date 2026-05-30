@@ -21,6 +21,8 @@ export const logoCloudDefaultProps: LogoCloudProps = {
 export const logoCloudInfo: CompositionInfo<LogoCloudProps> = {
   id: "LogoCloud",
   category: "marketing",
+  agentNotes:
+    "Use for 'trusted by' / customer-logo beats. Pass real or placeholder logo names. Best as a 2–3 second proof beat between demo and CTA. Don't use as the opener.",
   title: "Logo Cloud",
   description:
     "A 'trusted by' section with a row of company logos that stagger in.",

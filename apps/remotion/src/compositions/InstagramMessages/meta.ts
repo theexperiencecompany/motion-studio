@@ -28,6 +28,8 @@ export const instagramMessagesDefaultProps: InstagramMessagesProps = {
 export const instagramMessagesInfo: CompositionInfo<InstagramMessagesProps> = {
   id: "InstagramMessages",
   category: "social",
+  agentNotes:
+    "Instagram DM conversation with the gradient sent bubble. Use for Instagram-themed brand briefs or 'a user reached out' beats. messages prop is an array of { text, side, typingFrames }. Keep to 3–6 short messages.",
   title: "Instagram Messages",
   description:
     "An animated Instagram DM conversation with the gradient sent bubble, typing dots, and stacking spring physics.",

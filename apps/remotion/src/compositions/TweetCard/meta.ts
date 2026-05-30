@@ -24,6 +24,8 @@ export const tweetCardDefaultProps: TweetCardProps = {
 export const tweetCardInfo: CompositionInfo<TweetCardProps> = {
   id: "TweetCard",
   category: "social",
+  agentNotes:
+    "Authentic single-tweet card with avatar, handle, text, like/retweet row. Use for 'someone said this about us' beats, Twitter announcements, or quote-tweet style reveals. Keep tweet text under 240 chars.",
   title: "Tweet Card",
   description:
     "An animated X / Twitter post card. Customize the author, copy, theme, and engagement counts.",

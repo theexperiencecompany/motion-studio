@@ -18,6 +18,8 @@ export const metricCardDefaultProps: MetricCardProps = {
 export const metricCardInfo: CompositionInfo<MetricCardProps> = {
   id: "MetricCard",
   category: "data",
+  agentNotes:
+    "Big single number with label + delta arrow (e.g. '$1.2M ↑ 24%'). Use as the punchy result beat ('Revenue grew') — fits perfectly between a demo and a CTA. Keep label to 2–3 words.",
   title: "Metric Card",
   description:
     "A polished card that counts up to a big number with a label and sublabel — perfect for 'by the numbers' sections.",

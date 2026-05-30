@@ -7,7 +7,14 @@ import {
   KNOWN_CATEGORIES,
   listScenesInCategory,
 } from "./catalog";
-import { TEMPLATES, templateDurationInFrames } from "./templates";
+import { ACCENT_COLORS, COLOR_BASES, PREMIUM_FONTS } from "./design-tokens";
+
+// Templates are intentionally NOT exposed to the agent right now —
+// the per-slot category constraint blocked good brand-aware picks
+// (e.g. couldn't pick InstagramPost for an Instagram launch because
+// no slot accepted `social`). Files kept under ./templates/ so we
+// can re-enable with multi-category slots later.
+// import { TEMPLATES, templateDurationInFrames } from "./templates";
 
 /**
  * Trim a defaultProps payload so the agent sees the SHAPE without the
@@ -109,81 +116,50 @@ const ProjectSchema = z.object({
 });
 
 export const tools = {
-  // ───── PRIMARY: template-driven generation ────────────────────────────
-  // Templates pin duration + narrative arc + slot categories so the
-  // agent's job shrinks to "pick a scene per slot". This makes "20s
-  // ask becomes 8s build" structurally impossible — slot durations
-  // are fixed in the template definition.
-  listTemplates: tool({
-    description:
-      "Returns every video template — name, description, whenToUse, total duration in seconds, and the ordered slot list (each slot has a fixed category, fixed duration, and a role description). ALWAYS call this first for fresh video asks. Most user briefs fit a template; templates guarantee the right duration and a coherent narrative.",
-    inputSchema: z.object({}),
-    execute: async () => ({
-      templates: TEMPLATES.map((t) => ({
-        id: t.id,
-        name: t.name,
-        description: t.description,
-        whenToUse: t.whenToUse,
-        totalDurationFrames: templateDurationInFrames(t),
-        totalDurationSeconds:
-          Math.round((templateDurationInFrames(t) / t.fps) * 10) / 10,
-        fps: t.fps,
-        width: t.width,
-        height: t.height,
-        slots: t.slots.map((s) => ({
-          id: s.id,
-          role: s.role,
-          category: s.category,
-          durationInFrames: s.durationInFrames,
-          description: s.description,
-        })),
-      })),
-    }),
-  }),
-
-  buildFromTemplate: tool({
-    description:
-      "Build a project by filling every slot of a template. Duration + narrative arc + transition are pinned by the template. Workflow: call listTemplates → pick one → for each slot call listScenesInCategory(slot.category) → call getSceneDetails on the scenes you want → submit slotPicks here (one pick per slot). The picked scene must belong to the slot's category. Optionally set a project-wide `style` (background/text/accent/font) that applies to every non-brand-locked clip for visual consistency.",
-    inputSchema: z.object({
-      templateId: z.string().describe("Template id from listTemplates."),
-      slotPicks: z
-        .array(
-          z.object({
-            slotId: z.string(),
-            compositionId: z.string(),
-            props: z.record(z.string(), z.unknown()),
-          }),
-        )
-        .describe(
-          "EXACTLY one pick per slot. slotId must match a slot in the template; compositionId must belong to that slot's category.",
-        ),
-      style: z
-        .object({
-          backgroundColor: z.string().optional(),
-          textColor: z.string().optional(),
-          fontFamily: z.string().optional(),
-          accentColor: z.string().optional(),
-        })
-        .optional()
-        .describe(
-          "Optional palette applied to every non-brand-locked clip so the project has a consistent visual look. Brand-locked scenes (Slack, WhatsApp, etc.) ignore this.",
-        ),
-    }),
-    // No execute — runs client-side in AgentPanel.onToolCall (validates
-    // slot/category match, then assembles a Project and dispatches
-    // LOAD_PROJECT).
-  }),
-
-  // ───── FALLBACK: free-form generation ─────────────────────────────────
+  // ───── PRIMARY: free-form generation from category discovery ──────────
   buildProject: tool({
     description:
-      "Replace the entire timeline with a freeform project. Use ONLY when no template fits the user's brief (unusual length, unusual arc, very specific scene order the user requested). Templates are preferred — they guarantee duration and narrative. Atomic: either the whole project loads or nothing does.",
+      "Replace the entire timeline with a new project. Discovery flow: listDesignTokens (once) → listScenesInCategory for each relevant category → getSceneDetails for each scene you want to use → buildProject. Pass a complete Project JSON. Atomic: either the whole project loads or nothing does.",
     inputSchema: z.object({
       project: ProjectSchema.describe(
-        "The complete Project JSON. Must include fps, width, height, and a non-empty clips array. Each clip needs id, compositionId, and props.",
+        "The complete Project JSON. Must include fps, width, height, and a non-empty clips array. Each clip needs id, compositionId, props, and durationInFrames.",
       ),
     }),
     // No execute — runs client-side in AgentPanel.onToolCall.
+  }),
+
+  // ───── DESIGN TOKENS — curated palettes/fonts ────────────────────────
+  // Lock the agent to pre-vetted color and font atoms. Inventing raw hex
+  // codes produced amateur output; picking 1 base + 1 accent + 1 font
+  // from this list guarantees a premium look.
+  listDesignTokens: tool({
+    description:
+      "Returns curated design tokens: base palettes (background+text pairs), accent colors, and premium fonts. **Call this before buildProject** to pick a coherent visual style. Compose your clip.style by picking ONE base + ONE accent + ONE font — do NOT invent raw hex codes; the output will look amateur. Use the `vibe` and `bestOn` hints to match the brief.",
+    inputSchema: z.object({}),
+    execute: async () => ({
+      bases: COLOR_BASES.map((b) => ({
+        id: b.id,
+        name: b.name,
+        background: b.background,
+        color: b.color,
+        vibe: b.vibe,
+      })),
+      accents: ACCENT_COLORS.map((a) => ({
+        id: a.id,
+        name: a.name,
+        hex: a.hex,
+        bestOn: a.bestOn,
+      })),
+      fonts: PREMIUM_FONTS.map((f) => ({
+        id: f.id,
+        name: f.name,
+        family: f.family,
+        category: f.category,
+        vibe: f.vibe,
+      })),
+      howToUse:
+        "Pick ONE base, ONE accent, ONE font. Apply on every non-brand-locked clip: style.background = base.background, style.color = base.color, style.accent = accent.hex, style.fontFamily = font.family.",
+    }),
   }),
 
   // ───── DISCOVERY (category → scenes → details funnel) ────────────────
@@ -230,6 +206,10 @@ export const tools = {
         category: info.category,
         brandLocked: info.brandMode === "locked",
         defaultDurationFrames: info.durationInFrames,
+        // Optional agent-facing guidance — written by hand in meta.ts
+        // for high-impact scenes. When present, it tells the agent
+        // WHEN to use the scene, not just what props it takes.
+        agentNotes: info.agentNotes,
         // Trimmed payload — full defaultProps can be 3–4k tokens for
         // heavy scenes (chat scripts, terminal lines). The agent gets
         // the schema shape + sample values, not the bulk.

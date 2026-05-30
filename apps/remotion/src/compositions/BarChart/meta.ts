@@ -14,6 +14,8 @@ export const barChartDefaultProps: BarChartProps = {
 export const barChartInfo: CompositionInfo<BarChartProps> = {
   id: "BarChart",
   category: "data",
+  agentNotes:
+    "Animated bars rising in sequence with labels. Use for comparison / ranking / category-breakdown reveals. data is an array of { label, value }. Keep to ~4–8 bars.",
   title: "Bar Chart",
   description:
     "An animated bar chart with staggered grow-up bars, optional axes, gridlines, and value labels.",

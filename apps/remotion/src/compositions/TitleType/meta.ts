@@ -15,6 +15,8 @@ export const titleTypeDefaultProps: TitleTypeProps = {
 export const titleTypeInfo: CompositionInfo<TitleTypeProps> = {
   id: "TitleType",
   category: "text",
+  agentNotes:
+    "Typewriter-style title that types in character by character. Use for hooks where the typing motion adds drama (CLI launches, AI products, code-adjacent brands). Slower than TitlePopup — leaves room to read.",
   title: "Typewriter",
   description:
     "A monospaced typewriter intro: characters reveal one at a time with a blinking caret, ending with an optional subtitle that fades in below.",

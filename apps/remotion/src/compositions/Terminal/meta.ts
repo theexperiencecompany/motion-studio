@@ -37,6 +37,8 @@ export const terminalDefaultProps: TerminalProps = {
 export const terminalInfo: CompositionInfo<TerminalProps> = {
   id: "Terminal",
   category: "devtools",
+  agentNotes:
+    "Best for CLI install / build / deploy / one-liner shell demos with 2–4 lines. Use for the 'how it works' beat in a launch video. Each line is { kind: 'prompt' | 'output', text }. Keep individual lines short (single command + short response). Avoid for long sessions — typing animation gets stale past ~6 seconds.",
   title: "Terminal",
   description:
     "A macOS-style terminal that types out CLI commands line by line. Highly configurable: chrome style, cursor, font size, padding, line kinds.",

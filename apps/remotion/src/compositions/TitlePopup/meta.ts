@@ -15,6 +15,8 @@ export const titlePopupDefaultProps: TitlePopupProps = {
 export const titlePopupInfo: CompositionInfo<TitlePopupProps> = {
   id: "TitlePopup",
   category: "text",
+  agentNotes:
+    "Big spring-pop title with optional subtitle. Default hook scene for product names and bold openers. Keep title to 1–3 words; subtitle is a one-line value prop. Most versatile text scene.",
   title: "Pop In",
   description:
     "A punchy spring-driven title: the headline scales and bounces in as a single unit. Best for short, high-impact one-liners.",

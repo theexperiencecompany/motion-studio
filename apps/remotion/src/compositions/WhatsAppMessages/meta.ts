@@ -29,6 +29,8 @@ export const whatsappMessagesDefaultProps: WhatsAppMessagesProps = {
 export const whatsappMessagesInfo: CompositionInfo<WhatsAppMessagesProps> = {
   id: "WhatsAppMessages",
   category: "social",
+  agentNotes:
+    "WhatsApp DM with the signature green sent bubble. Use for personal-tone briefs, consumer apps, or 'a friend told me' beats. Keep messages short like real WhatsApp DMs.",
   title: "WhatsApp Messages",
   description:
     "An animated WhatsApp-style chat conversation with green bubbles, read receipts, and stacking spring physics.",
