@@ -2,16 +2,14 @@
 
 import { useChat } from "@ai-sdk/react";
 import {
-  ArrowUp01Icon,
   Cancel01Icon,
   RefreshIcon,
   SparklesIcon,
-  StopCircleIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import type { Project } from "@workspace/compositions/project";
 import { Button } from "@workspace/ui/components/button";
-import { Textarea } from "@workspace/ui/components/textarea";
+import { Composer } from "@workspace/ui/components/composer";
 import { WaveSpinner } from "@workspace/ui/components/wave-spinner";
 import { lastAssistantMessageIsCompleteWithToolCalls } from "ai";
 import { useEffect, useRef, useState } from "react";
@@ -53,6 +51,14 @@ export function AgentPanel({ project, dispatch, onClose }: Props) {
   useEffect(() => {
     projectRef.current = project;
   }, [project]);
+
+  // Same trick for brand kit — the chat transport (memoized once) reads
+  // the latest brand kit from this ref so updates flow into the next
+  // chat request without recreating useChat (which would wipe history).
+  const brandKitRef = useRef(project.brandKit);
+  useEffect(() => {
+    brandKitRef.current = project.brandKit;
+  }, [project.brandKit]);
 
   // Tracks how many times the SDK has auto-continued since the user
   // last sent a message. We compare to the cap inside
@@ -189,15 +195,11 @@ export function AgentPanel({ project, dispatch, onClose }: Props) {
       await stop();
     }
     autoContinuationCount.current = 0;
-    sendMessage({ text: trimmed });
+    // Piggyback the project's brandKit so the server can append a brand
+    // context block to the system prompt. The ref always points at the
+    // latest value, so brand kit edits show up on the very next send.
+    sendMessage({ text: trimmed }, { body: { brandKit: brandKitRef.current } });
     setInput("");
-  }
-
-  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      send(input);
-    }
   }
 
   return (
@@ -267,7 +269,9 @@ export function AgentPanel({ project, dispatch, onClose }: Props) {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => regenerate()}
+                  onClick={() =>
+                    regenerate({ body: { brandKit: brandKitRef.current } })
+                  }
                   className="h-7 self-start"
                 >
                   <HugeiconsIcon icon={RefreshIcon} className="size-3" />
@@ -279,53 +283,23 @@ export function AgentPanel({ project, dispatch, onClose }: Props) {
         )}
       </div>
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          send(input);
-        }}
-        className="border-t border-border p-3"
-      >
-        <div className="flex items-end gap-2 rounded-lg border border-border bg-muted/40 p-2 focus-within:border-ring/60">
-          <Textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={
-              isBusy
-                ? "Compose your next message — Stop to send now…"
-                : "Describe the video you want…"
-            }
-            rows={1}
-            className="min-h-0 flex-1 resize-none border-0 bg-transparent p-1 text-[13px] focus-visible:ring-0 focus-visible:outline-none"
-          />
-          {isBusy && input.trim().length === 0 ? (
-            <Button
-              type="button"
-              size="icon"
-              variant="secondary"
-              onClick={() => stop()}
-              className="size-7 shrink-0 rounded-md"
-              title="Stop"
-            >
-              <HugeiconsIcon icon={StopCircleIcon} className="size-3.5" />
-            </Button>
-          ) : (
-            <Button
-              type="submit"
-              size="icon"
-              disabled={input.trim().length === 0}
-              className="size-7 shrink-0 rounded-md"
-              title={isBusy ? "Stop current run and send" : "Send"}
-            >
-              <HugeiconsIcon icon={ArrowUp01Icon} className="size-3.5" />
-            </Button>
-          )}
-        </div>
+      <div className="border-t border-border p-3">
+        <Composer
+          value={input}
+          onChange={setInput}
+          onSubmit={send}
+          onStop={() => stop()}
+          isLoading={isBusy && input.trim().length === 0}
+          placeholder={
+            isBusy
+              ? "Compose your next message — Stop to send now…"
+              : "Describe the video you want…"
+          }
+        />
         <p className="mt-2 text-[10px] text-muted-foreground/70">
           Enter to send · Shift+Enter for newline
         </p>
-      </form>
+      </div>
     </aside>
   );
 }

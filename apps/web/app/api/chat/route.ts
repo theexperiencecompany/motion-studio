@@ -1,4 +1,5 @@
 import { openai } from "@ai-sdk/openai";
+import type { BrandKit } from "@workspace/compositions/project";
 import { convertToModelMessages, stepCountIs, streamText } from "ai";
 import { systemPrompt } from "@/lib/agent/system";
 import { tools } from "@/lib/agent/tools";
@@ -10,12 +11,23 @@ import { tools } from "@/lib/agent/tools";
 export const maxDuration = 300;
 
 export async function POST(req: Request) {
-  const { messages } = await req.json();
+  const { messages, brandKit } = (await req.json()) as {
+    messages: unknown;
+    brandKit?: BrandKit;
+  };
+
+  // Append the brand kit (when set) to the system prompt so the agent
+  // prefers the user's brand over generic design tokens. Cheap (~100
+  // tokens max) and avoids needing a dedicated `getBrandKit` tool +
+  // round trip.
+  const fullSystem = brandKit
+    ? `${systemPrompt}\n\n---\n\n## Active brand kit${formatBrandKit(brandKit)}`
+    : systemPrompt;
 
   const result = streamText({
     model: openai("gpt-5-mini"),
-    system: systemPrompt,
-    messages: await convertToModelMessages(messages, { tools }),
+    system: fullSystem,
+    messages: await convertToModelMessages(messages as never, { tools }),
     tools,
     stopWhen: stepCountIs(60),
     // Default is ~1.0 but explicit so we remember to tune. Higher than
@@ -39,6 +51,18 @@ export async function POST(req: Request) {
       return formatAgentError(error);
     },
   });
+}
+
+function formatBrandKit(kit: BrandKit): string {
+  const lines: string[] = [];
+  if (kit.brandName) lines.push(`- **Brand name**: ${kit.brandName}`);
+  if (kit.primaryColor) lines.push(`- **Primary color**: ${kit.primaryColor}`);
+  if (kit.secondaryColor)
+    lines.push(`- **Secondary color**: ${kit.secondaryColor}`);
+  if (kit.fontFamily) lines.push(`- **Font family**: ${kit.fontFamily}`);
+  if (kit.logoUrl) lines.push(`- **Logo**: available (use in CTA / closing).`);
+  if (lines.length === 0) return "\n\n(brand kit empty)";
+  return `\n\nThe user has set a brand kit for this project. **Prefer these over the curated design tokens** when assembling \`style\` for non-brand-locked clips:\n\n${lines.join("\n")}\n\nMap the brand kit onto \`style\` like so: \`style.accent = primaryColor\`, \`style.fontFamily = fontFamily\` (if set), and use a base palette from listDesignTokens whose mood matches the brand colors.`;
 }
 
 function formatAgentError(error: unknown): string {

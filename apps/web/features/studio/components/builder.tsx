@@ -54,8 +54,19 @@ export function Builder() {
   // Bump the version key when changing default sizes so old persisted
   // layouts don't pin panels at sizes that no longer make sense.
   const LAYOUT_STORAGE_KEY = "studio-layout-v4";
-  const [layout, setLayout] = useState<Layout | undefined>(() => {
-    if (typeof window === "undefined") return undefined;
+  // The persisted layout MUST NOT be read during the initial render: the
+  // server has no access to localStorage and renders panels at their default
+  // sizes, so reading it on the client's first render produces a hydration
+  // mismatch. Start undefined (matching the server), then load the stored
+  // layout after mount and remount the panel group via `layoutKey` so the
+  // restored sizes actually take effect.
+  const [layout, setLayout] = useState<Layout | undefined>(undefined);
+  const [layoutKey, setLayoutKey] = useState("initial");
+  // Gate persistence until the stored layout has been restored, so a
+  // layout-change event fired during the initial default-sized mount can't
+  // overwrite the saved layout before we've had a chance to read it back.
+  const layoutLoadedRef = useRef(false);
+  useEffect(() => {
     try {
       // One-time cleanup of older versions so stale narrow layouts don't
       // linger silently in the user's storage.
@@ -63,12 +74,15 @@ export function Builder() {
       window.localStorage.removeItem("studio-layout-v2");
       window.localStorage.removeItem("studio-layout-v3");
       const raw = window.localStorage.getItem(LAYOUT_STORAGE_KEY);
-      return raw ? (JSON.parse(raw) as Layout) : undefined;
+      if (raw) setLayout(JSON.parse(raw) as Layout);
     } catch {
-      return undefined;
+      // localStorage may be disabled (private mode / quota); silent fallback.
     }
-  });
+    layoutLoadedRef.current = true;
+    setLayoutKey("loaded");
+  }, []);
   const handleLayoutChanged = useCallback((next: Layout) => {
+    if (!layoutLoadedRef.current) return;
     setLayout(next);
     try {
       window.localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(next));
@@ -212,6 +226,11 @@ export function Builder() {
           onExport={() => setExportSettingsOpen(true)}
           onSaveProject={handleSaveProject}
           onLoadProjectFile={handleLoadProjectFile}
+          brandKit={project.brandKit}
+          onUpdateBrandKit={(patch) =>
+            dispatch({ type: "UPDATE_BRAND_KIT", patch })
+          }
+          onClearBrandKit={() => dispatch({ type: "CLEAR_BRAND_KIT" })}
         />
 
         <div className="relative flex min-h-0 flex-1">
@@ -221,6 +240,7 @@ export function Builder() {
           />
 
           <ResizablePanelGroup
+            key={layoutKey}
             orientation="horizontal"
             defaultLayout={layout}
             onLayoutChanged={handleLayoutChanged}
