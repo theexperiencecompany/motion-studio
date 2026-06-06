@@ -1,5 +1,5 @@
 "use client";
-import { AbsoluteFill, Audio, useCurrentFrame, useVideoConfig } from "remotion";
+import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 import { type ClipStyle, resolveClipStyle } from "../../clip-style";
 import { useFontReady } from "../../use-font-ready";
 import type { HAlign, VAlign } from "./config";
@@ -12,6 +12,7 @@ export type CaptionWord = {
 
 export type TikTokCaptionProps = {
   words: CaptionWord[];
+  /** Kept for editor transcription flows; captions do not render audio. */
   audioUrl?: string;
   captionVAlign?: VAlign;
   captionHAlign?: HAlign;
@@ -62,9 +63,10 @@ function groupIntoPhrases(words: CaptionWord[]): CaptionWord[][] {
   return phrases;
 }
 
-export const TikTokCaption: React.FC<TikTokCaptionProps> = ({
+export type TikTokCaptionLayerProps = Omit<TikTokCaptionProps, "audioUrl">;
+
+export const TikTokCaptionLayer: React.FC<TikTokCaptionLayerProps> = ({
   words,
-  audioUrl,
   captionVAlign = "center",
   captionHAlign = "center",
   fontScale = 1,
@@ -131,8 +133,6 @@ export const TikTokCaption: React.FC<TikTokCaptionProps> = ({
         padding: `${height * 0.08}px ${width * 0.06}px`,
       }}
     >
-      {audioUrl ? <Audio src={audioUrl} /> : null}
-
       {activePhrase ? (
         <div
           style={{
@@ -171,4 +171,8 @@ export const TikTokCaption: React.FC<TikTokCaptionProps> = ({
       ) : null}
     </AbsoluteFill>
   );
+};
+
+export const TikTokCaption: React.FC<TikTokCaptionProps> = (props) => {
+  return <TikTokCaptionLayer {...props} />;
 };

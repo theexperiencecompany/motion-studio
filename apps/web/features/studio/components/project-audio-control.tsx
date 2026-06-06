@@ -18,7 +18,7 @@ type Props = {
   sourceDurationSec?: number;
   onPatch: (patch: Partial<ProjectAudio>) => void;
   onClear: () => void;
-  onOpenLibrary: () => void;
+  onOpenUpload: () => void;
 };
 
 /**
@@ -34,7 +34,7 @@ export function ProjectAudioControl({
   sourceDurationSec,
   onPatch,
   onClear,
-  onOpenLibrary,
+  onOpenUpload,
 }: Props) {
   const ids = {
     volume: useId(),
@@ -104,10 +104,10 @@ export function ProjectAudioControl({
         <Button
           variant="outline"
           size="xs"
-          onClick={onOpenLibrary}
+          onClick={onOpenUpload}
           className="text-[11px]"
         >
-          Browse library
+          Replace audio
         </Button>
       </div>
 

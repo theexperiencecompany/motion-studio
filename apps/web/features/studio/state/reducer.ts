@@ -11,7 +11,7 @@ import {
 import { compositionsById } from "@workspace/compositions/registry";
 import type { SceneTransition } from "@workspace/compositions/transitions";
 
-export type StudioPanel = "library" | "agent" | "audio" | null;
+export type StudioPanel = "library" | "agent" | "upload" | null;
 
 /**
  * Tagged union for what's currently selected in the studio. The inspector

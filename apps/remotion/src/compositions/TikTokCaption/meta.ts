@@ -37,8 +37,8 @@ export const tikTokCaptionInfo: CompositionInfo<TikTokCaptionProps> = {
       kind: "audio",
       key: "audioUrl",
       wordsKey: "words",
-      label: "Audio file",
-      placeholder: "Upload an MP3/WAV/M4A to auto-caption",
+      label: "Caption source",
+      placeholder: "Upload audio to generate word timings",
     },
     {
       kind: "select",

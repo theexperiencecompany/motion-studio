@@ -155,6 +155,7 @@
         "@remotion/player": "4.0.459",
         "@remotion/tailwind-v4": "4.0.459",
         "@remotion/web-renderer": "4.0.459",
+        "@tanstack/react-query": "^5.100.9",
         "@types/canvas-confetti": "^1.9.0",
         "@types/jszip": "^3.4.1",
         "@types/mdx": "^2.0.13",

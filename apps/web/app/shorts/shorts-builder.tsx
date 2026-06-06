@@ -16,10 +16,14 @@ import {
   type VAlign,
 } from "@workspace/compositions/compositions/TikTokCaption/config";
 import { TIKTOK_CAPTION_FPS } from "@workspace/compositions/compositions/TikTokCaption/meta";
-import { TikTokCaption } from "@workspace/compositions/compositions/TikTokCaption/TikTokCaption";
+import {
+  TikTokCaption,
+  type TikTokCaptionProps,
+} from "@workspace/compositions/compositions/TikTokCaption/TikTokCaption";
 import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
 import { useRef, useState } from "react";
+import { AbsoluteFill, Audio } from "remotion";
 import { toast } from "sonner";
 import type {
   CaptionWord,
@@ -320,7 +324,7 @@ export function ShortsBuilder() {
                 }}
               >
                 <Player
-                  component={TikTokCaption}
+                  component={CaptionPreview}
                   inputProps={{
                     words: result?.words ?? PLACEHOLDER_WORDS,
                     audioUrl: audioUrl ?? undefined,
@@ -355,6 +359,15 @@ export function ShortsBuilder() {
         </>
       ) : null}
     </div>
+  );
+}
+
+function CaptionPreview({ audioUrl, ...props }: TikTokCaptionProps) {
+  return (
+    <AbsoluteFill>
+      {audioUrl ? <Audio src={audioUrl} /> : null}
+      <TikTokCaption {...props} />
+    </AbsoluteFill>
   );
 }
 

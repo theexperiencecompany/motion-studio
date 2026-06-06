@@ -6,7 +6,6 @@ import {
   ThinkingBubble,
   ToolCallsSection,
 } from "@heygaia/chat-ui";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { domAnimation, LazyMotion } from "motion/react";
 import { useEffect, useMemo, useRef } from "react";
 import { AbsoluteFill, useVideoConfig } from "remotion";
@@ -87,37 +86,6 @@ export type GaiaScenarioProps = {
    */
   toolCallsExpanded?: boolean | string;
 };
-
-// chat-ui has internal `useQuery` calls for integrations (config / user /
-// status) that point at a GAIA backend not present here — the resolved
-// queryFns return `undefined`, which React Query v5 rejects with
-// "Query data cannot be undefined". We do two things to keep them silent:
-//   1) A catch-all default `queryFn` returns null for any query that
-//      forgets to register one.
-//   2) For the known chat-ui keys, prefill the cache with shaped fake
-//      data + set per-key defaults that disable every automatic refetch
-//      trigger. Because chat-ui only overrides `staleTime`, the refetch
-//      triggers below stay in effect and the real queryFn never runs.
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      queryFn: async () => null,
-      retry: false,
-      staleTime: Number.POSITIVE_INFINITY,
-    },
-  },
-});
-
-queryClient.setQueryDefaults(["integrations"], {
-  retry: false,
-  refetchOnMount: false,
-  refetchOnWindowFocus: false,
-  refetchOnReconnect: false,
-  refetchInterval: false,
-});
-queryClient.setQueryData(["integrations", "config"], { configurations: [] });
-queryClient.setQueryData(["integrations", "user"], { integrations: [] });
-queryClient.setQueryData(["integrations", "status"], { status: {} });
 
 const FALLBACK_SCENARIO: Scenario = {
   id: "fallback",
@@ -228,17 +196,16 @@ export const GaiaScenario: React.FC<GaiaScenarioProps> = ({
   const headerLabel = title ?? scenario.title;
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <LazyMotion features={domAnimation}>
-        <style>
-          {/* chat-ui ships a Tailwind-bundled JS but an empty styles.css.
+    <LazyMotion features={domAnimation}>
+      <style>
+        {/* chat-ui ships a Tailwind-bundled JS but an empty styles.css.
             Tailwind in lyon scans .ts/.tsx but does NOT scan
             node_modules JS, so several utilities used inline by
             chat-ui never make it into the output stylesheet. Re-define
             the small set we actually need so the loading shimmer,
             avatar offset, follow-up actions, and tool-call rows render
             correctly without depending on Tailwind generation. */}
-          {`
+        {`
           @keyframes gaiaScenarioShine {
             0% { background-position: 100% 0; }
             100% { background-position: -100% 0; }
@@ -315,17 +282,17 @@ export const GaiaScenario: React.FC<GaiaScenarioProps> = ({
             margin-top: 0.5rem !important;
           }
         `}
-        </style>
-        {userAvatarUrl && (
-          <style>
-            {/* chat-ui renders the user avatar via Radix Avatar with
+      </style>
+      {userAvatarUrl && (
+        <style>
+          {/* chat-ui renders the user avatar via Radix Avatar with
               user.profilePicture (always undefined in our context). The
               AvatarFallback's <img src="/images/avatars/default.webp"> is
               flaky in Remotion's frame-by-frame render because Radix's
               load-status state machine fires asynchronously. Sidestep all
               of that: paint the avatar URL as a background-image on the
               fallback slot and hide the inner <img>. */}
-            {`
+          {`
             [data-slot="avatar-fallback"] {
               background-image: url(${JSON.stringify(userAvatarUrl).slice(1, -1)});
               background-size: cover;
@@ -336,74 +303,73 @@ export const GaiaScenario: React.FC<GaiaScenarioProps> = ({
               opacity: 0;
             }
           `}
-          </style>
-        )}
-        <AbsoluteFill
-          className="gaia-scenario-root"
-          style={{
-            background: bg,
-            color: fg,
-            borderRadius,
-            overflow: "hidden",
-            display: "flex",
-            flexDirection: "column",
-            fontFamily:
-              "-apple-system, BlinkMacSystemFont, 'SF Pro Display', Inter, sans-serif",
-          }}
-        >
-          {headerLabel && (
-            <div
-              style={{
-                padding: `${Math.round(padding * 0.6)}px ${padding}px`,
-                fontSize: 14,
-                fontWeight: 500,
-                opacity: 0.6,
-                letterSpacing: "0.02em",
-                textTransform: "uppercase",
-              }}
-            >
-              {headerLabel}
-            </div>
-          )}
+        </style>
+      )}
+      <AbsoluteFill
+        className="gaia-scenario-root"
+        style={{
+          background: bg,
+          color: fg,
+          borderRadius,
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+          fontFamily:
+            "-apple-system, BlinkMacSystemFont, 'SF Pro Display', Inter, sans-serif",
+        }}
+      >
+        {headerLabel && (
           <div
             style={{
-              flex: 1,
+              padding: `${Math.round(padding * 0.6)}px ${padding}px`,
+              fontSize: 14,
+              fontWeight: 500,
+              opacity: 0.6,
+              letterSpacing: "0.02em",
+              textTransform: "uppercase",
+            }}
+          >
+            {headerLabel}
+          </div>
+        )}
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "flex-end",
+            padding,
+            overflow: "hidden",
+          }}
+        >
+          {/*
+           * chat-ui ships at native mobile pixel sizes. Use a CSS transform to
+           * scale the entire chat surface up to MessageBubbles-equivalent size.
+           * Width is divided by scale so the layout box still fills the parent.
+           */}
+          <div
+            style={{
+              transform: `scale(${scale})`,
+              transformOrigin: "bottom center",
+              width: `${100 / scale}%`,
+              margin: "0 auto",
               display: "flex",
               flexDirection: "column",
               justifyContent: "flex-end",
-              padding,
-              overflow: "hidden",
+              gap: 12,
             }}
           >
-            {/*
-             * chat-ui ships at native mobile pixel sizes. Use a CSS transform to
-             * scale the entire chat surface up to MessageBubbles-equivalent size.
-             * Width is divided by scale so the layout box still fills the parent.
-             */}
-            <div
-              style={{
-                transform: `scale(${scale})`,
-                transformOrigin: "bottom center",
-                width: `${100 / scale}%`,
-                margin: "0 auto",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "flex-end",
-                gap: 12,
-              }}
-            >
-              {renderVisible(
-                visible,
-                frame,
-                activeLoading?.index ?? null,
-                activeThinking?.index ?? null,
-                toolCallsExpanded,
-              )}
-            </div>
+            {renderVisible(
+              visible,
+              frame,
+              activeLoading?.index ?? null,
+              activeThinking?.index ?? null,
+              toolCallsExpanded,
+            )}
           </div>
-        </AbsoluteFill>
-      </LazyMotion>
-    </QueryClientProvider>
+        </div>
+      </AbsoluteFill>
+    </LazyMotion>
   );
 };
 

@@ -1,18 +1,13 @@
 "use client";
-// `<Audio>` from `@remotion/media` rather than the classic one from
-// `remotion`. The classic Audio is rendered as an HTML5 <audio> element
-// which `@remotion/web-renderer` (used by both the in-browser MP4 export
-// AND the screenshot path via `renderStillOnWeb`) refuses with
-// "Html5Audio is not supported". `@remotion/media`'s Audio is the
-// WebCodecs-backed replacement and works across CLI render +
-// web-renderer + Player preview.
-import { Audio } from "@remotion/media";
+import { Audio as MediaAudio } from "@remotion/media";
 import { TransitionSeries } from "@remotion/transitions";
 import {
   AbsoluteFill,
+  Audio as Html5Audio,
   interpolate,
   Sequence,
   useCurrentFrame,
+  useRemotionEnvironment,
   useVideoConfig,
 } from "remotion";
 import { componentsById } from "../../components";
@@ -168,6 +163,7 @@ function ProjectAudioTrack({
   videoDuration: number;
 }) {
   const { fps } = useVideoConfig();
+  const environment = useRemotionEnvironment();
   const startFrame = Math.max(
     0,
     Math.min(audio.startFrame ?? 0, Math.max(0, videoDuration - 1)),
@@ -185,16 +181,27 @@ function ProjectAudioTrack({
 
   return (
     <Sequence from={startFrame} durationInFrames={audioDuration} layout="none">
-      <Audio
-        src={resolvedSrc}
-        // Skip `trimBefore` worth of frames into the source audio.
-        trimBefore={trimBefore}
-        loop={audio.loop ?? false}
-        // Per-frame volume envelope. The sequence-local frame starts at 0
-        // when `startFrame` hits, so fades remain anchored to the audio's
-        // own timeline regardless of when it begins in the project.
-        volume={(frame) => audioVolumeAt(frame, audio, audioDuration)}
-      />
+      {environment.isRendering ? (
+        <MediaAudio
+          src={resolvedSrc}
+          // Skip `trimBefore` worth of frames into the source audio.
+          trimBefore={trimBefore}
+          loop={audio.loop ?? false}
+          // Per-frame volume envelope. The sequence-local frame starts at 0
+          // when `startFrame` hits, so fades remain anchored to the audio's
+          // own timeline regardless of when it begins in the project.
+          volume={(frame) => audioVolumeAt(frame, audio, audioDuration)}
+        />
+      ) : (
+        <Html5Audio
+          src={resolvedSrc}
+          trimBefore={trimBefore}
+          loop={audio.loop ?? false}
+          pauseWhenBuffering={false}
+          crossOrigin="anonymous"
+          volume={(frame) => audioVolumeAt(frame, audio, audioDuration)}
+        />
+      )}
     </Sequence>
   );
 }

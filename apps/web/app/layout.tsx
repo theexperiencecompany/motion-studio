@@ -6,6 +6,7 @@ import "@workspace/ui/globals.css";
 import "streamdown/styles.css";
 import { Toaster } from "@workspace/ui/components/sonner";
 import { cn } from "@workspace/ui/lib/utils";
+import { QueryProvider } from "@/components/query-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 
 export const metadata: Metadata = {
@@ -42,7 +43,7 @@ export default function RootLayout({
     >
       <body className="min-h-screen bg-background text-foreground overflow-x-hidden">
         <ThemeProvider>
-          {children}
+          <QueryProvider>{children}</QueryProvider>
           <Toaster position="bottom-right" richColors />
         </ThemeProvider>
         <Script

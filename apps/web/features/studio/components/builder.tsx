@@ -20,6 +20,7 @@ import {
 } from "react";
 import { toast } from "sonner";
 
+import { useAudioSearch } from "../hooks/use-audio-search";
 import { useExportRender } from "../hooks/use-export-render";
 import { usePlayerControls } from "../hooks/use-player-controls";
 import { useProjectIO } from "../hooks/use-project-io";
@@ -33,7 +34,6 @@ import { registerImageProxy } from "../lib/register-image-proxy";
 import { PlayerProvider } from "../state/player-context";
 import { initialStudioState, studioReducer } from "../state/reducer";
 import { AgentPanel } from "./agent-panel";
-import { AudioPanel } from "./audio-panel";
 import { CommandPalette } from "./command-palette";
 import { ExportProgressOverlay } from "./export-progress-overlay";
 import { ExportSettingsModal } from "./export-settings-modal";
@@ -45,12 +45,14 @@ import { ProjectAudioControl } from "./project-audio-control";
 import { Timeline } from "./timeline";
 import { ToolRail } from "./tool-rail";
 import { TopBar } from "./top-bar";
+import { UploadPanel } from "./upload-panel";
 
 export function Builder() {
   // ----------------------------------------------------------------------
   // Studio state
   // ----------------------------------------------------------------------
   const [state, dispatch] = useReducer(studioReducer, initialStudioState);
+  const audioSearch = useAudioSearch();
   // Bump the version key when changing default sizes so old persisted
   // layouts don't pin panels at sizes that no longer make sense.
   const LAYOUT_STORAGE_KEY = "studio-layout-v4";
@@ -273,15 +275,16 @@ export function Builder() {
                       }
                     />
                   )}
-                  {openPanel === "audio" && (
-                    <AudioPanel
+                  {openPanel === "upload" && (
+                    <UploadPanel
                       currentAudio={project.audio}
+                      audioSearch={audioSearch}
                       onSet={(audio) =>
                         dispatch({ type: "SET_PROJECT_AUDIO", audio })
                       }
                       onClear={() => dispatch({ type: "CLEAR_PROJECT_AUDIO" })}
                       onClose={() =>
-                        dispatch({ type: "TOGGLE_PANEL", panel: "audio" })
+                        dispatch({ type: "TOGGLE_PANEL", panel: "upload" })
                       }
                     />
                   )}
@@ -457,8 +460,8 @@ export function Builder() {
                         onClear={() =>
                           dispatch({ type: "CLEAR_PROJECT_AUDIO" })
                         }
-                        onOpenLibrary={() =>
-                          dispatch({ type: "TOGGLE_PANEL", panel: "audio" })
+                        onOpenUpload={() =>
+                          dispatch({ type: "TOGGLE_PANEL", panel: "upload" })
                         }
                       />
                     </aside>
@@ -502,7 +505,9 @@ export function Builder() {
           onOpenLibrary={() =>
             dispatch({ type: "TOGGLE_PANEL", panel: "library" })
           }
-          onOpenAudio={() => dispatch({ type: "TOGGLE_PANEL", panel: "audio" })}
+          onOpenUpload={() =>
+            dispatch({ type: "TOGGLE_PANEL", panel: "upload" })
+          }
           onSaveProject={handleSaveProject}
           onImportProject={() => {
             // Conjure a transient file picker so the cmd-K Import action

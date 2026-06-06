@@ -2,8 +2,8 @@
 
 import {
   FolderLibraryIcon,
-  MusicNote01Icon,
   SparklesIcon,
+  Upload01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Button } from "@workspace/ui/components/button";
@@ -25,11 +25,11 @@ export function ToolRail({ openPanel, onToggle }: Props) {
         <HugeiconsIcon icon={FolderLibraryIcon} className="size-5" />
       </ToolButton>
       <ToolButton
-        active={openPanel === "audio"}
-        onClick={() => onToggle("audio")}
-        label="Audio"
+        active={openPanel === "upload"}
+        onClick={() => onToggle("upload")}
+        label="Upload"
       >
-        <HugeiconsIcon icon={MusicNote01Icon} className="size-5" />
+        <HugeiconsIcon icon={Upload01Icon} className="size-5" />
       </ToolButton>
       <ToolButton
         active={openPanel === "agent"}
