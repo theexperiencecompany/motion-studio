@@ -630,7 +630,7 @@ function ToolCallsView({
 
   // chat-ui's ToolCallsSection holds its expanded state internally and
   // starts collapsed. Programmatically click the accordion's trigger
-  // button so the demo always renders the expanded view.
+  // button once so the demo always renders the expanded view.
   //
   // HeroUI's dataAttr() returns true OR undefined — so closed buttons
   // have NO `data-open` attribute (not data-open="false"). React Aria's
@@ -645,8 +645,10 @@ function ToolCallsView({
   // letting the click bubble to any wrapping <Link> and trigger anchor
   // navigation. We combine both into one effect so registration order
   // is unambiguous, and run the guard hookup before the click.
+  const openedRef = useRef(false);
   useEffect(() => {
     if (!toolCallsExpanded) return;
+    if (openedRef.current) return;
     const el = containerRef.current;
     if (!el) return;
 
@@ -664,7 +666,10 @@ function ToolCallsView({
       const trigger = el.querySelector<HTMLButtonElement>(
         'button[aria-expanded="false"]',
       );
-      if (trigger) trigger.click();
+      if (trigger) {
+        openedRef.current = true;
+        trigger.click();
+      }
     };
     tryOpen();
     const raf = requestAnimationFrame(tryOpen);
@@ -674,7 +679,7 @@ function ToolCallsView({
       cancelAnimationFrame(raf);
       el.removeEventListener("click", guard);
     };
-  }, [toolCallsExpanded, normalised]);
+  }, [toolCallsExpanded]);
 
   return (
     <div ref={containerRef} style={{ marginLeft: 36 }}>

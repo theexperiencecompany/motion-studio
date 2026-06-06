@@ -9,15 +9,14 @@ export const FONT_HOOK_HEIGHT = 1920;
 
 export const fontHookDefaultProps: FontHookProps = {
   headline: "Stop\nScrolling",
-  subtitle: "Font speed hook",
+  subtitle: "",
 };
 
 export const fontHookInfo: CompositionInfo<FontHookProps> = {
   id: "FontHook",
   category: "text",
   title: "Font Hook",
-  description:
-    "Rapid font cycling for punchy, scroll-stopping openers and title cards.",
+  description: "Plain centered text with rapid font cycling.",
   durationInFrames: FONT_HOOK_DURATION,
   fps: FONT_HOOK_FPS,
   width: FONT_HOOK_WIDTH,
