@@ -5,6 +5,7 @@ import { captionTrackInfo } from "./compositions/CaptionTrack/meta";
 import { cursorWalkthroughInfo } from "./compositions/CursorWalkthrough/meta";
 import { discordMessagesInfo } from "./compositions/DiscordMessages/meta";
 import { featureCardInfo } from "./compositions/FeatureCard/meta";
+import { fontHookInfo } from "./compositions/FontHook/meta";
 import { gaiaScenarioInfo } from "./compositions/GaiaScenario/meta";
 import { githubStarButtonInfo } from "./compositions/GitHubStarButton/meta";
 import { imageSceneInfo } from "./compositions/ImageScene/meta";
@@ -73,6 +74,7 @@ export const compositions: AnyCompositionInfo[] = [
   titleTypeInfo,
   titlePopupInfo,
   titleFadeInfo,
+  fontHookInfo,
   typingSearchInfo,
   typingComposerInfo,
   cursorWalkthroughInfo,

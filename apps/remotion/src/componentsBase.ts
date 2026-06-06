@@ -7,6 +7,7 @@ import { CaptionTrack } from "./compositions/CaptionTrack/CaptionTrack";
 import { CursorWalkthrough } from "./compositions/CursorWalkthrough/CursorWalkthrough";
 import { DiscordMessages } from "./compositions/DiscordMessages/DiscordMessages";
 import { FeatureCard } from "./compositions/FeatureCard/FeatureCard";
+import { FontHook } from "./compositions/FontHook/FontHook";
 import { GaiaScenario } from "./compositions/GaiaScenario/GaiaScenario";
 import { GitHubStarButton } from "./compositions/GitHubStarButton/GitHubStarButton";
 import { ImageScene } from "./compositions/ImageScene/ImageScene";
@@ -76,6 +77,7 @@ export const componentsByIdBase: Record<string, ComponentType<any>> = {
   TitleType,
   TitlePopup,
   TitleFade,
+  FontHook,
   TypingSearch,
   TypingComposer,
   StatCounter,

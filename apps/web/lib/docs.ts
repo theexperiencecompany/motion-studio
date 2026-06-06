@@ -26,6 +26,9 @@ import DiscordMessagesMDX, {
 import FeatureCardMDX, {
   meta as featureCardMeta,
 } from "@/content/docs/feature-card.mdx";
+import FontHookMDX, {
+  meta as fontHookMeta,
+} from "@/content/docs/font-hook.mdx";
 import GaiaScenarioMDX, {
   meta as gaiaScenarioMeta,
 } from "@/content/docs/gaia-scenario.mdx";
@@ -252,6 +255,7 @@ const bespokeMdxByCompositionId: Record<string, BespokeMdx> = {
   TitleType: { Content: TitleTypeMDX, meta: titleTypeMeta },
   TitlePopup: { Content: TitlePopupMDX, meta: titlePopupMeta },
   TitleFade: { Content: TitleFadeMDX, meta: titleFadeMeta },
+  FontHook: { Content: FontHookMDX, meta: fontHookMeta },
   TextBlurOutUp: { Content: TextBlurOutUpMDX, meta: textBlurOutUpMeta },
   TextBottomUpLetters: {
     Content: TextBottomUpLettersMDX,

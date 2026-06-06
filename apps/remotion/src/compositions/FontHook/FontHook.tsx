@@ -21,7 +21,7 @@ const FALLBACK_STACK: FontStack = {
   weight: 400,
 };
 
-const DEFAULT_STACKS: FontStack[] = [
+const DEFAULT_STACKS = [
   FALLBACK_STACK,
   {
     family: "'Anton', 'Arial Black', sans-serif",
@@ -47,7 +47,7 @@ const DEFAULT_STACKS: FontStack[] = [
     family: "Georgia, 'Times New Roman', serif",
     weight: 700,
   },
-];
+] as const satisfies readonly FontStack[];
 
 const SEGMENT_FRAMES = 6;
 
