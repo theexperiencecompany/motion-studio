@@ -12,7 +12,8 @@
     "start": "next start",
     "lint": "biome lint .",
     "format": "biome format --write .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "doctor": "npx react-doctor@latest"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.60",
