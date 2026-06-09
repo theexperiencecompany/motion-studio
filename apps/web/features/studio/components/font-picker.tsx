@@ -9,7 +9,7 @@ import {
   PopoverTrigger,
 } from "@workspace/ui/components/popover";
 import { cn } from "@workspace/ui/lib/utils";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useReducer, useState } from "react";
 
 import {
   extractPrimaryFamily,
@@ -30,6 +30,34 @@ const CATEGORIES: { value: Category; label: string }[] = [
   { value: "handwriting", label: "Script" },
 ];
 
+// The result list and its loading flag are one async unit — they always flip
+// together as a fetch starts and resolves — so they live in one reducer
+// rather than two useStates that can drift out of sync.
+type FetchState = {
+  status: "idle" | "loading" | "loaded";
+  items: FontInfo[];
+};
+
+type FetchAction =
+  | { type: "load" }
+  | { type: "loaded"; items: FontInfo[] }
+  | { type: "failed" };
+
+const INITIAL_FETCH: FetchState = { status: "idle", items: [] };
+
+function fontsFetchReducer(state: FetchState, action: FetchAction): FetchState {
+  switch (action.type) {
+    case "load":
+      return { ...state, status: "loading" };
+    case "loaded":
+      return { status: "loaded", items: action.items };
+    case "failed":
+      return { status: "loaded", items: [] };
+    default:
+      return state;
+  }
+}
+
 type Props = {
   /** Current CSS `font-family` value (e.g. `"Inter", system-ui, sans-serif`). */
   value: string;
@@ -43,8 +71,9 @@ export function FontPicker({ value, onChange, placeholder }: Props) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<Category>("all");
-  const [results, setResults] = useState<FontInfo[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [fonts, dispatchFonts] = useReducer(fontsFetchReducer, INITIAL_FETCH);
+  const results = fonts.items;
+  const loading = fonts.status === "loading";
 
   const currentFamily = useMemo(() => extractPrimaryFamily(value), [value]);
 
@@ -57,7 +86,7 @@ export function FontPicker({ value, onChange, placeholder }: Props) {
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
-    setLoading(true);
+    dispatchFonts({ type: "load" });
     const t = setTimeout(async () => {
       try {
         const params = new URLSearchParams({
@@ -70,11 +99,9 @@ export function FontPicker({ value, onChange, placeholder }: Props) {
         if (!res.ok) throw new Error(String(res.status));
         const data = (await res.json()) as PaginatedFontsResponse;
         if (cancelled) return;
-        setResults(data.items);
+        dispatchFonts({ type: "loaded", items: data.items });
       } catch {
-        if (!cancelled) setResults([]);
-      } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) dispatchFonts({ type: "failed" });
       }
     }, 200);
     return () => {

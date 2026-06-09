@@ -7,9 +7,44 @@ import { componentsById } from "@workspace/compositions/components";
 import { FieldsRenderer } from "@workspace/compositions/editors";
 import type { AnyCompositionInfo } from "@workspace/compositions/schema";
 import { Button } from "@workspace/ui/components/button";
-import { useMemo, useState } from "react";
+import { useMemo, useReducer, useState } from "react";
 import { ClipStyleSection } from "@/features/studio/components/clip-style-section";
 import { downloadMp4Blob } from "@/features/studio/lib/local-export";
+
+// The three render fields are one export operation — they move together as
+// the in-browser render starts, reports progress, fails, or settles.
+type ExportState = {
+  rendering: boolean;
+  progress: number;
+  error: string | null;
+};
+
+type ExportAction =
+  | { type: "start" }
+  | { type: "progress"; progress: number }
+  | { type: "error"; error: string }
+  | { type: "settled" };
+
+const INITIAL_EXPORT: ExportState = {
+  rendering: false,
+  progress: 0,
+  error: null,
+};
+
+function exportReducer(state: ExportState, action: ExportAction): ExportState {
+  switch (action.type) {
+    case "start":
+      return { rendering: true, progress: 0, error: null };
+    case "progress":
+      return { ...state, progress: action.progress };
+    case "error":
+      return { ...state, error: action.error };
+    case "settled":
+      return { ...state, rendering: false };
+    default:
+      return state;
+  }
+}
 
 export function EditorView({
   info,
@@ -21,9 +56,11 @@ export function EditorView({
     () => structuredClone(info.defaultProps) as Record<string, unknown>,
   );
   const [clipStyle, setClipStyle] = useState<ClipStyle>({});
-  const [loading, setLoading] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [error, setError] = useState<string | null>(null);
+  const [exportState, dispatchExport] = useReducer(
+    exportReducer,
+    INITIAL_EXPORT,
+  );
+  const { rendering, progress, error } = exportState;
 
   // Brand-locked compositions hardcode their authentic look — don't pass
   // clipStyle through (matches Project.tsx behavior in the Studio).
@@ -35,9 +72,7 @@ export function EditorView({
 
   async function handleDownload(format: "mp4" | "webm") {
     if (!Component) return;
-    setLoading(true);
-    setProgress(0);
-    setError(null);
+    dispatchExport({ type: "start" });
     try {
       const isWebm = format === "webm";
       const result = await renderMediaOnWeb({
@@ -63,14 +98,18 @@ export function EditorView({
         ...(isWebm
           ? {}
           : { keyframeIntervalInSeconds: 1 / Math.max(1, info.fps) }),
-        onProgress: ({ progress: p }) => setProgress(p),
+        onProgress: ({ progress: p }) =>
+          dispatchExport({ type: "progress", progress: p }),
       });
       const blob = await result.getBlob();
       downloadMp4Blob(blob, `${info.id}.${format}`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Unknown error");
+      dispatchExport({
+        type: "error",
+        error: e instanceof Error ? e.message : "Unknown error",
+      });
     } finally {
-      setLoading(false);
+      dispatchExport({ type: "settled" });
     }
   }
 
@@ -110,9 +149,9 @@ export function EditorView({
           <Button
             className="w-full"
             onClick={() => handleDownload("mp4")}
-            disabled={loading}
+            disabled={rendering}
           >
-            {loading
+            {rendering
               ? `Rendering… ${Math.round(progress * 100)}%`
               : "Download MP4"}
           </Button>
@@ -121,7 +160,7 @@ export function EditorView({
               className="w-full"
               variant="outline"
               onClick={() => handleDownload("webm")}
-              disabled={loading}
+              disabled={rendering}
               title="Exports WebM/VP9 with alpha — set Background to transparent in the Style section first."
             >
               Download WebM (transparent)

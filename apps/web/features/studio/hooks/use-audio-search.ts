@@ -51,7 +51,11 @@ export function useAudioSearch(): AudioSearchState {
   const [query, setQuery] = useState("");
   const [localError, setLocalError] = useState<string | null>(null);
   const deferredQuery = useDeferredValue(query.trim());
-  const search = useQuery({
+  const {
+    data,
+    error: searchError,
+    isFetching,
+  } = useQuery({
     queryKey: audioSearchQueryKey(deferredQuery),
     queryFn: ({ signal }) => fetchAudioSearch(deferredQuery, signal),
     staleTime: AUDIO_SEARCH_STALE_MS,
@@ -63,19 +67,19 @@ export function useAudioSearch(): AudioSearchState {
   }, []);
 
   const queryError =
-    search.error instanceof Error
-      ? search.error.message
-      : search.error
+    searchError instanceof Error
+      ? searchError.message
+      : searchError
         ? "Failed to load"
         : null;
-  const apiError = search.data?.error ?? null;
+  const apiError = data?.error ?? null;
   const error = localError ?? apiError ?? queryError;
 
   return {
     query,
     debouncedQuery: deferredQuery,
-    tracks: search.data?.tracks ?? [],
-    loading: search.isFetching && !search.data,
+    tracks: data?.tracks ?? [],
+    loading: isFetching && !data,
     error,
     missingKey: error === "PIXABAY_API_KEY not set",
     setQuery: updateQuery,

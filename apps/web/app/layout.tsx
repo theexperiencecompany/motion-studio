@@ -1,3 +1,4 @@
+import { MotionConfig } from "motion/react";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
@@ -43,8 +44,13 @@ export default function RootLayout({
     >
       <body className="min-h-screen bg-background text-foreground overflow-x-hidden">
         <ThemeProvider>
-          <QueryProvider>{children}</QueryProvider>
-          <Toaster position="bottom-right" richColors />
+          {/* Honor the OS "reduce motion" setting for every motion-library
+              animation (WCAG 2.3.3). `user` reduces transform/layout
+              animations to instant transitions when the preference is on. */}
+          <MotionConfig reducedMotion="user">
+            <QueryProvider>{children}</QueryProvider>
+            <Toaster position="bottom-right" richColors />
+          </MotionConfig>
         </ThemeProvider>
         <Script
           src="https://as.heygaia.io/api/script.js"

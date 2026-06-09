@@ -17,7 +17,7 @@ import {
   TikTokCaption,
 } from "@workspace/compositions/compositions/TikTokCaption/TikTokCaption";
 import { Button } from "@workspace/ui/components/button";
-import { useRef, useState } from "react";
+import { useReducer, useRef, useState } from "react";
 import type { TranscribeResponse } from "@/app/api/shorts/transcribe/route";
 
 const PLACEHOLDER_WORDS: CaptionWord[] = [
@@ -32,22 +32,65 @@ const { width: WIDTH, height: HEIGHT } = ASPECT_DIMENSIONS["16:9"];
 
 type Stage = "idle" | "uploading" | "ready" | "error";
 
+// The five upload fields below always change together as one transcription
+// flow, so they live in a single reducer rather than five separate useStates.
+type UploadState = {
+  stage: Stage;
+  error: string | null;
+  fileName: string | null;
+  result: TranscribeResponse | null;
+  audioUrl: string | null;
+};
+
+type UploadAction =
+  | { type: "started"; fileName: string }
+  | { type: "succeeded"; result: TranscribeResponse; audioUrl: string }
+  | { type: "failed"; error: string }
+  | { type: "reset" };
+
+const INITIAL_UPLOAD: UploadState = {
+  stage: "idle",
+  error: null,
+  fileName: null,
+  result: null,
+  audioUrl: null,
+};
+
+function uploadReducer(state: UploadState, action: UploadAction): UploadState {
+  switch (action.type) {
+    case "started":
+      return {
+        stage: "uploading",
+        error: null,
+        fileName: action.fileName,
+        result: null,
+        audioUrl: null,
+      };
+    case "succeeded":
+      return {
+        ...state,
+        stage: "ready",
+        result: action.result,
+        audioUrl: action.audioUrl,
+      };
+    case "failed":
+      return { ...state, stage: "error", error: action.error };
+    case "reset":
+      return INITIAL_UPLOAD;
+    default:
+      return state;
+  }
+}
+
 export function CaptionTitlePlayer() {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [stage, setStage] = useState<Stage>("idle");
-  const [error, setError] = useState<string | null>(null);
-  const [fileName, setFileName] = useState<string | null>(null);
-  const [result, setResult] = useState<TranscribeResponse | null>(null);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [upload, dispatch] = useReducer(uploadReducer, INITIAL_UPLOAD);
   const [dragging, setDragging] = useState(false);
 
   async function handleFile(file: File) {
-    setFileName(file.name);
-    setStage("uploading");
-    setError(null);
-    setResult(null);
-    if (audioUrl) URL.revokeObjectURL(audioUrl);
-    setAudioUrl(null);
+    // Free the previous object URL before the reducer drops the reference.
+    if (upload.audioUrl) URL.revokeObjectURL(upload.audioUrl);
+    dispatch({ type: "started", fileName: file.name });
 
     const body = new FormData();
     body.append("file", file);
@@ -66,25 +109,26 @@ export function CaptionTitlePlayer() {
         );
       }
       // Audio stays in browser memory — never written to disk.
-      setAudioUrl(URL.createObjectURL(file));
-      setResult(data as TranscribeResponse);
-      setStage("ready");
+      dispatch({
+        type: "succeeded",
+        result: data as TranscribeResponse,
+        audioUrl: URL.createObjectURL(file),
+      });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Transcription failed");
-      setStage("error");
+      dispatch({
+        type: "failed",
+        error: e instanceof Error ? e.message : "Transcription failed",
+      });
     }
   }
 
   function reset() {
-    setStage("idle");
-    setResult(null);
-    setError(null);
-    setFileName(null);
-    if (audioUrl) URL.revokeObjectURL(audioUrl);
-    setAudioUrl(null);
+    if (upload.audioUrl) URL.revokeObjectURL(upload.audioUrl);
+    dispatch({ type: "reset" });
     if (inputRef.current) inputRef.current.value = "";
   }
 
+  const { stage, error, fileName, result, audioUrl } = upload;
   const previewWords = result?.words ?? PLACEHOLDER_WORDS;
   const previewAudio = audioUrl ?? undefined;
   const durationInFrames = result

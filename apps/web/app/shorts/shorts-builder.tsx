@@ -22,7 +22,7 @@ import {
 } from "@workspace/compositions/compositions/TikTokCaption/TikTokCaption";
 import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
-import { useRef, useState } from "react";
+import { useReducer, useRef, useState } from "react";
 import { AbsoluteFill, Audio } from "remotion";
 import { toast } from "sonner";
 import type {
@@ -47,33 +47,120 @@ const PLACEHOLDER_WORDS: CaptionWord[] = [
   { start: 1.5, end: 2.1, text: "below" },
 ];
 
+type UploadState = {
+  stage: Stage;
+  file: File | null;
+  result: TranscribeResponse | null;
+  audioUrl: string | null;
+  error: string | null;
+};
+
+type UploadAction =
+  | { type: "started"; file: File }
+  | { type: "succeeded"; result: TranscribeResponse; audioUrl: string }
+  | { type: "failed"; error: string };
+
+const INITIAL_UPLOAD: UploadState = {
+  stage: "idle",
+  file: null,
+  result: null,
+  audioUrl: null,
+  error: null,
+};
+
+function uploadReducer(state: UploadState, action: UploadAction): UploadState {
+  switch (action.type) {
+    case "started":
+      return {
+        stage: "uploading",
+        file: action.file,
+        result: null,
+        audioUrl: null,
+        error: null,
+      };
+    case "succeeded":
+      return {
+        ...state,
+        stage: "ready",
+        result: action.result,
+        audioUrl: action.audioUrl,
+      };
+    case "failed":
+      return { ...state, stage: "error", error: action.error };
+    default:
+      return state;
+  }
+}
+
+type CaptionStyleState = {
+  aspectRatio: AspectRatio;
+  bgMode: BgMode;
+  bgColor: string;
+  textColor: string;
+  accentColor: string;
+  vAlign: VAlign;
+  hAlign: HAlign;
+  fontScale: number;
+  fontKey: FontKey;
+};
+
+type CaptionStyleAction = { type: "patch"; patch: Partial<CaptionStyleState> };
+
+const INITIAL_CAPTION_STYLE: CaptionStyleState = {
+  aspectRatio: "16:9",
+  bgMode: "solid",
+  bgColor: "#0a0a0f",
+  textColor: "#ffffff",
+  accentColor: "#22d3ee",
+  vAlign: "center",
+  hAlign: "center",
+  fontScale: 1,
+  fontKey: DEFAULT_FONT_KEY,
+};
+
+function captionStyleReducer(
+  state: CaptionStyleState,
+  action: CaptionStyleAction,
+): CaptionStyleState {
+  switch (action.type) {
+    case "patch":
+      return { ...state, ...action.patch };
+    default:
+      return state;
+  }
+}
+
 export function ShortsBuilder() {
-  const [file, setFile] = useState<File | null>(null);
-  const [result, setResult] = useState<TranscribeResponse | null>(null);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [stage, setStage] = useState<Stage>("idle");
-  const [error, setError] = useState<string | null>(null);
+  // Upload + transcription is one flow — these five fields only change
+  // together, so they share a reducer rather than five separate useStates.
+  const [upload, dispatchUpload] = useReducer(uploadReducer, INITIAL_UPLOAD);
+  const { file, result, audioUrl, stage, error } = upload;
   const [dragging, setDragging] = useState(false);
 
-  const [aspectRatio, setAspectRatio] = useState<AspectRatio>("16:9");
-  const [bgMode, setBgMode] = useState<BgMode>("solid");
-  const [bgColor, setBgColor] = useState<string>("#0a0a0f");
-  const [textColor, setTextColor] = useState<string>("#ffffff");
-  const [accentColor, setAccentColor] = useState<string>("#22d3ee");
-  const [vAlign, setVAlign] = useState<VAlign>("center");
-  const [hAlign, setHAlign] = useState<HAlign>("center");
-  const [fontScale, setFontScale] = useState<number>(1);
-  const [fontKey, setFontKey] = useState<FontKey>(DEFAULT_FONT_KEY);
+  // The caption-style controls are one cohesive config object that all feeds
+  // the live preview — grouped into a patch-style reducer.
+  const [captionStyle, dispatchStyle] = useReducer(
+    captionStyleReducer,
+    INITIAL_CAPTION_STYLE,
+  );
+  const {
+    aspectRatio,
+    bgMode,
+    bgColor,
+    textColor,
+    accentColor,
+    vAlign,
+    hAlign,
+    fontScale,
+    fontKey,
+  } = captionStyle;
 
   const inputRef = useRef<HTMLInputElement>(null);
 
   async function handleFile(f: File) {
-    setFile(f);
-    setStage("uploading");
-    setError(null);
-    setResult(null);
+    // Free the previous object URL before the reducer drops the reference.
     if (audioUrl) URL.revokeObjectURL(audioUrl);
-    setAudioUrl(null);
+    dispatchUpload({ type: "started", file: f });
 
     const body = new FormData();
     body.append("file", f);
@@ -86,21 +173,21 @@ export function ShortsBuilder() {
       if (!res.ok) {
         const err = (await res.json().catch(() => ({}))) as { error?: string };
         const message = err.error ?? `Request failed with ${res.status}`;
-        setError(message);
-        setStage("error");
+        dispatchUpload({ type: "failed", error: message });
         toast.error(message);
         return;
       }
       const data = (await res.json()) as TranscribeResponse;
       // Audio stays in browser memory — never written to disk.
-      setAudioUrl(URL.createObjectURL(f));
-      setResult(data);
-      setStage("ready");
+      dispatchUpload({
+        type: "succeeded",
+        result: data,
+        audioUrl: URL.createObjectURL(f),
+      });
       toast.success(`Transcribed ${data.words.length} words`);
     } catch (e) {
       const message = e instanceof Error ? e.message : "Upload failed";
-      setError(message);
-      setStage("error");
+      dispatchUpload({ type: "failed", error: message });
       toast.error(message);
     }
   }
@@ -163,14 +250,24 @@ export function ShortsBuilder() {
                 <SegmentedGroup>
                   <Segmented
                     selected={aspectRatio === "9:16"}
-                    onClick={() => setAspectRatio("9:16")}
+                    onClick={() =>
+                      dispatchStyle({
+                        type: "patch",
+                        patch: { aspectRatio: "9:16" },
+                      })
+                    }
                   >
                     <AspectIcon ratio="9:16" />
                     9:16 · Vertical
                   </Segmented>
                   <Segmented
                     selected={aspectRatio === "16:9"}
-                    onClick={() => setAspectRatio("16:9")}
+                    onClick={() =>
+                      dispatchStyle({
+                        type: "patch",
+                        patch: { aspectRatio: "16:9" },
+                      })
+                    }
                   >
                     <AspectIcon ratio="16:9" />
                     16:9 · Landscape
@@ -186,7 +283,12 @@ export function ShortsBuilder() {
                   <SegmentedGroup>
                     <Segmented
                       selected={bgMode === "solid"}
-                      onClick={() => setBgMode("solid")}
+                      onClick={() =>
+                        dispatchStyle({
+                          type: "patch",
+                          patch: { bgMode: "solid" },
+                        })
+                      }
                     >
                       <span
                         className="h-4 w-4 rounded-sm border border-border"
@@ -196,7 +298,12 @@ export function ShortsBuilder() {
                     </Segmented>
                     <Segmented
                       selected={bgMode === "transparent"}
-                      onClick={() => setBgMode("transparent")}
+                      onClick={() =>
+                        dispatchStyle({
+                          type: "patch",
+                          patch: { bgMode: "transparent" },
+                        })
+                      }
                     >
                       <CheckerIcon />
                       Transparent
@@ -206,7 +313,9 @@ export function ShortsBuilder() {
                     <ColorRow
                       label="Background"
                       value={bgColor}
-                      onChange={setBgColor}
+                      onChange={(v) =>
+                        dispatchStyle({ type: "patch", patch: { bgColor: v } })
+                      }
                     />
                   ) : null}
                 </div>
@@ -220,12 +329,19 @@ export function ShortsBuilder() {
                   <ColorRow
                     label="Text"
                     value={textColor}
-                    onChange={setTextColor}
+                    onChange={(v) =>
+                      dispatchStyle({ type: "patch", patch: { textColor: v } })
+                    }
                   />
                   <ColorRow
                     label="Accent"
                     value={accentColor}
-                    onChange={setAccentColor}
+                    onChange={(v) =>
+                      dispatchStyle({
+                        type: "patch",
+                        patch: { accentColor: v },
+                      })
+                    }
                   />
                 </div>
               </Field>
@@ -237,10 +353,12 @@ export function ShortsBuilder() {
                 <PositionGrid
                   vAlign={vAlign}
                   hAlign={hAlign}
-                  onChange={(v, h) => {
-                    setVAlign(v);
-                    setHAlign(h);
-                  }}
+                  onChange={(v, h) =>
+                    dispatchStyle({
+                      type: "patch",
+                      patch: { vAlign: v, hAlign: h },
+                    })
+                  }
                   aspectRatio={aspectRatio}
                 />
               </Field>
@@ -254,7 +372,12 @@ export function ShortsBuilder() {
                     <Segmented
                       key={p.label}
                       selected={Math.abs(fontScale - p.value) < 0.01}
-                      onClick={() => setFontScale(p.value)}
+                      onClick={() =>
+                        dispatchStyle({
+                          type: "patch",
+                          patch: { fontScale: p.value },
+                        })
+                      }
                     >
                       <span
                         className="font-semibold"
@@ -279,7 +402,12 @@ export function ShortsBuilder() {
                       <Segmented
                         key={key}
                         selected={fontKey === key}
-                        onClick={() => setFontKey(key)}
+                        onClick={() =>
+                          dispatchStyle({
+                            type: "patch",
+                            patch: { fontKey: key },
+                          })
+                        }
                       >
                         <span
                           style={{
