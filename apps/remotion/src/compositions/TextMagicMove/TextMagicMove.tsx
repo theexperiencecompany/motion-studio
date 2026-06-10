@@ -6,7 +6,13 @@ import type { ClipStyle } from "../../clip-style";
 import { useDesignFrame } from "../../use-design-frame";
 import { useFontReady } from "../../use-font-ready";
 import { resolveTitleStyle, snap, snapZero } from "../title-shared";
-import { MAGIC_ENTER, MAGIC_HOLD, MAGIC_MORPH, parsePhrases } from "./timing";
+import {
+  MAGIC_ENTER,
+  MAGIC_HOLD,
+  MAGIC_MORPH,
+  normalizeSpeed,
+  parsePhrases,
+} from "./timing";
 
 /**
  * Kinetic-typography MAGIC MOVE. Feed it a list of phrases (one per line); it
@@ -39,6 +45,8 @@ export type TextMagicMoveProps = {
   /** One phrase per line. The clip morphs from each line to the next. */
   phrases: string;
   fontSize: number;
+  /** Playback rate. 1 = normal, 2 = twice as fast, 0.5 = half speed. */
+  speed: number;
   clipStyle?: ClipStyle;
 };
 
@@ -180,9 +188,13 @@ function Word({
 export const TextMagicMove: React.FC<TextMagicMoveProps> = ({
   phrases,
   fontSize,
+  speed,
   clipStyle,
 }) => {
-  const frame = useDesignFrame();
+  // Scale the timeline by `speed`: a higher rate makes the same motion play
+  // out over fewer frames. meta's duration divides by the same factor so the
+  // clip length tracks it.
+  const frame = useDesignFrame() * normalizeSpeed(speed);
   const s = resolveTitleStyle(clipStyle);
   useFontReady(s.fontFamily);
   const fontSettled = useFontSettled(s.fontFamily);

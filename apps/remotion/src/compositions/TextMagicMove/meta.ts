@@ -9,6 +9,7 @@ export const TEXT_MAGIC_MOVE_HEIGHT = 1080;
 export const textMagicMoveDefaultProps: TextMagicMoveProps = {
   phrases: "Motion makes it real\nMotion makes it flow\nMotion makes it yours",
   fontSize: 120,
+  speed: 1,
 };
 
 export const textMagicMoveInfo: CompositionInfo<TextMagicMoveProps> = {
@@ -19,7 +20,10 @@ export const textMagicMoveInfo: CompositionInfo<TextMagicMoveProps> = {
   title: "Magic Move",
   description:
     "Cycles through short phrases; words common to consecutive phrases travel to their new position while the rest blur in and out — a Keynote-style text morph.",
-  durationInFrames: computeMagicMoveDuration(textMagicMoveDefaultProps.phrases),
+  durationInFrames: computeMagicMoveDuration(
+    textMagicMoveDefaultProps.phrases,
+    textMagicMoveDefaultProps.speed,
+  ),
   fps: TEXT_MAGIC_MOVE_FPS,
   width: TEXT_MAGIC_MOVE_WIDTH,
   height: TEXT_MAGIC_MOVE_HEIGHT,
@@ -38,8 +42,15 @@ export const textMagicMoveInfo: CompositionInfo<TextMagicMoveProps> = {
       min: 48,
       max: 240,
     },
+    {
+      kind: "number",
+      key: "speed",
+      label: "Speed (×)",
+      min: 0.5,
+      max: 3,
+    },
   ],
   calculateMetadata: ({ props }) => ({
-    durationInFrames: computeMagicMoveDuration(props.phrases),
+    durationInFrames: computeMagicMoveDuration(props.phrases, props.speed),
   }),
 };
