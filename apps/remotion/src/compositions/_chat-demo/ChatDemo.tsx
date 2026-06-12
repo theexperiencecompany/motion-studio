@@ -14,6 +14,7 @@ import {
 } from "remotion";
 import { proxyExternalImg } from "../../proxy-image";
 import { useDesignFrame } from "../../use-design-frame";
+import { CssLiquidGlass } from "./CssLiquidGlass";
 import { Keyboard } from "./Keyboard";
 import { type GlassParams, GlassStage, LiquidGlass } from "./LiquidGlass";
 
@@ -951,13 +952,13 @@ function curvedThread(messages: ChatMessageItem[]): CurvedThread[] {
  * iMessage
  * ========================================================================= */
 
-// Exact iMessage bubble palette (iOS).
-//  • Sent (blue) — same gradient in light & dark, white text.
-//  • Received (gray) — Apple uses #E9E9EB in light, #3B3B3D in dark.
-const IMESSAGE_GRADIENT = "linear-gradient(180deg, #309BFE 0%, #027BFF 100%)";
-const IMESSAGE_TAIL_ME_COLOR = "#0E89FF";
+// iMessage bubble palette.
+//  • Sent — solid blue, white text.
+//  • Received — #E9E9EB in light, #2a272a in dark.
+const IMESSAGE_GRADIENT = "#2d90fa";
+const IMESSAGE_TAIL_ME_COLOR = "#2d90fa";
 const IMESSAGE_THEM_BG_LIGHT = "#E9E9EB";
-const IMESSAGE_THEM_BG_DARK = "#3B3B3D";
+const IMESSAGE_THEM_BG_DARK = "#2a272a";
 
 function IMessageDemo({
   messages,
@@ -995,6 +996,18 @@ function IMessageDemo({
   keyboardOpen?: number;
 }) {
   const grouped = curvedThread(messages);
+  // Caret blink for the idle (placeholder) composer — a ~1s cycle: on, quick
+  // fade out, off, quick fade back in, like the iOS insertion point.
+  const frame = useDesignFrame();
+  const blinkT = (frame % 60) / 60;
+  const caretOpacity =
+    blinkT < 0.45
+      ? 1
+      : blinkT < 0.55
+        ? 1 - (blinkT - 0.45) / 0.1
+        : blinkT < 0.9
+          ? 0
+          : (blinkT - 0.9) / 0.1;
   // The read receipt sits under the LAST message you sent and stays there even
   // after they reply — only a newer sent message moves it down. Track that
   // group so the receipt persists across subsequent incoming bubbles.
@@ -1029,16 +1042,38 @@ function IMessageDemo({
     : dark
       ? "rgba(120,120,128,0.32)"
       : "#E9E9EB";
-  // Fallback look for the glass chrome (back/FaceTime/plus buttons + name
-  // chip) when WebGL glass is off — a CSS frosted pill so the non-glass mode
-  // still reads as iOS glass instead of a flat gray blob over the wallpaper.
+  // Glass chrome (back/FaceTime/plus buttons + name chip). Over a wallpaper the
+  // WebGL layer refracts the image; over a solid sheet there's nothing to
+  // refract, so we render a real frosted CSS pill — a translucent light fill
+  // that lifts off the dark sheet, a bright top rim + soft inner/outer shadow
+  // (the Apple "liquid glass" bezel), and a blur. `forceCss` (passed below when
+  // there's no wallpaper) keeps this look instead of the flat shader shape.
   const chromeGlassStyle: React.CSSProperties = hasBg
     ? {
         background: chipBg,
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
       }
-    : { background: chipBg };
+    : dark
+      ? {
+          // Clean, lucent glass: a barely-there fill so the BLURRED backdrop
+          // (bubbles) shows through clear like water — not a milky white or a
+          // flat gray pill. Saturate (in the backdrop filter) keeps it vivid;
+          // a thin bright rim is the only solid edge.
+          background: "rgba(255,255,255,0.05)",
+          border: "1px solid rgba(255,255,255,0.18)",
+          boxShadow:
+            "inset 0 1px 0.5px rgba(255,255,255,0.4), inset 0 -1px 1px rgba(255,255,255,0.06)",
+        }
+      : {
+          // Light theme: a frosted GRAY material so the pill is visible on the
+          // white sheet (white-on-white was invisible), with a thin dark hairline
+          // + soft drop shadow for lift and a bright top rim.
+          background: "rgba(140,140,150,0.16)",
+          border: "1px solid rgba(0,0,0,0.06)",
+          boxShadow:
+            "inset 0 1px 0.5px rgba(255,255,255,0.7), 0 1px 2px rgba(0,0,0,0.08)",
+        };
   // Back/FaceTime icons go white whenever the surface behind them is dark — a
   // wallpaper or dark appearance — so they read on the translucent glass. On a
   // plain light sheet they stay the iOS blue accent (white would vanish).
@@ -1059,14 +1094,16 @@ function IMessageDemo({
       className={cn("h-full", className)}
       style={{ fontFamily: SF_STACK }}
     >
-      <div className="flex h-full flex-col">
-        {/* Header — back chevron + avatar/name chip + FaceTime, glass chrome */}
+      <div className="relative flex h-full flex-col">
+        {/* Header — back chevron + avatar/name chip + FaceTime, glass chrome.
+            Absolutely overlaid so the thread scrolls UNDERNEATH it (like real
+            iMessage) instead of being hard-cut by an opaque bar. */}
         <div
-          className="relative flex shrink-0 flex-col items-center justify-center"
-          style={{ background: chromeBg, padding: "22px 16px 14px" }}
+          className="absolute inset-x-0 top-0 z-20 flex flex-col items-center justify-center"
+          style={{ background: chromeBg, padding: "48px 16px 14px" }}
         >
-          <div style={{ position: "absolute", left: 12, top: 24 }}>
-            <LiquidGlass
+          <div style={{ position: "absolute", left: 12, top: 50 }}>
+            <CssLiquidGlass
               radius={20}
               style={{
                 width: 40,
@@ -1093,11 +1130,11 @@ function IMessageDemo({
                   strokeLinejoin="round"
                 />
               </svg>
-            </LiquidGlass>
+            </CssLiquidGlass>
           </div>
 
-          <div style={{ position: "absolute", right: 12, top: 24 }}>
-            <LiquidGlass
+          <div style={{ position: "absolute", right: 12, top: 50 }}>
+            <CssLiquidGlass
               radius={20}
               style={{
                 width: 40,
@@ -1129,7 +1166,7 @@ function IMessageDemo({
                   fill="currentColor"
                 />
               </svg>
-            </LiquidGlass>
+            </CssLiquidGlass>
           </div>
 
           <div
@@ -1150,7 +1187,7 @@ function IMessageDemo({
             />
           </div>
 
-          <LiquidGlass
+          <CssLiquidGlass
             radius={19}
             style={{
               display: "inline-flex",
@@ -1184,7 +1221,7 @@ function IMessageDemo({
                 strokeLinejoin="round"
               />
             </svg>
-          </LiquidGlass>
+          </CssLiquidGlass>
 
           {subtitle && (
             <span
@@ -1199,23 +1236,38 @@ function IMessageDemo({
           )}
         </div>
 
+        {/* Scrim — fades the thread into the sheet color as it slides under the
+            translucent header, so there's no hard top cut. Solid gradient (not
+            a CSS mask) so it survives the web-renderer export. */}
+        {!hasBg && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 top-0 z-10"
+            style={{
+              // Subtle iMessage-style top fade: a gentle linear gradient so the
+              // thread softly melts into the sheet as it scrolls up under the
+              // header — no heavy opaque wash.
+              height: 110,
+              background: `linear-gradient(to bottom, ${sheetBg} 0%, transparent 100%)`,
+            }}
+          />
+        )}
+
         <div
-          className="flex flex-1 flex-col overflow-y-auto px-3 pb-3"
+          className="relative z-0 flex flex-1 flex-col overflow-y-auto px-3 pb-3"
           style={{
             scrollbarWidth: "none",
-            gap: 10,
-            // Always anchor the thread to the bottom, like real iMessage: the
-            // newest message sits just above the composer and older ones scroll
-            // up off the top as the conversation grows. This is what keeps a
-            // long conversation "auto-scrolled" to the latest bubble (and stops
-            // a final photo/message from overflowing below the visible area).
+            gap: 2,
+            // Anchor the thread to the bottom; older bubbles scroll up UNDER the
+            // overlaid header and fade into the scrim. The newest bubble sits
+            // just above the composer.
             justifyContent: "flex-end",
           }}
         >
           {grouped.map((group, gi) => {
             const groupTime = group.items[0]?.time;
             return (
-              <div key={gi} className="flex flex-col" style={{ gap: 8 }}>
+              <div key={gi} className="flex flex-col" style={{ gap: 4 }}>
                 {groupTime && (
                   <div
                     className="self-center text-center"
@@ -1315,14 +1367,14 @@ function IMessageDemo({
 
         {(showComposer || showKeyboard) && (
           <div
-            className="flex shrink-0 items-end gap-2.5 px-4 pt-2 pb-1.5"
+            className="flex shrink-0 items-end gap-3.5 px-6 pt-2 pb-1.5"
             style={{ background: chromeBg }}
           >
-            <LiquidGlass
-              radius={18}
+            <CssLiquidGlass
+              radius={17}
               style={{
-                width: 36,
-                height: 36,
+                width: 34,
+                height: 34,
                 flexShrink: 0,
                 display: "flex",
                 alignItems: "center",
@@ -1331,7 +1383,7 @@ function IMessageDemo({
               }}
               glassStyle={chromeGlassStyle}
             >
-              <svg width="17" height="17" viewBox="0 0 14 14" aria-hidden>
+              <svg width="16" height="16" viewBox="0 0 14 14" aria-hidden>
                 <path
                   d="M7 1v12M1 7h12"
                   stroke="currentColor"
@@ -1339,17 +1391,15 @@ function IMessageDemo({
                   strokeLinecap="round"
                 />
               </svg>
-            </LiquidGlass>
-            <LiquidGlass
+            </CssLiquidGlass>
+            <CssLiquidGlass
               radius={18}
               style={{
                 display: "flex",
                 flex: 1,
                 alignItems: "center",
                 justifyContent: "space-between",
-                padding: "0 8px 0 14px",
-                // Fixed height (radius 18 = a perfect pill) so the composer
-                // doesn't grow/round-shift when the taller send button appears.
+                padding: "0 8px 0 16px",
                 height: 36,
               }}
               glassStyle={
@@ -1362,12 +1412,20 @@ function IMessageDemo({
                     }
                   : dark
                     ? {
-                        background: "#1C1C1E",
-                        border: "1px solid rgba(255,255,255,0.16)",
+                        // Clean, lucent glass to match the chrome — barely-there
+                        // fill so the blurred backdrop shows through clear, with
+                        // a thin bright rim. Not milky, not gray.
+                        background: "rgba(255,255,255,0.05)",
+                        border: "1px solid rgba(255,255,255,0.09)",
+                        boxShadow: "inset 0 1px 0.5px rgba(255,255,255,0.18)",
                       }
                     : {
-                        background: "#fff",
-                        border: "1px solid rgba(60,60,67,0.18)",
+                        // Light theme: visible frosted gray (white-on-white was
+                        // invisible), thin dark hairline + soft shadow for lift.
+                        background: "rgba(140,140,150,0.16)",
+                        border: "1px solid rgba(0,0,0,0.06)",
+                        boxShadow:
+                          "inset 0 1px 0.5px rgba(255,255,255,0.7), 0 1px 2px rgba(0,0,0,0.08)",
                       }
               }
             >
@@ -1387,7 +1445,7 @@ function IMessageDemo({
                       aria-hidden
                       style={{
                         display: "inline-block",
-                        width: 2,
+                        width: 1.5,
                         height: 17,
                         marginLeft: 1,
                         marginBottom: -3,
@@ -1399,12 +1457,32 @@ function IMessageDemo({
                 ) : (
                   <span
                     style={{
-                      color: lightUI
-                        ? "rgba(255,255,255,0.7)"
-                        : "rgba(60,60,67,0.5)",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      verticalAlign: "middle",
                     }}
                   >
-                    iMessage
+                    <span
+                      aria-hidden
+                      style={{
+                        display: "inline-block",
+                        width: 1.5,
+                        height: 17,
+                        marginRight: 4,
+                        background: "#0a84ff",
+                        borderRadius: 1,
+                        opacity: caretOpacity,
+                      }}
+                    />
+                    <span
+                      style={{
+                        color: lightUI
+                          ? "rgba(235,235,245,0.32)"
+                          : "rgba(60,60,67,0.38)",
+                      }}
+                    >
+                      Message
+                    </span>
                   </span>
                 )}
               </div>
@@ -1447,7 +1525,7 @@ function IMessageDemo({
                   </svg>
                 </button>
               )}
-            </LiquidGlass>
+            </CssLiquidGlass>
           </div>
         )}
 
@@ -1455,6 +1533,8 @@ function IMessageDemo({
           <div
             style={{
               flexShrink: 0,
+              // Breathing room between the composer and the keyboard.
+              marginTop: 6,
               // Clip the slide-up at the bottom/sides, but allow the key-press
               // pop balloon to overflow upward into the composer area.
               clipPath: "inset(-160px 0 0 0)",

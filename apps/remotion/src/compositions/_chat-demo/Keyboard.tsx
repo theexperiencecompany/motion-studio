@@ -21,9 +21,10 @@ const KB_W = 402;
 // keep room for it; the phone frame still draws its own home indicator below.
 const KB_H = 296;
 // Vertical centre of the globe/mic bar that sits under the key rows.
-const UTILITY_Y = 250;
-// A touch of side breathing room beyond the native 4px key margin.
-const KB_PAD_X = 4;
+const UTILITY_Y = 262;
+// Side breathing room beyond the native 4px key margin, so the keys sit inset
+// from the panel's rounded edges instead of running right up against them.
+const KB_PAD_X = 16;
 
 const SF_STACK =
   '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif';
@@ -220,7 +221,7 @@ function SmileyIcon({ color }: { color: string }) {
 
 function GlobeIcon({ color }: { color: string }) {
   return (
-    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <svg width="35" height="35" viewBox="0 0 24 24" fill="none" aria-hidden>
       <circle cx="12" cy="12" r="9" stroke={color} strokeWidth="1.5" />
       <path d="M3 12h18" stroke={color} strokeWidth="1.5" />
       <path
@@ -235,7 +236,7 @@ function GlobeIcon({ color }: { color: string }) {
 
 function MicIcon({ color }: { color: string }) {
   return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <svg width="31" height="31" viewBox="0 0 24 24" fill="none" aria-hidden>
       <rect
         x="9"
         y="2.6"

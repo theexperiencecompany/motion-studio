@@ -1,9 +1,14 @@
-import { spring, useVideoConfig } from "remotion";
+import { Audio } from "@remotion/media";
+import { useMemo } from "react";
+import { Sequence, spring, staticFile, useVideoConfig } from "remotion";
 import type { ChatMessage } from "../../editors/types";
 import { useDesignFrame } from "../../use-design-frame";
 import { ChatDemo, type ChatMessageItem } from "../_chat-demo/ChatDemo";
 import { ChatFill } from "../_chat-demo/ChatFill";
 import { KEYBOARD_BG } from "../_chat-demo/Keyboard";
+
+/** iMessage send/receive sound — played as each bubble lands. */
+const MESSAGE_SFX = "sounds/message_bubble/message.mp3";
 
 export type MessageBubblesProps = {
   contactName: string;
@@ -20,8 +25,6 @@ export type MessageBubblesProps = {
   liquidAmount?: number;
   /** Light or dark iMessage appearance (uses Apple's exact bubble grays). */
   theme?: "light" | "dark";
-  /** Timestamp shown beside "Read" under the last sent bubble (e.g. "9:41 AM"). */
-  readReceiptTime?: string;
   /** Show the on-screen keyboard typing out outgoing messages in real time. */
   showKeyboard?: boolean;
 };
@@ -135,11 +138,31 @@ export const MessageBubbles: React.FC<MessageBubblesProps> = ({
   liquidGlass = true,
   liquidAmount = 0,
   theme = "dark",
-  readReceiptTime = "9:41 AM",
   showKeyboard = false,
 }) => {
   const frame = useDesignFrame();
   const { fps } = useVideoConfig();
+
+  // Read receipt uses the REAL current time (computed once) — no editor field.
+  const readReceiptTime = useMemo(() => {
+    const d = new Date();
+    let h = d.getHours();
+    const min = d.getMinutes();
+    const ampm = h >= 12 ? "PM" : "AM";
+    h = h % 12 || 12;
+    return `${h}:${String(min).padStart(2, "0")} ${ampm}`;
+  }, []);
+
+  // One soft "swoosh" per message, fired the frame each bubble lands (after its
+  // typing phase). Messages are spaced well apart, so the cues never overlap —
+  // each plays cleanly start-to-finish.
+  const sfxCues = useMemo(
+    () =>
+      messages
+        .filter((m) => m.image || m.text.trim())
+        .map((m) => Math.max(0, Math.round(m.delay + m.typingFrames))),
+    [messages],
+  );
   const { items, composerText, pressedKey, pressT } = buildChatState(
     messages,
     frame,
@@ -169,29 +192,36 @@ export const MessageBubbles: React.FC<MessageBubblesProps> = ({
   };
 
   return (
-    <ChatFill
-      backdrop={backdrop}
-      chromeColor={backdrop}
-      bottomChromeColor={showKeyboard ? KEYBOARD_BG[theme] : undefined}
-      scale={scale}
-      orientation={orientation}
-    >
-      <ChatDemo
-        platform="imessage"
-        title={contactName}
-        headerAvatar={contactAvatar}
-        messages={items}
-        backgroundImage={backgroundImage}
-        liquidGlass={liquidGlass}
-        glassParams={glassParams}
-        readReceiptTime={readReceiptTime}
-        theme={theme}
-        showKeyboard={showKeyboard}
-        composerText={composerText}
-        pressedKey={pressedKey}
-        pressT={pressT}
-        keyboardOpen={keyboardOpen}
-      />
-    </ChatFill>
+    <>
+      {sfxCues.map((from, i) => (
+        <Sequence key={`sfx-${i}`} from={from} name="message-sfx">
+          <Audio src={staticFile(MESSAGE_SFX)} volume={0.8} />
+        </Sequence>
+      ))}
+      <ChatFill
+        backdrop={backdrop}
+        chromeColor={backdrop}
+        bottomChromeColor={showKeyboard ? KEYBOARD_BG[theme] : undefined}
+        scale={scale}
+        orientation={orientation}
+      >
+        <ChatDemo
+          platform="imessage"
+          title={contactName}
+          headerAvatar={contactAvatar}
+          messages={items}
+          backgroundImage={backgroundImage}
+          liquidGlass={liquidGlass}
+          glassParams={glassParams}
+          readReceiptTime={readReceiptTime}
+          theme={theme}
+          showKeyboard={showKeyboard}
+          composerText={composerText}
+          pressedKey={pressedKey}
+          pressT={pressT}
+          keyboardOpen={keyboardOpen}
+        />
+      </ChatFill>
+    </>
   );
 };

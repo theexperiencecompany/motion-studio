@@ -868,6 +868,7 @@ export function LiquidGlass({
   radius = 18,
   frost = false,
   tail = null,
+  forceCss = false,
   className,
   style,
   glassStyle,
@@ -879,6 +880,13 @@ export function LiquidGlass({
   frost?: boolean;
   /** Draw a seamless tail tucked into this bottom corner (frosted bubbles). */
   tail?: TailSide;
+  /**
+   * Skip the WebGL refraction and always render `glassStyle` (CSS glass). Use
+   * for chrome over a solid/dark sheet, where there's nothing to refract and
+   * the shader would render a near-invisible flat shape — a real frosted CSS
+   * pill (translucent fill + rim + blur) reads as glass instead.
+   */
+  forceCss?: boolean;
   className?: string;
   /** Style applied in BOTH modes (layout, padding, etc.). */
   style?: React.CSSProperties;
@@ -893,7 +901,7 @@ export function LiquidGlass({
   const ctx = useContext(GlassContext);
   const id = useId();
   const ref = useRef<HTMLDivElement>(null);
-  const active = ctx?.active ?? false;
+  const active = (ctx?.active ?? false) && !forceCss;
 
   useLayoutEffect(() => {
     if (!active || !ctx || !ref.current) return;

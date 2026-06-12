@@ -21,14 +21,13 @@ export const messageBubblesDefaultProps: MessageBubblesProps = {
       delay: 530,
     },
   ],
-  orientation: "landscape",
+  orientation: "portrait",
   scale: 2,
   backgroundImage: "",
   liquidGlass: true,
   liquidAmount: 0,
   theme: "dark",
-  readReceiptTime: "9:41 AM",
-  showKeyboard: false,
+  showKeyboard: true,
 };
 
 export const messageBubblesInfo: CompositionInfo<MessageBubblesProps> = {
@@ -64,16 +63,7 @@ export const messageBubblesInfo: CompositionInfo<MessageBubblesProps> = {
       placeholder: "images/... or https://...",
     },
     { kind: "switch", key: "liquidGlass", label: "Liquid glass (WebGL)" },
-    {
-      kind: "slider",
-      key: "liquidAmount",
-      label: "Liquid amount",
-      min: 0,
-      max: 100,
-      step: 1,
-    },
     { kind: "switch", key: "showKeyboard", label: "Keyboard (typing)" },
-    { kind: "text", key: "readReceiptTime", label: "Read receipt time" },
     {
       kind: "select",
       key: "theme",
