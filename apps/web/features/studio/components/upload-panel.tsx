@@ -16,81 +16,41 @@ import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
-type Track = {
-  id: string;
-  title: string;
-  duration: number;
-  previewUrl: string;
-  downloadUrl: string;
-  tags: string[];
-  user?: string;
-};
-
-type SearchResponse = {
-  tracks: Track[];
-  error?: string;
-};
+import type { AudioSearchState, AudioTrack } from "../hooks/use-audio-search";
 
 type Props = {
   currentAudio?: ProjectAudio;
+  audioSearch: AudioSearchState;
   onSet: (audio: ProjectAudio) => void;
   onClear: () => void;
   onClose: () => void;
 };
 
 const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
-const SEARCH_DEBOUNCE_MS = 300;
 
-export function AudioPanel({ currentAudio, onSet, onClear, onClose }: Props) {
-  const [query, setQuery] = useState("");
-  const [debounced, setDebounced] = useState("");
-  const [tracks, setTracks] = useState<Track[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [missingKey, setMissingKey] = useState(false);
+export function UploadPanel({
+  currentAudio,
+  audioSearch,
+  onSet,
+  onClear,
+  onClose,
+}: Props) {
+  const {
+    query,
+    setQuery,
+    debouncedQuery,
+    tracks,
+    loading,
+    error,
+    setError,
+    missingKey,
+  } = audioSearch;
   const fileInputId = useId();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Single shared preview element — only one track may play at a time.
   const previewRef = useRef<HTMLAudioElement | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const handle = setTimeout(
-      () => setDebounced(query.trim()),
-      SEARCH_DEBOUNCE_MS,
-    );
-    return () => clearTimeout(handle);
-  }, [query]);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    const url = debounced
-      ? `/api/audio/search?q=${encodeURIComponent(debounced)}`
-      : "/api/audio/search";
-    fetch(url)
-      .then((r) => r.json() as Promise<SearchResponse>)
-      .then((json) => {
-        if (cancelled) return;
-        setTracks(json.tracks ?? []);
-        setError(json.error ?? null);
-        setMissingKey(json.error === "PIXABAY_API_KEY not set");
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        setTracks([]);
-        const msg = err instanceof Error ? err.message : "Failed to load";
-        setError(msg);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [debounced]);
 
   // Tear down the preview audio when the panel unmounts.
   useEffect(() => {
@@ -103,7 +63,7 @@ export function AudioPanel({ currentAudio, onSet, onClear, onClose }: Props) {
     };
   }, []);
 
-  function togglePreview(track: Track) {
+  function togglePreview(track: AudioTrack) {
     if (typeof window === "undefined") return;
 
     // Clicking the row that's already playing pauses it.
@@ -152,7 +112,7 @@ export function AudioPanel({ currentAudio, onSet, onClear, onClose }: Props) {
     });
   }
 
-  function chooseTrack(track: Track) {
+  function chooseTrack(track: AudioTrack) {
     const base: ProjectAudio = {
       src: track.downloadUrl,
       title: track.title,
@@ -217,13 +177,11 @@ export function AudioPanel({ currentAudio, onSet, onClear, onClose }: Props) {
   }, [loading, missingKey, tracks.length]);
 
   return (
-    <aside className="flex w-72 shrink-0 flex-col overflow-hidden border-r border-border bg-background">
+    <aside className="flex h-full w-full flex-col overflow-hidden border-r border-border bg-background">
       <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-background/95 px-4 py-3 backdrop-blur">
         <div>
-          <p className="text-sm font-medium text-foreground">Audio</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Background music
-          </p>
+          <p className="text-sm font-medium text-foreground">Upload</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">Audio assets</p>
         </div>
         <Button
           variant="ghost"
@@ -256,6 +214,9 @@ export function AudioPanel({ currentAudio, onSet, onClear, onClose }: Props) {
       )}
 
       <div className="space-y-2 px-3 pb-2 pt-3">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Audio
+        </p>
         <div className="relative">
           <HugeiconsIcon
             icon={Search01Icon}
@@ -301,7 +262,7 @@ export function AudioPanel({ currentAudio, onSet, onClear, onClose }: Props) {
 
       <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">
         <p className="sticky top-0 z-[1] bg-background pb-1.5 pt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          {debounced ? "Results" : "Popular tracks"}
+          {debouncedQuery ? "Results" : "Popular tracks"}
         </p>
         {emptyMessage ? (
           <p className="rounded-md border border-dashed border-border/60 px-3 py-4 text-center text-[11px] leading-relaxed text-muted-foreground">
@@ -336,7 +297,7 @@ function TrackRow({
   onTogglePreview,
   onChoose,
 }: {
-  track: Track;
+  track: AudioTrack;
   playing: boolean;
   onTogglePreview: () => void;
   onChoose: () => void;
@@ -421,5 +382,5 @@ function decodeAudioDuration(url: string): Promise<number> {
 }
 
 // Provide the HugeIcons music marker for downstream imports that want a
-// consistent icon for the audio panel button.
-export const AUDIO_PANEL_ICON = MusicNote01Icon;
+// consistent icon for the audio asset button.
+export const UPLOAD_AUDIO_ICON = MusicNote01Icon;

@@ -1,52 +1,169 @@
 "use client";
 
 import type { ClipStyle } from "@workspace/compositions/clip-style";
+import type { CompositionTheme } from "@workspace/compositions/schema";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@workspace/ui/components/tabs";
+import { useState } from "react";
 
+import { BackgroundScenePicker } from "./background-scene-picker";
 import { FontPicker } from "./font-picker";
 
 type Props = {
   style: ClipStyle | undefined;
   onPatch: (patch: Partial<ClipStyle>) => void;
   onReset: () => void;
+  /**
+   * Curated skins declared in the composition's `meta.themes`. When
+   * present, a Theme picker renders above the free-form controls. First
+   * entry is the default look — selecting it clears the override.
+   */
+  themes?: CompositionTheme[];
+  /**
+   * Brand-locked compositions never receive free-form clipStyle, so only
+   * the Theme picker is shown (themes are hand-built skins and apply to
+   * locked compositions too).
+   */
+  locked?: boolean;
 };
 
 /**
  * Renders the universal Style controls every non-locked clip exposes:
  * Background, Text color, Font, Accent color. Stored on `Clip.style` and
  * forwarded to the composition through the `clipStyle` prop.
+ *
+ * The Background control toggles between a flat Color and a Scene — an
+ * animated `category: "background"` composition rendered behind the clip
+ * (see `Project.tsx`). The parent keys this component by clip id, so the
+ * Color/Scene view mode resets when a different clip is selected.
  */
-export function ClipStyleSection({ style, onPatch, onReset }: Props) {
+export function ClipStyleSection({
+  style,
+  onPatch,
+  onReset,
+  themes,
+  locked = false,
+}: Props) {
   const value = style ?? {};
+  const hasThemes = Boolean(themes && themes.length > 0);
   const isCustomized =
     Boolean(value.backgroundColor) ||
     Boolean(value.textColor) ||
     Boolean(value.fontFamily) ||
-    Boolean(value.accentColor);
+    Boolean(value.accentColor) ||
+    Boolean(value.backgroundScene) ||
+    Boolean(value.theme);
+
+  // Color vs Scene is a view mode; the persisted signal is `backgroundScene`.
+  // Scene is the default view — open it first unless the clip already has an
+  // explicit background color (and no scene), in which case show that color.
+  const [bgMode, setBgMode] = useState<"color" | "scene">(
+    value.backgroundScene ? "scene" : value.backgroundColor ? "color" : "scene",
+  );
+
+  function onBgModeChange(next: string) {
+    const mode = next === "scene" ? "scene" : "color";
+    // Leaving Scene mode drops the backdrop so Color mode renders cleanly.
+    if (mode === "color" && value.backgroundScene) {
+      onPatch({ backgroundScene: undefined });
+    }
+    setBgMode(mode);
+  }
+
+  const themePicker =
+    hasThemes && themes ? (
+      <div className="space-y-1.5">
+        <Label className="text-[12px]">Theme</Label>
+        <div className="grid grid-cols-2 gap-1.5">
+          {themes.map((t, i) => {
+            const selected = (value.theme ?? themes[0]?.id) === t.id;
+            return (
+              <Button
+                key={t.id}
+                variant={selected ? "default" : "outline"}
+                size="sm"
+                title={t.description}
+                onClick={() =>
+                  // First theme = the composition's default look, stored
+                  // as "no override".
+                  onPatch({ theme: i === 0 ? undefined : t.id })
+                }
+                className="h-8 text-[11px]"
+              >
+                {t.label}
+              </Button>
+            );
+          })}
+        </div>
+      </div>
+    ) : null;
+
+  const resetRow = isCustomized ? (
+    <div className="flex items-center justify-end">
+      <Button
+        variant="ghost"
+        size="xs"
+        onClick={onReset}
+        className="h-6 text-[11px]"
+      >
+        Reset to default
+      </Button>
+    </div>
+  ) : null;
+
+  // Brand-locked compositions ignore free-form clipStyle entirely — the
+  // curated Theme picker is the only Style control that applies.
+  if (locked) {
+    return (
+      <div className="space-y-4 px-5 py-5">
+        {resetRow}
+        {themePicker}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 px-5 py-5">
-      {isCustomized && (
-        <div className="flex items-center justify-end">
-          <Button
-            variant="ghost"
-            size="xs"
-            onClick={onReset}
-            className="h-6 text-[11px]"
-          >
-            Reset to default
-          </Button>
-        </div>
-      )}
+      {resetRow}
 
-      <ColorRow
-        id="clip-style-bg"
-        label="Background"
-        value={value.backgroundColor ?? ""}
-        onChange={(v) => onPatch({ backgroundColor: v })}
-      />
+      {themePicker}
+
+      <div className="space-y-1.5">
+        <Label className="text-[12px]">Background</Label>
+        <Tabs value={bgMode} onValueChange={onBgModeChange}>
+          <TabsList className="w-full">
+            <TabsTrigger value="scene" className="flex-1 text-[11px]">
+              Scene
+            </TabsTrigger>
+            <TabsTrigger value="color" className="flex-1 text-[11px]">
+              Color
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="color" className="mt-2">
+            <ColorField
+              id="clip-style-bg"
+              label="Background"
+              value={value.backgroundColor ?? ""}
+              onChange={(v) => onPatch({ backgroundColor: v })}
+            />
+          </TabsContent>
+          <TabsContent value="scene" className="mt-2">
+            <BackgroundScenePicker
+              value={value.backgroundScene}
+              onSelect={(id) => onPatch({ backgroundScene: id })}
+              accent={value.accentColor || undefined}
+            />
+          </TabsContent>
+        </Tabs>
+      </div>
+
       <ColorRow
         id="clip-style-text"
         label="Text color"
@@ -87,37 +204,53 @@ function ColorRow({
   value: string;
   onChange: (v: string) => void;
 }) {
-  const looksHex = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value);
-  const swatchValue = looksHex ? value : "#ffffff";
-
   return (
     <div className="space-y-1.5">
       <Label htmlFor={id} className="text-[12px]">
         {label}
       </Label>
-      <div className="flex items-center gap-2">
-        <label
-          className="relative size-9 shrink-0 cursor-pointer overflow-hidden rounded-full border border-border transition-shadow hover:ring-2 hover:ring-ring/40"
-          style={{ background: swatchValue }}
-          title="Pick color"
-        >
-          <input
-            type="color"
-            aria-label={`${label} color`}
-            value={swatchValue}
-            onChange={(e) => onChange(e.target.value)}
-            className="absolute inset-0 size-full cursor-pointer opacity-0"
-          />
-        </label>
-        <Input
-          id={id}
-          value={value}
-          placeholder="default"
+      <ColorField id={id} label={label} value={value} onChange={onChange} />
+    </div>
+  );
+}
+
+function ColorField({
+  id,
+  label,
+  value,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const looksHex = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value);
+  const swatchValue = looksHex ? value : "#ffffff";
+
+  return (
+    <div className="flex items-center gap-2">
+      <label
+        className="relative size-9 shrink-0 cursor-pointer overflow-hidden rounded-full border border-border transition-shadow hover:ring-2 hover:ring-ring/40"
+        style={{ background: swatchValue }}
+        title="Pick color"
+      >
+        <input
+          type="color"
+          aria-label={`${label} color`}
+          value={swatchValue}
           onChange={(e) => onChange(e.target.value)}
-          className="font-mono"
-          spellCheck={false}
+          className="absolute inset-0 size-full cursor-pointer opacity-0"
         />
-      </div>
+      </label>
+      <Input
+        id={id}
+        value={value}
+        placeholder="default"
+        onChange={(e) => onChange(e.target.value)}
+        className="font-mono"
+        spellCheck={false}
+      />
     </div>
   );
 }

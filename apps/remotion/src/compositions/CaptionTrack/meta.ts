@@ -13,6 +13,7 @@ export const captionTrackDefaultProps: CaptionTrackProps = {
 
 export const captionTrackInfo: CompositionInfo<CaptionTrackProps> = {
   id: "CaptionTrack",
+  category: "captions",
   title: "Caption Track",
   description:
     "Word-by-word caption track. Each word springs into place at the configured cadence — set the words-per-second to match your VO.",

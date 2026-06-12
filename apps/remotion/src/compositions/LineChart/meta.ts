@@ -13,6 +13,9 @@ export const lineChartDefaultProps: LineChartProps = {
 
 export const lineChartInfo: CompositionInfo<LineChartProps> = {
   id: "LineChart",
+  category: "data",
+  agentNotes:
+    "Animated line chart with axis labels. Use for trend / growth / time-series reveals as the result beat. data is an array of points (~5–8 is ideal — too many gets noisy). Title prop sells the takeaway ('Active users, last 30 days').",
   title: "Line Chart",
   description:
     "A smooth line chart that draws itself in left-to-right with springy data point dots and optional gridlines.",

@@ -14,6 +14,7 @@ export const textSoftBlurInDefaultProps: TextSoftBlurInProps = {
 
 export const textSoftBlurInInfo: CompositionInfo<TextSoftBlurInProps> = {
   id: "TextSoftBlurIn",
+  category: "text",
   title: "Soft Blur In",
   description:
     "Per-character fade-in with a gentle blur and upward motion. Apple's signature hero-title reveal.",

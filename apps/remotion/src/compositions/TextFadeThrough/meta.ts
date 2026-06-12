@@ -4,6 +4,7 @@ import type { TextFadeThroughProps } from "./TextFadeThrough";
 
 export const textFadeThroughInfo: CompositionInfo<TextFadeThroughProps> = {
   id: "TextFadeThrough",
+  category: "text",
   title: "Fade Through",
   description:
     "A Material-style content transition: old fades out, new fades in with a soft delay.",

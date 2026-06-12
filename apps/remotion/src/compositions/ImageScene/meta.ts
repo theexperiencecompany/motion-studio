@@ -13,6 +13,7 @@ export const imageSceneDefaultProps: ImageSceneProps = {
 
 export const imageSceneInfo: CompositionInfo<ImageSceneProps> = {
   id: "ImageScene",
+  category: "media",
   title: "Image Scene",
   description:
     "A single centered image with an optional caption beneath. Good for QR codes, logos, screenshots that need to be focal.",

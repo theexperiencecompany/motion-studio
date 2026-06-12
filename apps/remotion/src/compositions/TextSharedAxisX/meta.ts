@@ -4,6 +4,7 @@ import type { TextSharedAxisXProps } from "./TextSharedAxisX";
 
 export const textSharedAxisXInfo: CompositionInfo<TextSharedAxisXProps> = {
   id: "TextSharedAxisX",
+  category: "text",
   title: "Slide In",
   description:
     "Horizontal shared-axis transition for sibling destinations with continuity.",

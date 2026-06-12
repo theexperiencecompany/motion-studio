@@ -1,14 +1,15 @@
 "use client";
-// `<Audio>` from `@remotion/media` rather than the classic one from
-// `remotion`. The classic Audio is rendered as an HTML5 <audio> element
-// which `@remotion/web-renderer` (used by both the in-browser MP4 export
-// AND the screenshot path via `renderStillOnWeb`) refuses with
-// "Html5Audio is not supported". `@remotion/media`'s Audio is the
-// WebCodecs-backed replacement and works across CLI render +
-// web-renderer + Player preview.
-import { Audio } from "@remotion/media";
+import { Audio as MediaAudio } from "@remotion/media";
 import { TransitionSeries } from "@remotion/transitions";
-import { AbsoluteFill, Sequence, useVideoConfig } from "remotion";
+import {
+  AbsoluteFill,
+  Audio as Html5Audio,
+  interpolate,
+  Sequence,
+  useCurrentFrame,
+  useRemotionEnvironment,
+  useVideoConfig,
+} from "remotion";
 import { componentsById } from "../../components";
 import { EffectsWrap } from "../../effects/EffectsWrap";
 import {
@@ -56,16 +57,64 @@ export const ProjectComposition: React.FC<Project> = ({
           const Component = componentsById[clip.compositionId];
           const info = compositionsById[clip.compositionId];
           const isLocked = info?.brandMode === "locked";
-          const styleProps = isLocked ? {} : { clipStyle: clip.style };
 
-          const inner = Component ? (
-            <Component key={`c-${clip.id}`} {...clip.props} {...styleProps} />
+          // Optional background-scene backdrop (Inspector → Style → Background
+          // → Scene). Locked compositions never receive clipStyle, so they
+          // can't carry a backdrop. When a valid scene is set, the clip's own
+          // background is forced transparent so the backdrop shows through.
+          const backdropId = isLocked ? undefined : clip.style?.backgroundScene;
+          const BackdropComponent = backdropId
+            ? componentsById[backdropId]
+            : undefined;
+          const backdropInfo = backdropId
+            ? compositionsById[backdropId]
+            : undefined;
+          const hasBackdrop = Boolean(BackdropComponent && backdropInfo);
+
+          // Curated theme — unlike free-form clipStyle, themes also apply
+          // to locked compositions (each theme is a hand-built skin). Only
+          // forward ids the composition actually declares.
+          const themeId = clip.style?.theme;
+          const themeProps =
+            themeId && info?.themes?.some((t) => t.id === themeId)
+              ? { clipTheme: themeId }
+              : {};
+
+          const contentStyle = isLocked
+            ? themeProps
+            : {
+                clipStyle: hasBackdrop
+                  ? { ...clip.style, backgroundColor: "transparent" }
+                  : clip.style,
+                ...themeProps,
+              };
+
+          const content = Component ? (
+            <Component key={`c-${clip.id}`} {...clip.props} {...contentStyle} />
           ) : (
             <MissingClip
               key={`c-${clip.id}`}
               compositionId={clip.compositionId}
             />
           );
+
+          const inner =
+            hasBackdrop && BackdropComponent && backdropInfo ? (
+              <AbsoluteFill key={`bg-${clip.id}`}>
+                <BackdropComponent
+                  {...backdropInfo.defaultProps}
+                  clipStyle={{ ...clip.style, backgroundColor: undefined }}
+                />
+                {content}
+              </AbsoluteFill>
+            ) : (
+              content
+            );
+
+          // Camera life — subtle Ken Burns on every non-locked clip.
+          // Skipped for brand-locked scenes (authentic apps shouldn't
+          // drift) and very short clips (<1s feels jittery, not alive).
+          const enableCameraLife = !isLocked && clip.durationInFrames >= 30;
 
           const sequence = (
             <TransitionSeries.Sequence
@@ -76,7 +125,16 @@ export const ProjectComposition: React.FC<Project> = ({
                 effects={clip.effects}
                 clipDurationInFrames={clip.durationInFrames}
               >
-                {inner}
+                {enableCameraLife ? (
+                  <CameraLifeWrap
+                    durationInFrames={clip.durationInFrames}
+                    clipIndex={index}
+                  >
+                    {inner}
+                  </CameraLifeWrap>
+                ) : (
+                  inner
+                )}
               </EffectsWrap>
             </TransitionSeries.Sequence>
           );
@@ -148,6 +206,7 @@ function ProjectAudioTrack({
   videoDuration: number;
 }) {
   const { fps } = useVideoConfig();
+  const environment = useRemotionEnvironment();
   const startFrame = Math.max(
     0,
     Math.min(audio.startFrame ?? 0, Math.max(0, videoDuration - 1)),
@@ -165,16 +224,27 @@ function ProjectAudioTrack({
 
   return (
     <Sequence from={startFrame} durationInFrames={audioDuration} layout="none">
-      <Audio
-        src={resolvedSrc}
-        // Skip `trimBefore` worth of frames into the source audio.
-        trimBefore={trimBefore}
-        loop={audio.loop ?? false}
-        // Per-frame volume envelope. The sequence-local frame starts at 0
-        // when `startFrame` hits, so fades remain anchored to the audio's
-        // own timeline regardless of when it begins in the project.
-        volume={(frame) => audioVolumeAt(frame, audio, audioDuration)}
-      />
+      {environment.isRendering ? (
+        <MediaAudio
+          src={resolvedSrc}
+          // Skip `trimBefore` worth of frames into the source audio.
+          trimBefore={trimBefore}
+          loop={audio.loop ?? false}
+          // Per-frame volume envelope. The sequence-local frame starts at 0
+          // when `startFrame` hits, so fades remain anchored to the audio's
+          // own timeline regardless of when it begins in the project.
+          volume={(frame) => audioVolumeAt(frame, audio, audioDuration)}
+        />
+      ) : (
+        <Html5Audio
+          src={resolvedSrc}
+          trimBefore={trimBefore}
+          loop={audio.loop ?? false}
+          pauseWhenBuffering={false}
+          crossOrigin="anonymous"
+          volume={(frame) => audioVolumeAt(frame, audio, audioDuration)}
+        />
+      )}
     </Sequence>
   );
 }
@@ -202,6 +272,58 @@ function MissingClip({ compositionId }: { compositionId: string }) {
       <div style={{ fontSize: 22, opacity: 0.6 }}>
         No component registered for id &ldquo;{compositionId}&rdquo;.
       </div>
+    </AbsoluteFill>
+  );
+}
+
+/**
+ * Subtle Ken Burns wrapper applied to every non-locked clip. Animates
+ * a slow scale (1.00 → 1.05) and a small pan over the clip's full
+ * duration so static scenes feel alive without crossing into "look,
+ * I'm zooming!" territory. Direction alternates per clip so multiple
+ * scenes back-to-back don't drift in the same direction.
+ *
+ * Caveats:
+ *   - Skipped for brand-locked scenes (Tweet, Slack, etc.) — they
+ *     should render exactly as the real app does.
+ *   - Skipped for very short clips (<1s) where the motion reads as
+ *     jitter rather than life.
+ *   - Uses `transform-origin: center center` so the pan + scale feel
+ *     balanced regardless of clip aspect.
+ */
+function CameraLifeWrap({
+  durationInFrames,
+  clipIndex,
+  children,
+}: {
+  durationInFrames: number;
+  clipIndex: number;
+  children: React.ReactNode;
+}) {
+  const frame = useCurrentFrame();
+  // Alternate direction per clip: even → drift right + down, odd → left + up.
+  const dirX = clipIndex % 2 === 0 ? 1 : -1;
+  const dirY = clipIndex % 2 === 0 ? 0.4 : -0.4;
+  // 5% scale shift, 1% pan shift — both barely perceptible per second
+  // but cumulative over the clip.
+  const scale = interpolate(frame, [0, durationInFrames], [1, 1.05], {
+    extrapolateRight: "clamp",
+  });
+  const panX = interpolate(frame, [0, durationInFrames], [0, dirX], {
+    extrapolateRight: "clamp",
+  });
+  const panY = interpolate(frame, [0, durationInFrames], [0, dirY], {
+    extrapolateRight: "clamp",
+  });
+  return (
+    <AbsoluteFill
+      style={{
+        transform: `translate(${panX}%, ${panY}%) scale(${scale})`,
+        transformOrigin: "center center",
+        willChange: "transform",
+      }}
+    >
+      {children}
     </AbsoluteFill>
   );
 }

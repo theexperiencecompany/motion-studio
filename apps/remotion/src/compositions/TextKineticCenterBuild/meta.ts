@@ -15,6 +15,7 @@ export const textKineticCenterBuildDefaultProps: TextKineticCenterBuildProps = {
 export const textKineticCenterBuildInfo: CompositionInfo<TextKineticCenterBuildProps> =
   {
     id: "TextKineticCenterBuild",
+    category: "text",
     title: "Kinetic Center Build",
     description:
       "A word appears in the center; each new word enters from right to left with a soft blur and pushes the existing line until the full phrase locks centered.",

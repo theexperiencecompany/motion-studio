@@ -4,6 +4,7 @@ import type { TextMaskRevealUpProps } from "./TextMaskRevealUp";
 
 export const textMaskRevealUpInfo: CompositionInfo<TextMaskRevealUpProps> = {
   id: "TextMaskRevealUp",
+  category: "text",
   title: "Line Reveal",
   description:
     "Lines reveal upward with a soft masked feel and compact stagger.",

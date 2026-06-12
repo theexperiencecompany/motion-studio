@@ -12,6 +12,7 @@ const defaultProps: TextShortSlideRightProps = {
 export const textShortSlideRightInfo: CompositionInfo<TextShortSlideRightProps> =
   {
     id: "TextShortSlideRight",
+    category: "text",
     title: "Short Slide Right",
     description:
       "The whole phrase glides in from the left as one compact move, while the words themselves are revealed in sequence only through opacity.",

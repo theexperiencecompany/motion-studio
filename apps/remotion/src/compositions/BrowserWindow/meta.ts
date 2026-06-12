@@ -14,6 +14,9 @@ export const browserWindowDefaultProps: BrowserWindowProps = {
 
 export const browserWindowInfo: CompositionInfo<BrowserWindowProps> = {
   id: "BrowserWindow",
+  category: "devtools",
+  agentNotes:
+    "Use for product walkthroughs, landing-page reveals, or 'open this URL' beats. The url and tabs props sell the framing. Pair with CursorWalkthrough or TypingSearch for interaction. Best as the central demo beat, ~4–6s.",
   title: "Browser Window",
   description:
     "A Mac-style browser frame. The URL types into the address bar, then your page content fades in below.",

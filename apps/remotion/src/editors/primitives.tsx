@@ -19,7 +19,7 @@ import {
 import { Switch } from "@workspace/ui/components/switch";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { cn } from "@workspace/ui/lib/utils";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import {
   ICON_PRESETS,
   type IconPreset,
@@ -112,6 +112,23 @@ export function PrimitiveControl({
           />
         </Wrapper>
       );
+
+    case "audio": {
+      // Like iconPreset, audio writes two keys atomically — audioUrl and
+      // the words array — by funneling both through onChange wrapped in a
+      // sentinel object that FieldsRenderer destructures.
+      const audioUrl = (value as string) ?? "";
+      const setBoth = (url: string, words: unknown[]) => {
+        onChange({ __audioBoth: true, audioUrl: url, words });
+      };
+      void onExtraChange;
+      void extraValue;
+      return (
+        <Wrapper htmlFor={field.key} label={field.label}>
+          <AudioControl value={audioUrl} onChange={setBoth} />
+        </Wrapper>
+      );
+    }
 
     case "switch":
       return (
@@ -286,6 +303,124 @@ function ImageControl({
           />
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function AudioControl({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (url: string, words: unknown[]) => void;
+}) {
+  const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleFile(file: File | null) {
+    if (!file) return;
+    if (!file.type.startsWith("audio/")) {
+      setError("Please drop an audio file");
+      return;
+    }
+    setError(null);
+    setIsUploading(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/shorts/transcribe", {
+        method: "POST",
+        body: form,
+      });
+      if (!res.ok) {
+        const j = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(j.error ?? `Upload failed (${res.status})`);
+      }
+      const data = (await res.json()) as { words: unknown[] };
+      // Audio stays in browser memory — never persisted server-side.
+      // Blob URL is tied to this document and is revoked on replace/clear.
+      if (value.startsWith("blob:")) URL.revokeObjectURL(value);
+      const blobUrl = URL.createObjectURL(file);
+      onChange(blobUrl, data.words);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  function clearAudio() {
+    if (value.startsWith("blob:")) URL.revokeObjectURL(value);
+    onChange("", []);
+  }
+
+  const hasAudio = value.length > 0;
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-start gap-2">
+        <label
+          className={cn(
+            "flex flex-1 cursor-pointer flex-col items-center justify-center gap-1 rounded-md border border-dashed border-border bg-muted/30 px-3 py-4 text-center transition-colors hover:bg-muted/60",
+            isDragging && "border-primary bg-primary/5",
+            isUploading && "pointer-events-none opacity-60",
+          )}
+          title="Upload or drop an audio file (auto-transcribed via Whisper)"
+          onDragOver={(e) => {
+            e.preventDefault();
+            if (!isUploading) setIsDragging(true);
+          }}
+          onDragLeave={(e) => {
+            e.preventDefault();
+            setIsDragging(false);
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            setIsDragging(false);
+            if (isUploading) return;
+            const file = e.dataTransfer.files?.[0] ?? null;
+            void handleFile(file);
+          }}
+        >
+          <HugeiconsIcon
+            icon={isUploading ? RefreshIcon : Upload04Icon}
+            size={18}
+            className={isUploading ? "animate-spin" : undefined}
+          />
+          <span className="text-[12px] font-medium text-foreground">
+            {isUploading
+              ? "Transcribing…"
+              : isDragging
+                ? "Drop to upload"
+                : "Drop audio here or click to browse"}
+          </span>
+          <span className="text-[10.5px] text-muted-foreground">
+            MP3, WAV, or M4A
+          </span>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="audio/*"
+            className="hidden"
+            disabled={isUploading}
+            onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
+          />
+        </label>
+        {hasAudio ? (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={clearAudio}
+            disabled={isUploading}
+          >
+            <HugeiconsIcon icon={Cancel01Icon} size={13} />
+          </Button>
+        ) : null}
+      </div>
+      {error ? <p className="text-[11px] text-destructive">{error}</p> : null}
     </div>
   );
 }

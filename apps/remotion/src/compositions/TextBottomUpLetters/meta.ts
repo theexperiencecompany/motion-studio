@@ -15,6 +15,7 @@ export const textBottomUpLettersDefaultProps: TextBottomUpLettersProps = {
 export const textBottomUpLettersInfo: CompositionInfo<TextBottomUpLettersProps> =
   {
     id: "TextBottomUpLetters",
+    category: "text",
     title: "Letters Rise Up",
     description:
       "Letters rise from below in a pronounced staircase, one symbol at a time, with zero blur.",

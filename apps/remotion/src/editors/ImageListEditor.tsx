@@ -73,7 +73,6 @@ export function ImageListEditor({
           >
             <div className="flex items-center gap-2">
               {item.url ? (
-                // biome-ignore lint/a11y/useAltText: editor preview only
                 // eslint-disable-next-line @remotion/warn-native-media-tag
                 <img
                   src={item.url}
@@ -134,12 +133,12 @@ export function ImageListEditor({
                 />
               </label>
               <Input
-                value={item.url.startsWith("data:") ? "" : item.url}
+                value={item.url?.startsWith("data:") ? "" : (item.url ?? "")}
                 placeholder="Or paste image URL"
                 className="h-8 text-[11px]"
                 onChange={(e) => update(i, { url: e.target.value })}
               />
-              {item.url.startsWith("data:") && (
+              {item.url?.startsWith("data:") && (
                 <Button
                   type="button"
                   variant="outline"

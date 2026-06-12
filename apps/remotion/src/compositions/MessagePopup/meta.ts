@@ -17,6 +17,7 @@ export const messagePopupDefaultProps: MessagePopupProps = {
 
 export const messagePopupInfo: CompositionInfo<MessagePopupProps> = {
   id: "MessagePopup",
+  category: "social",
   title: "Message Popup",
   description:
     "An animated iOS-style notification banner. Edit the fields below to preview, then download an MP4.",

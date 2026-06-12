@@ -26,6 +26,9 @@ import DiscordMessagesMDX, {
 import FeatureCardMDX, {
   meta as featureCardMeta,
 } from "@/content/docs/feature-card.mdx";
+import FontHookMDX, {
+  meta as fontHookMeta,
+} from "@/content/docs/font-hook.mdx";
 import GaiaScenarioMDX, {
   meta as gaiaScenarioMeta,
 } from "@/content/docs/gaia-scenario.mdx";
@@ -170,6 +173,9 @@ import TextTopDownLettersMDX, {
 import TextTypewriterMDX, {
   meta as textTypewriterMeta,
 } from "@/content/docs/text-typewriter.mdx";
+import TikTokCaptionMDX, {
+  meta as tikTokCaptionMeta,
+} from "@/content/docs/tiktok-caption.mdx";
 import TitleFadeMDX, {
   meta as titleFadeMeta,
 } from "@/content/docs/title-fade.mdx";
@@ -249,6 +255,7 @@ const bespokeMdxByCompositionId: Record<string, BespokeMdx> = {
   TitleType: { Content: TitleTypeMDX, meta: titleTypeMeta },
   TitlePopup: { Content: TitlePopupMDX, meta: titlePopupMeta },
   TitleFade: { Content: TitleFadeMDX, meta: titleFadeMeta },
+  FontHook: { Content: FontHookMDX, meta: fontHookMeta },
   TextBlurOutUp: { Content: TextBlurOutUpMDX, meta: textBlurOutUpMeta },
   TextBottomUpLetters: {
     Content: TextBottomUpLettersMDX,
@@ -332,6 +339,7 @@ const bespokeMdxByCompositionId: Record<string, BespokeMdx> = {
   },
   BrowserWindow: { Content: BrowserWindowMDX, meta: browserWindowMeta },
   CaptionTrack: { Content: CaptionTrackMDX, meta: captionTrackMeta },
+  TikTokCaption: { Content: TikTokCaptionMDX, meta: tikTokCaptionMeta },
   StatCounter: { Content: StatCounterMDX, meta: statCounterMeta },
   TweetCard: { Content: TweetCardMDX, meta: tweetCardMeta },
   TwitterFollow: { Content: TwitterFollowMDX, meta: twitterFollowMeta },

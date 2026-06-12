@@ -48,6 +48,7 @@ export const discordMessagesDefaultProps: DiscordMessagesProps = {
 
 export const discordMessagesInfo: CompositionInfo<DiscordMessagesProps> = {
   id: "DiscordMessages",
+  category: "social",
   title: "Discord Messages",
   description:
     "An animated Discord-style channel conversation in the dark theme with colored usernames and typing indicator.",

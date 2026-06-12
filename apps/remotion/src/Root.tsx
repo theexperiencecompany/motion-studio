@@ -1,4 +1,5 @@
 import "./index.css";
+import type { ComponentType } from "react";
 import { Composition } from "remotion";
 import { componentsById } from "./components";
 import {
@@ -33,6 +34,7 @@ import {
 } from "./compositions/IntroText";
 import { ProjectComposition } from "./compositions/Project/Project";
 import { DEFAULT_PROJECT, type Project, projectDuration } from "./project";
+import { withRemotionQueryClient } from "./query-client";
 import { compositions } from "./registry";
 
 export const RemotionRoot: React.FC = () => {
@@ -42,7 +44,7 @@ export const RemotionRoot: React.FC = () => {
         <Composition
           key={c.id}
           id={c.id}
-          component={componentsById[c.id]!}
+          component={withRemotionQueryClient(componentsById[c.id]!)}
           durationInFrames={c.durationInFrames}
           fps={c.fps}
           width={c.width}
@@ -53,7 +55,7 @@ export const RemotionRoot: React.FC = () => {
       ))}
       <Composition
         id="BrowserScroll"
-        component={BrowserScroll}
+        component={withRemotionQueryClient(BrowserScroll)}
         durationInFrames={BROWSER_SCROLL_DURATION}
         fps={BROWSER_SCROLL_FPS}
         width={BROWSER_SCROLL_WIDTH}
@@ -65,7 +67,7 @@ export const RemotionRoot: React.FC = () => {
       />
       <Composition
         id="IntroText"
-        component={IntroText}
+        component={withRemotionQueryClient(IntroText)}
         durationInFrames={INTRO_TEXT_DURATION}
         fps={INTRO_TEXT_FPS}
         width={INTRO_TEXT_WIDTH}
@@ -73,7 +75,7 @@ export const RemotionRoot: React.FC = () => {
       />
       <Composition
         id="FollowerCelebration"
-        component={FollowerCelebration}
+        component={withRemotionQueryClient(FollowerCelebration)}
         durationInFrames={FOLLOWER_DURATION}
         fps={FOLLOWER_FPS}
         width={FOLLOWER_WIDTH}
@@ -88,7 +90,7 @@ export const RemotionRoot: React.FC = () => {
       />
       <Composition
         id="HeroDemo"
-        component={HeroDemo}
+        component={withRemotionQueryClient(HeroDemo)}
         durationInFrames={HERO_DEMO_DURATION}
         fps={HERO_DEMO_FPS}
         width={HERO_DEMO_WIDTH}
@@ -96,7 +98,11 @@ export const RemotionRoot: React.FC = () => {
       />
       <Composition
         id="MyComp"
-        component={MyComposition}
+        component={
+          withRemotionQueryClient(MyComposition) as ComponentType<
+            Record<string, unknown>
+          >
+        }
         durationInFrames={60}
         fps={30}
         width={1280}
@@ -104,7 +110,7 @@ export const RemotionRoot: React.FC = () => {
       />
       <Composition
         id="Project"
-        component={ProjectComposition}
+        component={withRemotionQueryClient(ProjectComposition)}
         durationInFrames={projectDuration(DEFAULT_PROJECT)}
         fps={DEFAULT_PROJECT.fps}
         width={DEFAULT_PROJECT.width}

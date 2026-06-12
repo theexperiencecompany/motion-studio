@@ -2,17 +2,25 @@
 import type { ComponentType } from "react";
 import { AreaChart } from "./compositions/AreaChart/AreaChart";
 import { BarChart } from "./compositions/BarChart/BarChart";
+import { BounceCards } from "./compositions/BounceCards/BounceCards";
 import { BrowserWindow } from "./compositions/BrowserWindow/BrowserWindow";
+import { AuroraGradient } from "./compositions/backgrounds/AuroraGradient/AuroraGradient";
+import { BlueGrid } from "./compositions/backgrounds/BlueGrid/BlueGrid";
+import { FuturisticArch } from "./compositions/backgrounds/FuturisticArch/FuturisticArch";
+import { LiquidChrome } from "./compositions/backgrounds/LiquidChrome/LiquidChrome";
+import { WhiteRadialBurst } from "./compositions/backgrounds/WhiteRadialBurst/WhiteRadialBurst";
 import { CaptionTrack } from "./compositions/CaptionTrack/CaptionTrack";
 import { CursorWalkthrough } from "./compositions/CursorWalkthrough/CursorWalkthrough";
 import { DiscordMessages } from "./compositions/DiscordMessages/DiscordMessages";
 import { FeatureCard } from "./compositions/FeatureCard/FeatureCard";
+import { FontHook } from "./compositions/FontHook/FontHook";
 import { GaiaScenario } from "./compositions/GaiaScenario/GaiaScenario";
 import { GitHubStarButton } from "./compositions/GitHubStarButton/GitHubStarButton";
 import { ImageScene } from "./compositions/ImageScene/ImageScene";
 import { InstagramMessages } from "./compositions/InstagramMessages/InstagramMessages";
 import { InstagramPost } from "./compositions/InstagramPost/InstagramPost";
 import { LineChart } from "./compositions/LineChart/LineChart";
+import { LockScreenMessage } from "./compositions/LockScreenMessage/LockScreenMessage";
 import { LogoCloud } from "./compositions/LogoCloud/LogoCloud";
 import { MessageBubbles } from "./compositions/MessageBubbles/MessageBubbles";
 import { MessagePopup } from "./compositions/MessagePopup/MessagePopup";
@@ -35,8 +43,10 @@ import { TextFadeThrough } from "./compositions/TextFadeThrough/TextFadeThrough"
 import { TextFocusBlurResolve } from "./compositions/TextFocusBlurResolve/TextFocusBlurResolve";
 import { TextKineticCenterBuild } from "./compositions/TextKineticCenterBuild/TextKineticCenterBuild";
 import { TextLineByLineSlide } from "./compositions/TextLineByLineSlide/TextLineByLineSlide";
+import { TextMagicMove } from "./compositions/TextMagicMove/TextMagicMove";
 import { TextMaskRevealUp } from "./compositions/TextMaskRevealUp/TextMaskRevealUp";
 import { TextMicroScaleFade } from "./compositions/TextMicroScaleFade/TextMicroScaleFade";
+import { TextMorph } from "./compositions/TextMorph/TextMorph";
 import { TextPerCharacterRise } from "./compositions/TextPerCharacterRise/TextPerCharacterRise";
 import { TextPerWordCrossfade } from "./compositions/TextPerWordCrossfade/TextPerWordCrossfade";
 import { TextScaleDownFade } from "./compositions/TextScaleDownFade/TextScaleDownFade";
@@ -52,6 +62,7 @@ import { TextStaggerFromCenter } from "./compositions/TextStaggerFromCenter/Text
 import { TextStaggerFromEdges } from "./compositions/TextStaggerFromEdges/TextStaggerFromEdges";
 import { TextTopDownLetters } from "./compositions/TextTopDownLetters/TextTopDownLetters";
 import { TextTypewriter } from "./compositions/TextTypewriter/TextTypewriter";
+import { TikTokCaption } from "./compositions/TikTokCaption/TikTokCaption";
 import { TitleFade } from "./compositions/TitleFade/TitleFade";
 import { TitlePopup } from "./compositions/TitlePopup/TitlePopup";
 import { TitleSlideUp } from "./compositions/TitleSlideUp/TitleSlideUp";
@@ -71,10 +82,12 @@ export const componentsByIdBase: Record<string, ComponentType<any>> = {
   GaiaScenario,
   MessagePopup,
   MessageBubbles,
+  LockScreenMessage,
   TitleSlideUp,
   TitleType,
   TitlePopup,
   TitleFade,
+  FontHook,
   TypingSearch,
   TypingComposer,
   StatCounter,
@@ -82,6 +95,7 @@ export const componentsByIdBase: Record<string, ComponentType<any>> = {
   CursorWalkthrough,
   BrowserWindow,
   CaptionTrack,
+  TikTokCaption,
   TwitterFollow,
   WhatsAppMessages,
   InstagramMessages,
@@ -89,7 +103,9 @@ export const componentsByIdBase: Record<string, ComponentType<any>> = {
   SlackMessages,
   DiscordMessages,
   TelegramMessages,
+  TextMagicMove,
   TextMicroScaleFade,
+  TextMorph,
   TextShimmerSweep,
   TextFadeThrough,
   TextSharedAxisZ,
@@ -121,6 +137,7 @@ export const componentsByIdBase: Record<string, ComponentType<any>> = {
   Terminal,
   GitHubStarButton,
   ImageScene,
+  BounceCards,
   QrCode,
   Toast,
   PerspectiveMarquee,
@@ -130,4 +147,9 @@ export const componentsByIdBase: Record<string, ComponentType<any>> = {
   PieChart,
   RadarChart,
   RadialChart,
+  BlueGrid,
+  AuroraGradient,
+  WhiteRadialBurst,
+  LiquidChrome,
+  FuturisticArch,
 };

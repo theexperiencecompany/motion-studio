@@ -18,6 +18,7 @@ export const qrCodeDefaultProps: QrCodeProps = {
 
 export const qrCodeInfo: CompositionInfo<QrCodeProps> = {
   id: "QrCode",
+  category: "media",
   title: "QR Code",
   description:
     "A scannable QR code with optional center logo and caption. Choose dot or square modules, pick a brand logo preset (WhatsApp, Telegram, Slack…) or upload your own.",

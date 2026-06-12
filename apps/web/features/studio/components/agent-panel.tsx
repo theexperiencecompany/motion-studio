@@ -1,74 +1,244 @@
 "use client";
 
-import {
-  ArrowUp01Icon,
-  Cancel01Icon,
-  SparklesIcon,
-} from "@hugeicons/core-free-icons";
+import { useChat } from "@ai-sdk/react";
+import { Cancel01Icon, RefreshIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import type { Project } from "@workspace/compositions/project";
 import { Button } from "@workspace/ui/components/button";
-import { Textarea } from "@workspace/ui/components/textarea";
+import { Composer } from "@workspace/ui/components/composer";
+import { WaveSpinner } from "@workspace/ui/components/wave-spinner";
+import { lastAssistantMessageIsCompleteWithToolCalls } from "ai";
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-
-type Message = {
-  id: string;
-  role: "user" | "agent";
-  text: string;
-};
+import type { StudioAction } from "../state/reducer";
+import { runClientTool } from "./agent-panel/client-tools";
+import { EmptyState } from "./agent-panel/empty-state";
+import { humanizeAgentError } from "./agent-panel/error";
+import { MessageBubble } from "./agent-panel/message-bubble";
+import { ThinkingPhrase } from "./agent-panel/thinking-phrase";
 
 type Props = {
+  project: Project;
+  dispatch: React.Dispatch<StudioAction>;
   onClose: () => void;
 };
 
-const SUGGESTIONS = [
-  "Make a 20s product launch video",
-  "Show a tweet, then a Slack reaction",
-  "Intro title → browser walkthrough → outro",
-];
+// Cap on how many times the SDK will auto-continue per user message.
+// Surgical edits ("add a tweet card") need: listClips → listScenesInCategory
+// → getSceneDetails → addClip → updateClipProps — that's 5 tool turns
+// before the terminal-tool short-circuit fires on addClip/updateClipProps.
+// Set generously so multi-step edits aren't truncated mid-flow; the
+// terminal-tool short-circuit ends the loop early on successful builds.
+const MAX_AUTO_CONTINUATIONS_PER_USER_MESSAGE = 12;
 
-export function AgentPanel({ onClose }: Props) {
-  const [messages, setMessages] = useState<Message[]>([]);
+const TERMINAL_TOOL_TYPES = new Set([
+  "tool-buildProject",
+  "tool-clearProject",
+  "tool-addClip",
+  "tool-deleteClip",
+  "tool-updateClipProps",
+  "tool-updateClipStyle",
+  "tool-updateClipDuration",
+]);
+
+export function AgentPanel({ project, dispatch, onClose }: Props) {
+  // Keep the latest project in a ref so onToolCall (closed over at mount)
+  // always sees current clips/ids instead of a stale snapshot. Assigned during
+  // render rather than in an effect — the value is only ever read later, in
+  // async callbacks, so there's no need to wait for a commit.
+  const projectRef = useRef(project);
+  projectRef.current = project;
+
+  // Same trick for brand kit — the chat transport (memoized once) reads
+  // the latest brand kit from this ref so updates flow into the next
+  // chat request without recreating useChat (which would wipe history).
+  const brandKitRef = useRef(project.brandKit);
+  brandKitRef.current = project.brandKit;
+
+  // Tracks how many times the SDK has auto-continued since the user
+  // last sent a message. We compare to the cap inside
+  // `sendAutomaticallyWhen` to break runaway loops.
+  const autoContinuationCount = useRef(0);
+
+  const {
+    messages,
+    sendMessage,
+    status,
+    stop,
+    error,
+    regenerate,
+    addToolResult,
+  } = useChat({
+    sendAutomaticallyWhen: (args) => {
+      const ready = lastAssistantMessageIsCompleteWithToolCalls(args);
+      if (!ready) return false;
+
+      // Terminal-tool short-circuit: if the last assistant message
+      // includes a successful build (or clear/edit) tool result, that
+      // IS the final action. Don't auto-continue waiting for the model
+      // to emit a follow-up text turn — gpt-4.1-mini frequently doesn't,
+      // and burning more turns on it just gets the UI stuck.
+      const lastMsg = args.messages[args.messages.length - 1];
+      if (lastMsg?.role === "assistant") {
+        const hasTerminalResult = lastMsg.parts.some((p) => {
+          if (!TERMINAL_TOOL_TYPES.has(p.type)) return false;
+          const out = (p as { output?: unknown }).output;
+          return (
+            typeof out === "object" &&
+            out !== null &&
+            (out as { ok?: unknown }).ok === true
+          );
+        });
+        if (hasTerminalResult) return false;
+      }
+
+      if (
+        autoContinuationCount.current >= MAX_AUTO_CONTINUATIONS_PER_USER_MESSAGE
+      ) {
+        return false;
+      }
+      autoContinuationCount.current += 1;
+      return true;
+    },
+    onToolCall: async ({ toolCall }) => {
+      const name = toolCall.toolName;
+      const input = toolCall.input as Record<string, unknown>;
+      try {
+        const output = runClientTool(name, input, projectRef, dispatch);
+        if (output === undefined) return; // server-executed tool, ignore
+        await addToolResult({
+          tool: name as never,
+          toolCallId: toolCall.toolCallId,
+          output: output as never,
+        });
+      } catch (err) {
+        await addToolResult({
+          tool: name as never,
+          toolCallId: toolCall.toolCallId,
+          output: {
+            error: err instanceof Error ? err.message : String(err),
+          } as never,
+        });
+      }
+    },
+  });
+
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Hard safety net for status getting stuck at "streaming" with no
+  // activity — re-evaluated whenever a message changes. If 4 seconds
+  // pass with no new message activity, we declare the chat idle even
+  // if the SDK hasn't transitioned status.
+  const [forceIdle, setForceIdle] = useState(false);
+  const lastActivitySig = useRef<string>("");
+  useEffect(() => {
+    const sig = messages
+      .map((m) => `${m.id}:${m.parts.length}:${JSON.stringify(m.parts).length}`)
+      .join("|");
+    if (sig !== lastActivitySig.current) {
+      lastActivitySig.current = sig;
+      setForceIdle(false);
+    }
+    if (status !== "streaming" && status !== "submitted") return;
+    const t = setTimeout(() => setForceIdle(true), 4000);
+    return () => clearTimeout(t);
+  }, [messages, status]);
+
+  // The ONLY reliable "the agent is done" signal is a successful
+  // terminal-tool result. Text alone doesn't mean done because the
+  // agent emits an opener BEFORE running tools. Stream-end (status →
+  // "ready") and the 4-second forceIdle handle the other "done" cases.
+  const lastMessage = messages[messages.length - 1];
+  const hasSuccessfulTerminal =
+    lastMessage?.role === "assistant" &&
+    lastMessage.parts.some((p) => {
+      if (!TERMINAL_TOOL_TYPES.has(p.type)) return false;
+      const out = (p as { output?: unknown }).output;
+      return (
+        typeof out === "object" &&
+        out !== null &&
+        (out as { ok?: unknown }).ok === true
+      );
+    });
+  const hasPendingTool =
+    lastMessage?.role === "assistant" &&
+    lastMessage.parts.some(
+      (p) =>
+        p.type.startsWith("tool-") &&
+        (p as { output?: unknown }).output === undefined,
+    );
+  const lastAssistantSettled = !hasPendingTool && hasSuccessfulTerminal;
+  const isBusy =
+    (status === "submitted" || status === "streaming") &&
+    !lastAssistantSettled &&
+    !forceIdle;
 
   useEffect(() => {
     const el = scrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
-  }, [messages.length]);
+  }, [messages, status]);
 
-  function send(text: string) {
+  async function send(text: string) {
     const trimmed = text.trim();
     if (!trimmed) return;
-    setMessages((prev) => [
-      ...prev,
-      { id: crypto.randomUUID(), role: "user", text: trimmed },
-      {
-        id: crypto.randomUUID(),
-        role: "agent",
-        text: "Agent isn't wired up yet — your message is queued. Once the LLM endpoint lands, this is where scene suggestions will appear.",
-      },
-    ]);
+    // If a build is still in flight, cancel it before queuing the new
+    // message. Without this the new sendMessage call gets dropped by
+    // useChat ("can't send while not ready") and the user's input
+    // disappears into the void.
+    if (isBusy) {
+      await stop();
+    }
+    autoContinuationCount.current = 0;
+    // Piggyback the project's brandKit so the server can append a brand
+    // context block to the system prompt. The ref always points at the
+    // latest value, so brand kit edits show up on the very next send.
+    sendMessage({ text: trimmed }, { body: { brandKit: brandKitRef.current } });
     setInput("");
   }
 
-  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      send(input);
-    }
-  }
-
   return (
-    <aside className="flex w-80 shrink-0 flex-col border-r border-border bg-background">
-      <div className="flex items-center justify-between border-b border-border px-4 py-3">
+    <aside className="relative flex h-full w-full flex-col overflow-hidden border-r border-border bg-background">
+      {/*
+        Ambient hero — the wildflower-sunset artwork washes in at the top and
+        melts into the dark panel. Only present on the empty state; the moment
+        the user sends a brief and the conversation begins, it unmounts so the
+        chat reads clean.
+      */}
+      {messages.length === 0 ? (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 z-0 h-72 bg-cover bg-center opacity-[0.55]"
+          style={{
+            backgroundImage: "url(/background.png)",
+            maskImage:
+              "linear-gradient(to bottom, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.5) 45%, transparent 100%)",
+            WebkitMaskImage:
+              "linear-gradient(to bottom, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.5) 45%, transparent 100%)",
+          }}
+        />
+      ) : null}
+
+      <div
+        className={`relative z-10 flex items-center justify-between border-b px-4 py-3 ${
+          messages.length === 0
+            ? "border-white/10 bg-background/30 backdrop-blur-md"
+            : "border-border"
+        }`}
+      >
         <div className="flex items-center gap-2">
-          <span className="flex size-6 items-center justify-center rounded-md bg-primary/10 text-primary">
-            <HugeiconsIcon icon={SparklesIcon} className="size-3.5" />
-          </span>
+          <Image
+            src="/logo.png"
+            alt=""
+            aria-hidden
+            width={24}
+            height={24}
+            className="size-6 shrink-0 object-contain"
+          />
           <div>
             <p className="text-sm font-medium text-foreground">Agent</p>
             <p className="text-[11px] text-muted-foreground">
-              Brief it, get a video
+              Describe it — it builds the timeline
             </p>
           </div>
         </div>
@@ -82,95 +252,89 @@ export function AgentPanel({ onClose }: Props) {
         </Button>
       </div>
 
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+      <div
+        ref={scrollRef}
+        className="relative z-10 min-h-0 flex-1 overflow-y-auto px-4 py-4"
+      >
         {messages.length === 0 ? (
           <EmptyState onPick={send} />
         ) : (
           <ul className="space-y-3">
-            {messages.map((m) => (
-              <MessageBubble key={m.id} message={m} />
-            ))}
+            {messages.map((m, i) => {
+              const isLast = i === messages.length - 1;
+              return (
+                <MessageBubble
+                  key={m.id}
+                  message={m}
+                  isStreaming={
+                    status === "streaming" && isLast && m.role === "assistant"
+                  }
+                />
+              );
+            })}
+            {/*
+              ONE persistent activity indicator. Lives at the bottom of
+              the list and stays visible the entire time the chat is
+              busy — never flickers or moves position. Phrase pool
+              switches based on whether an assistant message has started
+              forming yet.
+            */}
+            {isBusy ? (
+              <li className="flex items-center gap-2.5 py-1">
+                <WaveSpinner
+                  size="md"
+                  pattern="line"
+                  dotShape="circle"
+                  animation="horizontal"
+                  color="primary"
+                />
+                <ThinkingPhrase
+                  pool={
+                    lastMessage?.role === "assistant" ? "working" : "planning"
+                  }
+                />
+              </li>
+            ) : null}
+            {error ? (
+              <li className="flex flex-col gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-[12px] text-destructive">
+                <span className="font-medium">Agent error</span>
+                <span className="whitespace-pre-wrap break-words font-mono text-[11px] leading-relaxed opacity-90">
+                  {humanizeAgentError(error)}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    regenerate({ body: { brandKit: brandKitRef.current } })
+                  }
+                  className="h-7 self-start"
+                >
+                  <HugeiconsIcon icon={RefreshIcon} className="size-3" />
+                  Retry
+                </Button>
+              </li>
+            ) : null}
           </ul>
         )}
       </div>
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          send(input);
-        }}
-        className="border-t border-border p-3"
-      >
-        <div className="flex items-end gap-2 rounded-lg border border-border bg-muted/40 p-2 focus-within:border-ring/60">
-          <Textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Describe the video you want…"
-            rows={1}
-            className="min-h-0 flex-1 resize-none border-0 bg-transparent p-1 text-[13px] focus-visible:ring-0 focus-visible:outline-none"
-          />
-          <Button
-            type="submit"
-            size="icon"
-            disabled={input.trim().length === 0}
-            className="size-7 shrink-0 rounded-md"
-            title="Send"
-          >
-            <HugeiconsIcon icon={ArrowUp01Icon} className="size-3.5" />
-          </Button>
-        </div>
+      <div className="border-t border-border p-3">
+        <Composer
+          value={input}
+          onChange={setInput}
+          onSubmit={send}
+          onStop={() => stop()}
+          isLoading={isBusy && input.trim().length === 0}
+          placeholder={
+            isBusy
+              ? "Compose your next message — Stop to send now…"
+              : "Describe the video you want…"
+          }
+        />
         <p className="mt-2 text-[10px] text-muted-foreground/70">
           Enter to send · Shift+Enter for newline
         </p>
-      </form>
+      </div>
     </aside>
-  );
-}
-
-function EmptyState({ onPick }: { onPick: (text: string) => void }) {
-  return (
-    <div className="flex h-full flex-col items-center justify-center gap-4 px-2 text-center">
-      <div className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-        <HugeiconsIcon icon={SparklesIcon} className="size-5" />
-      </div>
-      <div>
-        <p className="text-sm font-medium">Stitch a video from a brief</p>
-        <p className="mt-1 text-[12px] text-muted-foreground">
-          Tell the agent what you want and it will pick scenes from the library,
-          set props, and lay them out on the timeline.
-        </p>
-      </div>
-      <ul className="w-full space-y-1.5">
-        {SUGGESTIONS.map((s) => (
-          <li key={s}>
-            <button
-              type="button"
-              onClick={() => onPick(s)}
-              className="w-full rounded-md border border-border bg-muted/30 px-3 py-2 text-left text-[12px] text-muted-foreground transition-colors hover:border-border/80 hover:bg-muted hover:text-foreground"
-            >
-              {s}
-            </button>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function MessageBubble({ message }: { message: Message }) {
-  const isUser = message.role === "user";
-  return (
-    <li className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
-      <div
-        className={`max-w-[88%] rounded-lg px-3 py-2 text-[13px] leading-relaxed ${
-          isUser
-            ? "bg-primary text-primary-foreground"
-            : "border border-border bg-muted/40 text-foreground"
-        }`}
-      >
-        {message.text}
-      </div>
-    </li>
   );
 }

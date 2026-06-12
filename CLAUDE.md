@@ -122,6 +122,46 @@ The Studio's Inspector hides the Style section for locked compositions, and
 locked: `TweetCard`, `TwitterFollow`, `WhatsAppMessages`, `SlackMessages`,
 `DiscordMessages`, `MessageBubbles`, `MessagePopup`.
 
+### Curated themes (`meta.themes`)
+
+Separate from the four free-form controls, any composition — **including
+brand-locked ones** — can declare curated, named skins via `themes` in its
+`meta.ts`. A theme is a hand-built look (materials, blur, bubble shapes,
+chrome), not arbitrary recoloring, which is why locked compositions are
+allowed to have them.
+
+```ts
+export const messageBubblesInfo: CompositionInfo<MessageBubblesProps> = {
+  // ...
+  themes: [
+    { id: "imessage", label: "iMessage" },           // first = default look
+    { id: "glass", label: "Liquid Glass" },
+  ],
+};
+```
+
+How it works:
+
+- The Inspector's Style section renders a **Theme picker** whenever a
+  composition declares `themes`. For locked compositions it's the *only*
+  Style control shown. The first entry is the default look — selecting it
+  clears the override.
+- The choice is stored at `clip.style.theme`. `Project.tsx` validates the
+  id against `info.themes` and forwards it to the component as a separate
+  `clipTheme?: string` prop (locked and non-locked alike). The component
+  branches on its non-default theme ids:
+
+  ```tsx
+  export type FooProps = { /* ... */ clipTheme?: string };
+  // in render: if (clipTheme === "glass") return <GlassVariant ... />;
+  ```
+
+- Do **not** add a `theme` select to the `fields` array — the universal
+  Theme picker handles it.
+- Theme visuals must survive `@remotion/web-renderer` exports: build the
+  base look from rgba fills, linear gradients, borders and shadows;
+  `backdrop-filter` is allowed only as progressive enhancement.
+
 ## Remotion Composition Registry
 
 `apps/remotion/src/components.ts` uses a two-level split to avoid circular dependencies:

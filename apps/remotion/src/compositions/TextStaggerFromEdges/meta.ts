@@ -15,6 +15,7 @@ export const textStaggerFromEdgesDefaultProps: TextStaggerFromEdgesProps = {
 export const textStaggerFromEdgesInfo: CompositionInfo<TextStaggerFromEdgesProps> =
   {
     id: "TextStaggerFromEdges",
+    category: "text",
     title: "Edge Stagger",
     description:
       "Characters start from both edges and converge toward the center.",

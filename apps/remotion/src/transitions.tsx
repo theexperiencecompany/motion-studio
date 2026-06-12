@@ -23,7 +23,8 @@ import { flip } from "@remotion/transitions/flip";
 import { iris } from "@remotion/transitions/iris";
 import { slide } from "@remotion/transitions/slide";
 import { wipe } from "@remotion/transitions/wipe";
-import { Easing } from "remotion";
+import { zoomInOut } from "@remotion/transitions/zoom-in-out";
+import { Easing, isHtmlInCanvasSupported } from "remotion";
 
 export type SceneTransitionKind =
   | "none"
@@ -195,7 +196,15 @@ export function toPresentation(
     case "iris":
       return iris({ width: dimensions.width, height: dimensions.height });
     case "zoom":
-      return zoomPresentation(t.zoomMode ?? "in");
+      // Prefer Remotion's built-in pixel-accurate zoom, but it's an
+      // HTML-in-canvas (WebGL) presentation that THROWS in browsers without
+      // the experimental `canvas-draw-element` support (Firefox, Safari,
+      // Chrome without the flag). Remotion's own `isHtmlInCanvasSupported()`
+      // tells us when it's safe; otherwise fall back to the DOM-transform zoom
+      // below, which runs everywhere (studio Player + in-browser export).
+      return isHtmlInCanvasSupported()
+        ? zoomInOut({})
+        : zoomPresentation(t.zoomMode ?? "in");
     default:
       // Render as a zero-frame fade — TransitionSeries still requires a
       // presentation, but with durationInFrames=0 nothing animates.
@@ -204,10 +213,24 @@ export function toPresentation(
 }
 
 /**
- * Custom zoom presentation — not provided by @remotion/transitions. Incoming
- * clip scales up from 0.85 (zoom-in) or down from 1.18 (zoom-out), while
- * fading in. Outgoing clip stays put and fades out.
+ * Fallback zoom presentation — used only when Remotion's built-in `zoomInOut`
+ * can't run (no HTML-in-canvas support). A subtle continuous camera push.
+ * Crucially, BOTH clips stay at scale >= 1 for the whole
+ * window so neither ever exposes its edges (a clip scaled below 1 reveals the
+ * empty area behind it, which reads as an ugly black border — the old bug).
+ *
+ * "in": the camera keeps pushing forward through the cut. The outgoing clip
+ * scales up from 1 -> 1+AMT as it fades out; the incoming clip starts already
+ * pushed in at 1+AMT and settles back to 1 as it fades in. Because the visible
+ * clip is at scale 1 at each boundary (outgoing at progress 0, incoming at
+ * progress 1) and only ever larger in between, the motion is seamless and
+ * full-frame the entire time.
+ *
+ * "out": the mirror — the incoming clip pushes in from 1+AMT while the outgoing
+ * holds, giving a gentle pull-into-the-new-scene feel.
  */
+const ZOOM_AMOUNT = 0.12;
+
 function zoomPresentation(mode: "in" | "out"): AnyTransitionPresentation {
   const ZoomComponent: React.FC<{
     children: React.ReactNode;
@@ -215,30 +238,31 @@ function zoomPresentation(mode: "in" | "out"): AnyTransitionPresentation {
     presentationDirection: "entering" | "exiting";
   }> = ({ children, presentationProgress, presentationDirection }) => {
     const p = presentationProgress;
+    let scale: number;
+    let opacity: number;
+
     if (presentationDirection === "entering") {
-      const start = mode === "in" ? 0.85 : 1.18;
-      const scale = start + (1 - start) * p;
-      return (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            opacity: p,
-            transform: `scale(${scale})`,
-            transformOrigin: "center center",
-          }}
-        >
-          {children}
-        </div>
-      );
+      // Incoming starts pushed in and settles to rest at scale 1.
+      scale = 1 + ZOOM_AMOUNT * (1 - p);
+      opacity = p;
+    } else if (mode === "in") {
+      // Outgoing keeps pushing forward as it fades — continuous camera move.
+      scale = 1 + ZOOM_AMOUNT * p;
+      opacity = 1 - p;
+    } else {
+      // "out": outgoing holds at rest and just fades, letting the incoming push.
+      scale = 1;
+      opacity = 1 - p;
     }
-    // Outgoing clip just fades out — leaving zoom motion for the incoming.
+
     return (
       <div
         style={{
           position: "absolute",
           inset: 0,
-          opacity: 1 - p,
+          opacity,
+          transform: `scale(${scale})`,
+          transformOrigin: "center center",
         }}
       >
         {children}

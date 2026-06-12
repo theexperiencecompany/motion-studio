@@ -14,6 +14,7 @@ export const laptopFrameDefaultProps: LaptopFrameProps = {
 
 export const laptopFrameInfo: CompositionInfo<LaptopFrameProps> = {
   id: "LaptopFrame",
+  category: "layout",
   title: "Laptop Frame",
   description:
     "Wraps any other composition inside a realistic laptop mockup with a drop-in entrance.",

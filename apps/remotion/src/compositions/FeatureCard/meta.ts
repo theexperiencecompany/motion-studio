@@ -15,6 +15,9 @@ export const featureCardDefaultProps: FeatureCardProps = {
 
 export const featureCardInfo: CompositionInfo<FeatureCardProps> = {
   id: "FeatureCard",
+  category: "marketing",
+  agentNotes:
+    "Use for 'here's the feature' reveal beats. Title + description + optional icon. Best as the proof/payoff beat after a demo. Keep titles 1–4 words, descriptions 1 short sentence. Don't use for CTAs (use a text title for that).",
   title: "Feature Card",
   description:
     "A clean Linear/Vercel-style feature card with icon, title, and body — staggered reveal animation.",

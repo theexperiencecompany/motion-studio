@@ -8,7 +8,6 @@ import {
   type SceneTransitionKind,
   TRANSITION_DIRECTION_OPTIONS,
 } from "@workspace/compositions/transitions";
-import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import {
   Select,
@@ -17,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@workspace/ui/components/select";
+import { Slider } from "@workspace/ui/components/slider";
 
 type Props = {
   /** Per-clip override, if any. */
@@ -49,8 +49,24 @@ export function TransitionSection({
     projectDefault,
     index: isFirst ? 0 : 1,
   });
-  const maxDuration = Math.min(120, Math.floor(clipDurationInFrames / 2));
-  const frameStepSec = 1 / fps;
+  // A clip's frame count can briefly be non-finite while it's being created
+  // (e.g. a freshly added background scene), which would hand the Radix
+  // Slider a NaN `max`. Guard it to a finite floor of 1.
+  const safeClipFrames = Number.isFinite(clipDurationInFrames)
+    ? clipDurationInFrames
+    : 2;
+  const maxDuration = Math.max(
+    1,
+    Math.min(120, Math.floor(safeClipFrames / 2)),
+  );
+  // The resolved duration (often the project default of 14) can exceed this
+  // clip's own max. Feeding the Slider an out-of-range value makes Radix loop
+  // its internal clamp and trips React's max-update-depth guard, so clamp it
+  // into [1, maxDuration] before it ever reaches the Slider.
+  const sliderValue = Math.min(
+    maxDuration,
+    Math.max(1, effective.durationInFrames || 1),
+  );
   const durationSecValue = effective.durationInFrames / fps;
   const supportsDirection = SUPPORTS_DIRECTION_KINDS.has(effective.kind);
   const isZoom = effective.kind === "zoom";
@@ -185,27 +201,25 @@ export function TransitionSection({
               <div className="space-y-1.5">
                 <div className="flex items-baseline justify-between">
                   <Label htmlFor="transition-duration" className="text-[12px]">
-                    Duration (s)
+                    Duration
                   </Label>
                   <span className="font-mono text-[10px] text-muted-foreground">
+                    {durationSecValue.toFixed(2)}s ·{" "}
                     {effective.durationInFrames} frames
                   </span>
                 </div>
-                <Input
+                <Slider
                   id="transition-duration"
-                  type="number"
-                  step={frameStepSec.toFixed(4)}
-                  min={frameStepSec.toFixed(4)}
-                  max={(maxDuration / fps).toFixed(4)}
-                  value={durationSecValue.toFixed(2)}
-                  onChange={(e) => {
-                    const sec = Number(e.target.value);
-                    if (!Number.isFinite(sec)) return;
-                    const frames = Math.round(sec * fps);
+                  min={1}
+                  max={maxDuration}
+                  step={1}
+                  value={[sliderValue]}
+                  onValueChange={([v]) => {
+                    if (v === undefined) return;
                     patch({
                       durationInFrames: Math.max(
                         1,
-                        Math.min(maxDuration, frames),
+                        Math.min(maxDuration, Math.round(v)),
                       ),
                     });
                   }}

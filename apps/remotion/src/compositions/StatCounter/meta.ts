@@ -15,6 +15,7 @@ export const statCounterDefaultProps: StatCounterProps = {
 
 export const statCounterInfo: CompositionInfo<StatCounterProps> = {
   id: "StatCounter",
+  category: "data",
   title: "Stat Counter",
   description:
     "An animated number that ticks from 0 up to a target value, with a label fading in below.",

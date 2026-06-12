@@ -13,6 +13,9 @@ export const typingSearchDefaultProps: TypingSearchProps = {
 
 export const typingSearchInfo: CompositionInfo<TypingSearchProps> = {
   id: "TypingSearch",
+  category: "devtools",
+  agentNotes:
+    "Search bar with text typing in and (optionally) results dropping down. Use for 'how to find X' beats, product search demos, or as a hook in tutorials. Pair the typed query with a relevant brand or product.",
   title: "Typing Search",
   description:
     "A search bar that types out a query character-by-character, then a mouse cursor flies in and clicks the search button.",

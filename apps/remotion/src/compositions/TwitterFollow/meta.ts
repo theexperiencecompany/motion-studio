@@ -20,6 +20,7 @@ export const twitterFollowDefaultProps: TwitterFollowProps = {
 
 export const twitterFollowInfo: CompositionInfo<TwitterFollowProps> = {
   id: "TwitterFollow",
+  category: "social",
   title: "Twitter Follow",
   description:
     "An animated X / Twitter profile card with a Follow button click and follower count bump.",

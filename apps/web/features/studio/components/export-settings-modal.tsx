@@ -16,7 +16,7 @@ import {
   RadioGroup,
   RadioGroupItem,
 } from "@workspace/ui/components/radio-group";
-import { useEffect, useState } from "react";
+import { useEffect, useReducer, useState } from "react";
 import {
   applyPreset,
   DEFAULT_EXPORT_OPTIONS,
@@ -63,6 +63,50 @@ const PRESET_LABELS: Record<
   },
 };
 
+// The four zip fields below are one async packaging operation — they only
+// ever change together (start / finish / fail), so they share a reducer.
+type ZipState = {
+  busy: boolean;
+  error: string | null;
+  startedAt: number | null;
+  finishedAt: number | null;
+};
+
+type ZipAction =
+  | { type: "start"; startedAt: number }
+  | { type: "finish"; finishedAt: number }
+  | { type: "fail"; finishedAt: number; error: string };
+
+const INITIAL_ZIP: ZipState = {
+  busy: false,
+  error: null,
+  startedAt: null,
+  finishedAt: null,
+};
+
+function zipReducer(state: ZipState, action: ZipAction): ZipState {
+  switch (action.type) {
+    case "start":
+      return {
+        busy: true,
+        error: null,
+        startedAt: action.startedAt,
+        finishedAt: null,
+      };
+    case "finish":
+      return { ...state, busy: false, finishedAt: action.finishedAt };
+    case "fail":
+      return {
+        ...state,
+        busy: false,
+        error: action.error,
+        finishedAt: action.finishedAt,
+      };
+    default:
+      return state;
+  }
+}
+
 export function ExportSettingsModal({
   open,
   onOpenChange,
@@ -78,31 +122,25 @@ export function ExportSettingsModal({
     initialOptions ?? DEFAULT_EXPORT_OPTIONS,
   );
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [zipBusy, setZipBusy] = useState(false);
-  const [zipError, setZipError] = useState<string | null>(null);
-  const [zipStartedAt, setZipStartedAt] = useState<number | null>(null);
-  const [zipFinishedAt, setZipFinishedAt] = useState<number | null>(null);
-  const zipElapsedMs = useTicker(zipStartedAt, zipFinishedAt, zipBusy);
+  const [zip, dispatchZip] = useReducer(zipReducer, INITIAL_ZIP);
+  const zipElapsedMs = useTicker(zip.startedAt, zip.finishedAt, zip.busy);
 
   async function handleDownloadZip() {
-    setZipError(null);
-    setZipFinishedAt(null);
-    const startedAt = Date.now();
-    setZipStartedAt(startedAt);
-    setZipBusy(true);
+    dispatchZip({ type: "start", startedAt: Date.now() });
     try {
       const blob = await buildExportZip({ project });
       const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
       downloadBlob(blob, `motion-studio-render-${stamp}.zip`);
-      setZipFinishedAt(Date.now());
+      dispatchZip({ type: "finish", finishedAt: Date.now() });
       // Leave the modal open briefly so the user sees the final time before
       // it disappears. They can close it manually too.
       window.setTimeout(() => onOpenChange(false), 1500);
     } catch (err) {
-      setZipError(err instanceof Error ? err.message : String(err));
-      setZipFinishedAt(Date.now());
-    } finally {
-      setZipBusy(false);
+      dispatchZip({
+        type: "fail",
+        finishedAt: Date.now(),
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   }
 
@@ -256,19 +294,19 @@ export function ExportSettingsModal({
             <code>node render.mjs</code>, uses all your CPU cores. Typically
             5–10× faster than the in-browser export.
           </p>
-          {zipError && (
-            <p className="mt-2 text-[11px] text-red-500">{zipError}</p>
+          {zip.error && (
+            <p className="mt-2 text-[11px] text-red-500">{zip.error}</p>
           )}
           <Button
             variant="outline"
             size="sm"
             className="mt-3 w-full"
             onClick={handleDownloadZip}
-            disabled={zipBusy}
+            disabled={zip.busy}
           >
-            {zipBusy
+            {zip.busy
               ? `Packaging… ${formatElapsed(zipElapsedMs)}`
-              : zipFinishedAt && !zipError
+              : zip.finishedAt && !zip.error
                 ? `Downloaded · packaged in ${formatElapsed(zipElapsedMs)}`
                 : "Download fast renderer (zip)"}
           </Button>
@@ -283,7 +321,7 @@ export function ExportSettingsModal({
               onStart(options);
               onOpenChange(false);
             }}
-            disabled={zipBusy}
+            disabled={zip.busy}
           >
             Start render in browser
           </Button>

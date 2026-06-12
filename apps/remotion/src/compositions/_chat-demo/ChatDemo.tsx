@@ -993,6 +993,242 @@ function IMessageDemo({
 }
 
 /* =========================================================================
+ * Liquid Glass — Apple-glass skin of the iMessage layout: frosted
+ * translucent bubbles floating over a vivid gradient backdrop, no tails.
+ * The base look is rgba fills + linear gradients + borders/shadows so it
+ * survives @remotion/web-renderer exports; backdrop-filter is progressive
+ * enhancement for the live preview.
+ * ========================================================================= */
+
+// Subtle neutral graphite — just enough tone for the frosted bubbles to
+// read against, without the loud color gradient.
+export const GLASS_CHAT_BACKDROP =
+  "linear-gradient(180deg, #54545a 0%, #3c3c42 100%)";
+
+const GLASS_ME_BG =
+  "linear-gradient(180deg, rgba(86,164,255,0.85) 0%, rgba(18,108,244,0.78) 100%)";
+const GLASS_THEM_BG = "rgba(255,255,255,0.26)";
+const GLASS_BLUR = "blur(22px) saturate(170%)";
+
+const glassSurface = {
+  border: "1px solid rgba(255,255,255,0.4)",
+  boxShadow:
+    "inset 0 1px 0 rgba(255,255,255,0.45), 0 10px 30px rgba(10,15,60,0.18)",
+  backdropFilter: GLASS_BLUR,
+  WebkitBackdropFilter: GLASS_BLUR,
+} as const;
+
+export function GlassChatDemo({
+  messages,
+  title,
+  subtitle,
+  headerAvatar,
+  showComposer = true,
+  className,
+}: {
+  messages: ChatMessageItem[];
+  title?: string;
+  subtitle?: string;
+  headerAvatar?: string;
+  showComposer?: boolean;
+  className?: string;
+}) {
+  const grouped = curvedThread(messages);
+  return (
+    <div
+      className={cn("flex h-full flex-col", className)}
+      style={{ fontFamily: SF_STACK, color: "#fff" }}
+    >
+      <div
+        className="flex shrink-0 flex-col items-center justify-center"
+        style={{ padding: "10px 16px 12px" }}
+      >
+        <div
+          className="overflow-hidden rounded-full"
+          style={{
+            width: 54,
+            height: 54,
+            marginBottom: 6,
+            border: "2px solid rgba(255,255,255,0.55)",
+            boxShadow: "0 6px 18px rgba(10,15,60,0.25)",
+          }}
+        >
+          <Img
+            src={asset(headerAvatar ?? DEFAULT_AVATAR) ?? ""}
+            crossOrigin="anonymous"
+            alt=""
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
+        </div>
+        <div
+          className="flex items-center"
+          style={{ fontSize: 14, fontWeight: 600, gap: 3 }}
+        >
+          <span
+            style={{
+              letterSpacing: "-0.01em",
+              textShadow: "0 1px 3px rgba(10,15,60,0.25)",
+            }}
+          >
+            {title ?? "GAIA"}
+          </span>
+          <svg width="5" height="8" viewBox="0 0 7 11" fill="none" aria-hidden>
+            <path
+              d="M1 1l4.5 4.5L1 10"
+              stroke="rgba(255,255,255,0.6)"
+              strokeWidth="1.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </div>
+        {subtitle && (
+          <span
+            style={{
+              fontSize: 11,
+              color: "rgba(255,255,255,0.75)",
+              marginTop: 2,
+            }}
+          >
+            {subtitle}
+          </span>
+        )}
+      </div>
+
+      <div
+        className="flex flex-1 flex-col overflow-y-auto px-3 pb-3"
+        style={{ scrollbarWidth: "none", gap: 8 }}
+      >
+        {grouped.map((group, gi) => {
+          const groupTime = group.items[0]?.time;
+          return (
+            <div key={gi} className="flex flex-col" style={{ gap: 8 }}>
+              {groupTime && (
+                <div
+                  className="self-center text-center"
+                  style={{
+                    fontSize: 11,
+                    color: "rgba(255,255,255,0.75)",
+                    fontWeight: 500,
+                    letterSpacing: "-0.01em",
+                    marginTop: gi === 0 ? 4 : 6,
+                  }}
+                >
+                  {groupTime}
+                </div>
+              )}
+              <div
+                className={cn(
+                  "flex flex-col",
+                  group.from === "me" ? "items-end" : "items-start",
+                )}
+                style={{ gap: 3 }}
+              >
+                {group.items.map((m, i) => {
+                  const isMe = group.from === "me";
+                  return (
+                    <BubbleEnter
+                      key={m.id ?? `${gi}-${i}`}
+                      enterFrames={m.enterFrames}
+                      from={group.from}
+                    >
+                      <div
+                        style={{
+                          ...glassSurface,
+                          background: isMe ? GLASS_ME_BG : GLASS_THEM_BG,
+                          color: "#fff",
+                          padding: "8px 14px 9px",
+                          borderRadius: 22,
+                          fontSize: 15.5,
+                          lineHeight: "20px",
+                          letterSpacing: "-0.01em",
+                          wordBreak: "break-word",
+                          whiteSpace: "pre-wrap",
+                          textShadow: isMe
+                            ? undefined
+                            : "0 1px 2px rgba(10,15,60,0.18)",
+                        }}
+                      >
+                        {m.typing ? (
+                          <TypingDots color="rgba(255,255,255,0.85)" />
+                        ) : (
+                          m.text
+                        )}
+                      </div>
+                    </BubbleEnter>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {showComposer && (
+        <div className="flex shrink-0 items-end gap-2 px-2 pt-2 pb-2">
+          <button
+            type="button"
+            aria-label="More"
+            className="flex shrink-0 cursor-pointer items-center justify-center rounded-full"
+            style={{
+              ...glassSurface,
+              width: 32,
+              height: 32,
+              background: "rgba(255,255,255,0.22)",
+              color: "rgba(255,255,255,0.9)",
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden>
+              <path
+                d="M7 1v12M1 7h12"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+          <div
+            className="flex flex-1 items-center justify-between"
+            style={{
+              ...glassSurface,
+              borderRadius: 18,
+              padding: "5px 8px 5px 12px",
+              background: "rgba(255,255,255,0.2)",
+              minHeight: 32,
+            }}
+          >
+            <input
+              type="text"
+              placeholder="iMessage"
+              className="chat-demo-input min-w-0 flex-1 border-0 bg-transparent p-0 outline-none placeholder:text-[rgba(255,255,255,0.65)]"
+              style={{
+                fontSize: 15,
+                color: "#fff",
+                letterSpacing: "-0.01em",
+                fontFamily: "inherit",
+              }}
+            />
+            <button
+              type="button"
+              aria-label="Audio"
+              className="ml-2 flex cursor-pointer items-center justify-center rounded-full"
+              style={{ color: "rgba(255,255,255,0.85)", width: 22, height: 22 }}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
+                <path
+                  d="M8 1.5a2 2 0 0 0-2 2v4a2 2 0 0 0 4 0v-4a2 2 0 0 0-2-2Zm4 6a4 4 0 0 1-8 0H3a5 5 0 0 0 4.5 5V14h1v-1.5A5 5 0 0 0 13 7.5h-1Z"
+                  fill="currentColor"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* =========================================================================
  * WhatsApp — iMessage bubble shape + WhatsApp SVG colors and chrome.
  * Source: .context/attachments/WhatsApp Chat.svg
  * ========================================================================= */

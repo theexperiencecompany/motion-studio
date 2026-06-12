@@ -15,6 +15,7 @@ export const splitSceneDefaultProps: SplitSceneProps = {
 
 export const splitSceneInfo: CompositionInfo<SplitSceneProps> = {
   id: "SplitScene",
+  category: "layout",
   title: "Split Scene",
   description:
     "Combine multiple compositions in one frame using a preset layout — stacked, side-by-side, picture-in-picture, or 2×2 grid.",

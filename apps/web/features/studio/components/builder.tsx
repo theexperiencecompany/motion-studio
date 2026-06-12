@@ -5,6 +5,12 @@ import { type Project, projectDuration } from "@workspace/compositions/project";
 import { compositionsById } from "@workspace/compositions/registry";
 import { resolveTransition } from "@workspace/compositions/transitions";
 import {
+  type Layout,
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@workspace/ui/components/resizable";
+import {
   useCallback,
   useEffect,
   useMemo,
@@ -14,6 +20,7 @@ import {
 } from "react";
 import { toast } from "sonner";
 
+import { useAudioSearch } from "../hooks/use-audio-search";
 import { useExportRender } from "../hooks/use-export-render";
 import { usePlayerControls } from "../hooks/use-player-controls";
 import { useProjectIO } from "../hooks/use-project-io";
@@ -27,7 +34,6 @@ import { registerImageProxy } from "../lib/register-image-proxy";
 import { PlayerProvider } from "../state/player-context";
 import { initialStudioState, studioReducer } from "../state/reducer";
 import { AgentPanel } from "./agent-panel";
-import { AudioPanel } from "./audio-panel";
 import { CommandPalette } from "./command-palette";
 import { ExportProgressOverlay } from "./export-progress-overlay";
 import { ExportSettingsModal } from "./export-settings-modal";
@@ -39,12 +45,53 @@ import { ProjectAudioControl } from "./project-audio-control";
 import { Timeline } from "./timeline";
 import { ToolRail } from "./tool-rail";
 import { TopBar } from "./top-bar";
+import { UploadPanel } from "./upload-panel";
 
 export function Builder() {
   // ----------------------------------------------------------------------
   // Studio state
   // ----------------------------------------------------------------------
   const [state, dispatch] = useReducer(studioReducer, initialStudioState);
+  const audioSearch = useAudioSearch();
+  // Bump the version key when changing default sizes so old persisted
+  // layouts don't pin panels at sizes that no longer make sense.
+  const LAYOUT_STORAGE_KEY = "studio-layout-v4";
+  // The persisted layout MUST NOT be read during the initial render: the
+  // server has no access to localStorage and renders panels at their default
+  // sizes, so reading it on the client's first render produces a hydration
+  // mismatch. Start undefined (matching the server), then load the stored
+  // layout after mount and remount the panel group via `layoutKey` so the
+  // restored sizes actually take effect.
+  const [layout, setLayout] = useState<Layout | undefined>(undefined);
+  const [layoutKey, setLayoutKey] = useState("initial");
+  // Gate persistence until the stored layout has been restored, so a
+  // layout-change event fired during the initial default-sized mount can't
+  // overwrite the saved layout before we've had a chance to read it back.
+  const layoutLoadedRef = useRef(false);
+  useEffect(() => {
+    try {
+      // One-time cleanup of older versions so stale narrow layouts don't
+      // linger silently in the user's storage.
+      window.localStorage.removeItem("studio-layout-v1");
+      window.localStorage.removeItem("studio-layout-v2");
+      window.localStorage.removeItem("studio-layout-v3");
+      const raw = window.localStorage.getItem(LAYOUT_STORAGE_KEY);
+      if (raw) setLayout(JSON.parse(raw) as Layout);
+    } catch {
+      // localStorage may be disabled (private mode / quota); silent fallback.
+    }
+    layoutLoadedRef.current = true;
+    setLayoutKey("loaded");
+  }, []);
+  const handleLayoutChanged = useCallback((next: Layout) => {
+    if (!layoutLoadedRef.current) return;
+    setLayout(next);
+    try {
+      window.localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      // localStorage may be disabled (private mode / quota); silent fallback.
+    }
+  }, []);
   const { project, selection, openPanel } = state;
   const selectedClipId = selection?.kind === "clip" ? selection.id : null;
   const isAudioSelected = selection?.kind === "audio";
@@ -181,6 +228,11 @@ export function Builder() {
           onExport={() => setExportSettingsOpen(true)}
           onSaveProject={handleSaveProject}
           onLoadProjectFile={handleLoadProjectFile}
+          brandKit={project.brandKit}
+          onUpdateBrandKit={(patch) =>
+            dispatch({ type: "UPDATE_BRAND_KIT", patch })
+          }
+          onClearBrandKit={() => dispatch({ type: "CLEAR_BRAND_KIT" })}
         />
 
         <div className="relative flex min-h-0 flex-1">
@@ -189,188 +241,235 @@ export function Builder() {
             onToggle={(p) => dispatch({ type: "TOGGLE_PANEL", panel: p })}
           />
 
-          {openPanel === "library" && (
-            <LibraryPanel
-              onAdd={(id) => dispatch({ type: "ADD_CLIP", compositionId: id })}
-              onAddEffect={(effectId) => {
-                if (!selectedClipId) return;
-                dispatch({
-                  type: "ADD_EFFECT",
-                  clipId: selectedClipId,
-                  effectId,
-                });
-              }}
-              selectedClipId={selectedClipId}
-              onClose={() =>
-                dispatch({ type: "TOGGLE_PANEL", panel: "library" })
-              }
-            />
-          )}
-
-          {openPanel === "audio" && (
-            <AudioPanel
-              currentAudio={project.audio}
-              onSet={(audio) => dispatch({ type: "SET_PROJECT_AUDIO", audio })}
-              onClear={() => dispatch({ type: "CLEAR_PROJECT_AUDIO" })}
-              onClose={() => dispatch({ type: "TOGGLE_PANEL", panel: "audio" })}
-            />
-          )}
-
-          {openPanel === "agent" && (
-            <AgentPanel
-              onClose={() => dispatch({ type: "TOGGLE_PANEL", panel: "agent" })}
-            />
-          )}
-
-          <main className="flex min-w-0 flex-1 flex-col">
-            <PreviewStage
-              project={project}
-              playerInputProps={playerInputProps}
-              totalDuration={totalDuration}
-              hasClips={hasClips}
-              onOpenLibrary={() =>
-                dispatch({ type: "TOGGLE_PANEL", panel: "library" })
-              }
-              playerRef={playerRef}
-            />
-
-            <PlaybackControls
-              totalDuration={totalDuration}
-              fps={project.fps}
-              disabled={!hasClips}
-              onPlayPause={playerControls.handlePlayPause}
-              onSkipToStart={playerControls.handleSkipToStart}
-              onSkipToEnd={playerControls.handleSkipToEnd}
-            />
-
-            <Timeline
-              project={project}
-              selectedClipId={selectedClipId}
-              audioSelected={isAudioSelected}
-              onSelectAudio={() => dispatch({ type: "SELECT_AUDIO" })}
-              onUpdateAudio={(patch) =>
-                dispatch({ type: "UPDATE_PROJECT_AUDIO", patch })
-              }
-              onSelect={(id) => dispatch({ type: "SELECT_CLIP", clipId: id })}
-              onReorder={(clipIds) =>
-                dispatch({ type: "REORDER_CLIPS", clipIds })
-              }
-              onDelete={(id) => dispatch({ type: "DELETE_CLIP", clipId: id })}
-              onDurationChange={(id, durationInFrames) =>
-                dispatch({
-                  type: "UPDATE_CLIP_DURATION",
-                  clipId: id,
-                  durationInFrames,
-                })
-              }
-              onUpdateTransition={(id, transition) =>
-                dispatch({
-                  type: "UPDATE_CLIP_TRANSITION",
-                  clipId: id,
-                  transition,
-                })
-              }
-              onSelectTransition={(id) => {
-                dispatch({ type: "SELECT_CLIP", clipId: id });
-                setInspectorTab("motion");
-              }}
-              onSeek={playerControls.handleSeek}
-              onScrubStart={playerControls.handleScrubStart}
-              onScrubEnd={playerControls.handleScrubEnd}
-              onCapture={handleCaptureFrame}
-            />
-          </main>
-
-          {selectedClip && selectedInfo && (
-            <Inspector
-              clip={selectedClip}
-              info={selectedInfo}
-              isFirst={project.clips[0]?.id === selectedClip.id}
-              fps={project.fps}
-              projectDefaultTransition={project.defaultTransition}
-              tab={inspectorTab}
-              onTabChange={setInspectorTab}
-              onChange={(next) =>
-                dispatch({
-                  type: "UPDATE_CLIP_PROPS",
-                  clipId: selectedClip.id,
-                  props: next,
-                })
-              }
-              onUpdateStyle={(patch) =>
-                dispatch({
-                  type: "UPDATE_CLIP_STYLE",
-                  clipId: selectedClip.id,
-                  patch,
-                })
-              }
-              onResetStyle={() =>
-                dispatch({
-                  type: "RESET_CLIP_STYLE",
-                  clipId: selectedClip.id,
-                })
-              }
-              onUpdateTransition={(transition) =>
-                dispatch({
-                  type: "UPDATE_CLIP_TRANSITION",
-                  clipId: selectedClip.id,
-                  transition,
-                })
-              }
-              onUpdateEffect={(effectInstanceId, props) =>
-                dispatch({
-                  type: "UPDATE_EFFECT_PROPS",
-                  clipId: selectedClip.id,
-                  effectInstanceId,
-                  props,
-                })
-              }
-              onRemoveEffect={(effectInstanceId) =>
-                dispatch({
-                  type: "REMOVE_EFFECT",
-                  clipId: selectedClip.id,
-                  effectInstanceId,
-                })
-              }
-              onClose={() => dispatch({ type: "SELECT_CLIP", clipId: null })}
-            />
-          )}
-
-          {/*
-            Audio inspector — surfaces when the user clicks the audio track
-            row in the timeline (selection.kind === "audio"). Mutually
-            exclusive with the clip inspector: a clip click clears audio
-            selection and vice versa.
-          */}
-          {isAudioSelected && project.audio && (
-            <aside className="flex w-80 shrink-0 flex-col gap-3 overflow-y-auto border-l border-border bg-background p-3">
-              <div className="flex items-center justify-between px-1">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Project audio
-                </p>
-                <button
-                  type="button"
-                  onClick={() => dispatch({ type: "CLEAR_SELECTION" })}
-                  className="text-[11px] text-muted-foreground hover:text-foreground"
+          <ResizablePanelGroup
+            key={layoutKey}
+            orientation="horizontal"
+            defaultLayout={layout}
+            onLayoutChanged={handleLayoutChanged}
+            className="flex-1"
+          >
+            {openPanel !== null && (
+              <>
+                <ResizablePanel
+                  id="studio-side"
+                  defaultSize="288px"
+                  minSize="240px"
+                  maxSize="720px"
                 >
-                  Close
-                </button>
-              </div>
-              <ProjectAudioControl
-                audio={project.audio}
-                fps={project.fps}
-                videoDurationFrames={totalDuration}
-                sourceDurationSec={project.audio.sourceDurationSec}
-                onPatch={(patch) =>
-                  dispatch({ type: "UPDATE_PROJECT_AUDIO", patch })
-                }
-                onClear={() => dispatch({ type: "CLEAR_PROJECT_AUDIO" })}
-                onOpenLibrary={() =>
-                  dispatch({ type: "TOGGLE_PANEL", panel: "audio" })
-                }
-              />
-            </aside>
-          )}
+                  {openPanel === "library" && (
+                    <LibraryPanel
+                      onAdd={(id) =>
+                        dispatch({ type: "ADD_CLIP", compositionId: id })
+                      }
+                      onAddEffect={(effectId) => {
+                        if (!selectedClipId) return;
+                        dispatch({
+                          type: "ADD_EFFECT",
+                          clipId: selectedClipId,
+                          effectId,
+                        });
+                      }}
+                      selectedClipId={selectedClipId}
+                      onClose={() =>
+                        dispatch({ type: "TOGGLE_PANEL", panel: "library" })
+                      }
+                    />
+                  )}
+                  {openPanel === "upload" && (
+                    <UploadPanel
+                      currentAudio={project.audio}
+                      audioSearch={audioSearch}
+                      onSet={(audio) =>
+                        dispatch({ type: "SET_PROJECT_AUDIO", audio })
+                      }
+                      onClear={() => dispatch({ type: "CLEAR_PROJECT_AUDIO" })}
+                      onClose={() =>
+                        dispatch({ type: "TOGGLE_PANEL", panel: "upload" })
+                      }
+                    />
+                  )}
+                  {openPanel === "agent" && (
+                    <AgentPanel
+                      project={project}
+                      dispatch={dispatch}
+                      onClose={() =>
+                        dispatch({ type: "TOGGLE_PANEL", panel: "agent" })
+                      }
+                    />
+                  )}
+                </ResizablePanel>
+                <ResizableHandle withHandle />
+              </>
+            )}
+
+            <ResizablePanel id="studio-main" minSize="400px">
+              <main className="flex h-full min-w-0 flex-col">
+                <PreviewStage
+                  project={project}
+                  playerInputProps={playerInputProps}
+                  totalDuration={totalDuration}
+                  hasClips={hasClips}
+                  onOpenLibrary={() =>
+                    dispatch({ type: "TOGGLE_PANEL", panel: "library" })
+                  }
+                  playerRef={playerRef}
+                />
+
+                <PlaybackControls
+                  totalDuration={totalDuration}
+                  fps={project.fps}
+                  disabled={!hasClips}
+                  onPlayPause={playerControls.handlePlayPause}
+                  onSkipToStart={playerControls.handleSkipToStart}
+                  onSkipToEnd={playerControls.handleSkipToEnd}
+                />
+
+                <Timeline
+                  project={project}
+                  selectedClipId={selectedClipId}
+                  audioSelected={isAudioSelected}
+                  onSelectAudio={() => dispatch({ type: "SELECT_AUDIO" })}
+                  onUpdateAudio={(patch) =>
+                    dispatch({ type: "UPDATE_PROJECT_AUDIO", patch })
+                  }
+                  onSelect={(id) =>
+                    dispatch({ type: "SELECT_CLIP", clipId: id })
+                  }
+                  onReorder={(clipIds) =>
+                    dispatch({ type: "REORDER_CLIPS", clipIds })
+                  }
+                  onDelete={(id) =>
+                    dispatch({ type: "DELETE_CLIP", clipId: id })
+                  }
+                  onDurationChange={(id, durationInFrames) =>
+                    dispatch({
+                      type: "UPDATE_CLIP_DURATION",
+                      clipId: id,
+                      durationInFrames,
+                    })
+                  }
+                  onUpdateTransition={(id, transition) =>
+                    dispatch({
+                      type: "UPDATE_CLIP_TRANSITION",
+                      clipId: id,
+                      transition,
+                    })
+                  }
+                  onSelectTransition={(id) => {
+                    dispatch({ type: "SELECT_CLIP", clipId: id });
+                    setInspectorTab("motion");
+                  }}
+                  onSeek={playerControls.handleSeek}
+                  onScrubStart={playerControls.handleScrubStart}
+                  onScrubEnd={playerControls.handleScrubEnd}
+                  onCapture={handleCaptureFrame}
+                />
+              </main>
+            </ResizablePanel>
+
+            {(selectedClip && selectedInfo) ||
+            (isAudioSelected && project.audio) ? (
+              <>
+                <ResizableHandle withHandle />
+                <ResizablePanel
+                  id="studio-inspector"
+                  defaultSize="320px"
+                  minSize="280px"
+                  maxSize="720px"
+                >
+                  {selectedClip && selectedInfo ? (
+                    <Inspector
+                      clip={selectedClip}
+                      info={selectedInfo}
+                      isFirst={project.clips[0]?.id === selectedClip.id}
+                      fps={project.fps}
+                      projectDefaultTransition={project.defaultTransition}
+                      tab={inspectorTab}
+                      onTabChange={setInspectorTab}
+                      onChange={(next) =>
+                        dispatch({
+                          type: "UPDATE_CLIP_PROPS",
+                          clipId: selectedClip.id,
+                          props: next,
+                        })
+                      }
+                      onUpdateStyle={(patch) =>
+                        dispatch({
+                          type: "UPDATE_CLIP_STYLE",
+                          clipId: selectedClip.id,
+                          patch,
+                        })
+                      }
+                      onResetStyle={() =>
+                        dispatch({
+                          type: "RESET_CLIP_STYLE",
+                          clipId: selectedClip.id,
+                        })
+                      }
+                      onUpdateTransition={(transition) =>
+                        dispatch({
+                          type: "UPDATE_CLIP_TRANSITION",
+                          clipId: selectedClip.id,
+                          transition,
+                        })
+                      }
+                      onUpdateEffect={(effectInstanceId, props) =>
+                        dispatch({
+                          type: "UPDATE_EFFECT_PROPS",
+                          clipId: selectedClip.id,
+                          effectInstanceId,
+                          props,
+                        })
+                      }
+                      onRemoveEffect={(effectInstanceId) =>
+                        dispatch({
+                          type: "REMOVE_EFFECT",
+                          clipId: selectedClip.id,
+                          effectInstanceId,
+                        })
+                      }
+                      onClose={() =>
+                        dispatch({ type: "SELECT_CLIP", clipId: null })
+                      }
+                    />
+                  ) : isAudioSelected && project.audio ? (
+                    // Audio inspector — surfaces when the user clicks the
+                    // audio track row in the timeline. Mutually exclusive
+                    // with the clip inspector.
+                    <aside className="flex h-full w-full flex-col gap-3 overflow-y-auto border-l border-border bg-background p-3">
+                      <div className="flex items-center justify-between px-1">
+                        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          Project audio
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => dispatch({ type: "CLEAR_SELECTION" })}
+                          className="text-[11px] text-muted-foreground hover:text-foreground"
+                        >
+                          Close
+                        </button>
+                      </div>
+                      <ProjectAudioControl
+                        audio={project.audio}
+                        fps={project.fps}
+                        videoDurationFrames={totalDuration}
+                        sourceDurationSec={project.audio.sourceDurationSec}
+                        onPatch={(patch) =>
+                          dispatch({ type: "UPDATE_PROJECT_AUDIO", patch })
+                        }
+                        onClear={() =>
+                          dispatch({ type: "CLEAR_PROJECT_AUDIO" })
+                        }
+                        onOpenUpload={() =>
+                          dispatch({ type: "TOGGLE_PANEL", panel: "upload" })
+                        }
+                      />
+                    </aside>
+                  ) : null}
+                </ResizablePanel>
+              </>
+            ) : null}
+          </ResizablePanelGroup>
         </div>
 
         <ExportProgressOverlay
@@ -406,7 +505,9 @@ export function Builder() {
           onOpenLibrary={() =>
             dispatch({ type: "TOGGLE_PANEL", panel: "library" })
           }
-          onOpenAudio={() => dispatch({ type: "TOGGLE_PANEL", panel: "audio" })}
+          onOpenUpload={() =>
+            dispatch({ type: "TOGGLE_PANEL", panel: "upload" })
+          }
           onSaveProject={handleSaveProject}
           onImportProject={() => {
             // Conjure a transient file picker so the cmd-K Import action

@@ -13,6 +13,9 @@ export const typingComposerDefaultProps: TypingComposerProps = {
 
 export const typingComposerInfo: CompositionInfo<TypingComposerProps> = {
   id: "TypingComposer",
+  category: "devtools",
+  agentNotes:
+    "Compact 'someone is typing in a chat composer' UI — DM input field with text appearing character-by-character. Use for chat-app context or 'sending a message' beats.",
   title: "Typing Composer",
   description:
     "A GAIA-style chat composer that types out a prompt character-by-character, then a mouse cursor flies in and clicks the send button.",

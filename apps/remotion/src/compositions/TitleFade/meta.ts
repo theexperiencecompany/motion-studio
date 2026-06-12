@@ -14,6 +14,9 @@ export const titleFadeDefaultProps: TitleFadeProps = {
 
 export const titleFadeInfo: CompositionInfo<TitleFadeProps> = {
   id: "TitleFade",
+  category: "text",
+  agentNotes:
+    "Calm, premium fade-in title with optional subtitle. Use for editorial / serious / brand-forward openers. Pairs with the off-white or warm-cream bases for an Apple-style feel.",
   title: "Fade In",
   description:
     "The simplest, most restrained intro: the headline fades up and the subtitle follows. Reach for this when the words should do the work.",

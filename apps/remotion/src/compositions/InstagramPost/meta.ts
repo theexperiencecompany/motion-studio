@@ -21,6 +21,9 @@ export const instagramPostDefaultProps: InstagramPostProps = {
 
 export const instagramPostInfo: CompositionInfo<InstagramPostProps> = {
   id: "InstagramPost",
+  category: "social",
+  agentNotes:
+    "Authentic Instagram feed post: image + caption + username + heart/comment row. Use for Instagram-themed launches, social mockups, influencer content. The image prop accepts /images/... paths or any URL — use a brand-appropriate placeholder when no specific image is given.",
   title: "Instagram Post",
   description:
     "An animated Instagram post card. Customize the author, photo, caption, and like count.",

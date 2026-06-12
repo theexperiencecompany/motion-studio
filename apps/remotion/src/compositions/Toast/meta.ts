@@ -17,6 +17,9 @@ export const toastDefaultProps: ToastProps = {
 
 export const toastInfo: CompositionInfo<ToastProps> = {
   id: "Toast",
+  category: "marketing",
+  agentNotes:
+    "Notification-style success/info banner that slides in. Use for 'it worked' / 'launched in 3s' / 'live now' beats after a demo. Title + short description. Keep both very short (notification copy length).",
   title: "Toast",
   description:
     "A configurable notification toast that slides in from any corner with a spring, holds, then fades out.",

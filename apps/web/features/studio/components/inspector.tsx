@@ -77,7 +77,9 @@ export function Inspector({
     clip.style?.backgroundColor ||
       clip.style?.textColor ||
       clip.style?.fontFamily ||
-      clip.style?.accentColor,
+      clip.style?.accentColor ||
+      clip.style?.backgroundScene ||
+      clip.style?.theme,
   );
   const hasTransitionOverride = clip.transition !== undefined;
   const motionBadgeCount = (hasTransitionOverride ? 1 : 0) + clipEffects.length;
@@ -85,7 +87,7 @@ export function Inspector({
   const durationSec = (clip.durationInFrames / fps).toFixed(1);
 
   return (
-    <aside className="flex h-full min-h-0 w-80 shrink-0 flex-col border-l border-border bg-background">
+    <aside className="flex h-full min-h-0 w-full flex-col border-l border-border bg-background">
       <div className="flex items-center justify-between gap-2 px-4 py-2.5">
         <div className="flex min-w-0 items-center gap-2">
           <p className="truncate text-sm font-medium text-foreground">
@@ -141,15 +143,19 @@ export function Inspector({
                 className="mt-0.5 size-3.5 shrink-0 text-muted-foreground"
               />
               <p className="text-[11px] leading-relaxed text-muted-foreground">
-                This composition uses authentic brand styling. Color and font
-                changes won&rsquo;t affect the preview.
+                {info.themes?.length
+                  ? "This composition uses authentic brand styling. Pick a curated theme to restyle it."
+                  : "This composition uses authentic brand styling. Color and font changes won’t affect the preview."}
               </p>
             </div>
           )}
           <ClipStyleSection
+            key={clip.id}
             style={clip.style}
             onPatch={onUpdateStyle}
             onReset={onResetStyle}
+            themes={info.themes}
+            locked={isLocked}
           />
         </TabsContent>
 

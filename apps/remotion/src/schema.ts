@@ -4,6 +4,19 @@ export type PrimitiveField =
   | { kind: "number"; key: string; label: string; min?: number; max?: number }
   | { kind: "color"; key: string; label: string }
   | { kind: "image"; key: string; label: string; placeholder?: string }
+  | {
+      /**
+       * Audio file picker. Uploads through /api/shorts/transcribe so the
+       * Whisper-derived word array can land on the same clip atomically.
+       * Stores the served URL under `key` and the CaptionWord[] under
+       * `wordsKey` on the same props object.
+       */
+      kind: "audio";
+      key: string;
+      wordsKey: string;
+      label: string;
+      placeholder?: string;
+    }
   | { kind: "switch"; key: string; label: string }
   | {
       kind: "select";
@@ -93,6 +106,25 @@ export type CalculatedMetadata = {
 };
 
 /**
+ * A curated, named skin a composition can declare. Unlike the free-form
+ * ClipStyle colors, a theme can restyle anything — materials, blur, bubble
+ * shapes, chrome — so brand-locked compositions may declare themes too
+ * (each theme is a hand-built look, not arbitrary recoloring).
+ *
+ * Convention: the FIRST entry is the composition's default look. Selecting
+ * it clears the override (`clip.style.theme = undefined`), so components
+ * only need to branch on their non-default theme ids.
+ *
+ * The selected id is forwarded to the component as a `clipTheme?: string`
+ * prop by `Project.tsx` — for locked and non-locked compositions alike.
+ */
+export type CompositionTheme = {
+  id: string;
+  label: string;
+  description?: string;
+};
+
+/**
  * brandMode controls whether a composition inherits the project Brand Kit:
  *   - "branded" (default): accent / background / font fall back to the brand
  *     when the per-clip prop is omitted or empty.
@@ -117,6 +149,33 @@ export type BrandMode = "branded" | "locked";
  */
 export type PhoneFitMode = "cover" | "width" | "contain";
 
+/**
+ * Coarse grouping used by the agent's discovery flow. The system prompt
+ * lists categories; the agent calls `listScenesInCategory` to drill in,
+ * then `getSceneDetails` for the specific compositions it picks. Keeps
+ * the prompt constant-size as the registry grows.
+ *
+ *   text         — title/text animations (TextX, TitleX)
+ *   social       — chat & post impersonators (Tweet, Slack, WhatsApp, …)
+ *   data         — charts, counters, stats
+ *   devtools     — terminal, browser, cursor, typing demos
+ *   marketing    — feature/pricing/testimonial cards, logos, toast
+ *   layout       — wrapper compositions (PhoneFrame, LaptopFrame, Split)
+ *   captions     — voiceover-driven caption tracks
+ *   media        — images, QR codes, marquees, scenario players
+ *   background   — ambient looping backdrops (gradients, grids, particles)
+ */
+export type CompositionCategory =
+  | "text"
+  | "social"
+  | "data"
+  | "devtools"
+  | "marketing"
+  | "layout"
+  | "captions"
+  | "media"
+  | "background";
+
 export type CompositionInfo<P extends Record<string, unknown>> = {
   id: string;
   title: string;
@@ -129,6 +188,38 @@ export type CompositionInfo<P extends Record<string, unknown>> = {
   fields: Field[];
   brandMode?: BrandMode;
   phoneFitMode?: PhoneFitMode;
+  /**
+   * Curated skins for this composition, surfaced as a Theme picker at the
+   * top of the Inspector's Style section. Works for locked compositions
+   * too (the picker is the only Style control they show). First entry =
+   * default look. See `CompositionTheme`.
+   */
+  themes?: CompositionTheme[];
+  /**
+   * Coarse category for agent discovery. Required so the agent's catalog
+   * stays comprehensive as new compositions land.
+   */
+  category: CompositionCategory;
+  /**
+   * When true, the studio agent never sees this composition — it's
+   * filtered out of the category counts, listScenesInCategory results,
+   * and getSceneDetails. Use for internal/branded scenes that exist for
+   * the team but shouldn't be picked by the LLM when generating user
+   * videos. The composition still appears in the studio library and
+   * docs surfaces.
+   */
+  hideFromAgent?: boolean;
+  /**
+   * Free-form, 1–3 sentence usage guidance for the studio agent —
+   * surfaced via `getSceneDetails`. Tell the model when to reach for
+   * this scene, what role it plays in a video, and what makes a good
+   * prop fill. Examples:
+   *   "Best for CLI install/build/deploy with 2–4 lines. Use for the
+   *    'how it works' beat in a launch video. Avoid for long-form."
+   *   "Use for Instagram-themed launches or social mockups. Pair the
+   *    InstagramPost reveal with a TextScaleDownFade hook."
+   */
+  agentNotes?: string;
   // Optional callback Remotion runs at studio load + every prop edit.
   // Use this to recompute durationInFrames (or any metadata) from
   // current props — e.g. GaiaScenario derives its length from the

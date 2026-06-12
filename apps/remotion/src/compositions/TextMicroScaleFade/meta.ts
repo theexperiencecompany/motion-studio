@@ -5,6 +5,7 @@ import type { TextMicroScaleFadeProps } from "./TextMicroScaleFade";
 export const textMicroScaleFadeInfo: CompositionInfo<TextMicroScaleFadeProps> =
   {
     id: "TextMicroScaleFade",
+    category: "text",
     title: "Scale Fade",
     description:
       "A calm, tiny scale pop used as subtle premium polish for labels and headings.",

@@ -14,6 +14,7 @@ export const titleSlideUpDefaultProps: TitleSlideUpProps = {
 
 export const titleSlideUpInfo: CompositionInfo<TitleSlideUpProps> = {
   id: "TitleSlideUp",
+  category: "text",
   title: "Slide Up",
   description:
     "An Apple-style intro: a bold headline that rises from a baseline word-by-word, with an optional subtitle that fades in below.",

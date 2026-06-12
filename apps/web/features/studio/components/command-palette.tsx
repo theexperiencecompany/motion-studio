@@ -24,7 +24,7 @@ type Props = {
   onSkipToStart: () => void;
   onSkipToEnd: () => void;
   onOpenLibrary: () => void;
-  onOpenAudio: () => void;
+  onOpenUpload: () => void;
   onSaveProject: () => void;
   onImportProject: () => void;
 };
@@ -50,7 +50,7 @@ export function CommandPalette({
   onSkipToStart,
   onSkipToEnd,
   onOpenLibrary,
-  onOpenAudio,
+  onOpenUpload,
   onSaveProject,
   onImportProject,
 }: Props) {
@@ -104,8 +104,8 @@ export function CommandPalette({
           <CommandItem onSelect={() => run(onOpenLibrary)}>
             Open library panel
           </CommandItem>
-          <CommandItem onSelect={() => run(onOpenAudio)}>
-            Open audio panel
+          <CommandItem onSelect={() => run(onOpenUpload)}>
+            Open upload panel
           </CommandItem>
           <CommandItem onSelect={() => run(onSaveProject)}>
             Save project (JSON)

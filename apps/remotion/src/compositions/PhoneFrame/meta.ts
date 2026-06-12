@@ -14,6 +14,7 @@ export const phoneFrameDefaultProps: PhoneFrameProps = {
 
 export const phoneFrameInfo: CompositionInfo<PhoneFrameProps> = {
   id: "PhoneFrame",
+  category: "layout",
   title: "Phone Frame",
   description:
     "Wraps any other composition inside a realistic iPhone mockup with a drop-in entrance.",
