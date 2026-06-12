@@ -3,6 +3,8 @@
 import {
   BubbleChatIcon,
   Delete02Icon,
+  DragDropVerticalIcon,
+  ImageAdd02Icon,
   Sent02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -15,14 +17,16 @@ import type { ChatMessage } from "./types";
 const FIRST_DELAY = 30;
 const GAP_FRAMES = 90;
 
-function computeTypingFrames(text: string): number {
-  return Math.max(45, Math.min(90, Math.round(text.length * 3.5)));
+function computeTypingFrames(m: ChatMessage): number {
+  // Photos get a short beat (a brief "..."), then drop in.
+  if (m.image) return 36;
+  return Math.max(45, Math.min(90, Math.round(m.text.length * 3.5)));
 }
 
 function recomputeTimings(messages: ChatMessage[]): ChatMessage[] {
   let cursor = FIRST_DELAY;
   return messages.map((m) => {
-    const typingFrames = computeTypingFrames(m.text);
+    const typingFrames = computeTypingFrames(m);
     const delay = cursor;
     cursor = delay + typingFrames + GAP_FRAMES;
     return { ...m, typingFrames, delay };
@@ -31,8 +35,11 @@ function recomputeTimings(messages: ChatMessage[]): ChatMessage[] {
 
 export function ChatEditor({ value, onChange }: EditorProps<ChatMessage[]>) {
   const [draft, setDraft] = useState("");
-  const [flashKey, setFlashKey] = useState(0);
-  const [flashedIndex, setFlashedIndex] = useState<number | null>(null);
+  // Drag-to-reorder state. `dragIndex` is the row being dragged; `dropGap` is
+  // the insertion slot (0…n) the drop line is currently showing.
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dropGap, setDropGap] = useState<number | null>(null);
+  const [fileOver, setFileOver] = useState(false);
 
   const lastSide = value[value.length - 1]?.side ?? "left";
   const nextSide: ChatMessage["side"] = lastSide === "left" ? "right" : "left";
@@ -49,12 +56,6 @@ export function ChatEditor({ value, onChange }: EditorProps<ChatMessage[]>) {
     prevLength.current = value.length;
   }, [value.length]);
 
-  useEffect(() => {
-    if (flashedIndex === null) return;
-    const t = setTimeout(() => setFlashedIndex(null), 500);
-    return () => clearTimeout(t);
-  }, [flashedIndex, flashKey]);
-
   function setMessages(next: ChatMessage[]) {
     onChange(recomputeTimings(next));
   }
@@ -67,6 +68,13 @@ export function ChatEditor({ value, onChange }: EditorProps<ChatMessage[]>) {
       { text: trimmed, side: nextSide, typingFrames: 0, delay: 0 },
     ]);
     setDraft("");
+  }
+
+  function addImage(dataUrl: string) {
+    setMessages([
+      ...value,
+      { text: "", side: nextSide, image: dataUrl, typingFrames: 0, delay: 0 },
+    ]);
   }
 
   function patchMessage(i: number, patch: Partial<ChatMessage>) {
@@ -84,8 +92,39 @@ export function ChatEditor({ value, onChange }: EditorProps<ChatMessage[]>) {
   function flipSide(i: number) {
     const cur = value[i]!;
     patchMessage(i, { side: cur.side === "left" ? "right" : "left" });
-    setFlashedIndex(i);
-    setFlashKey((k) => k + 1);
+  }
+
+  /** Auto-delete a bubble the moment it's left empty (no text, no image). */
+  function pruneIfEmpty(i: number) {
+    const m = value[i];
+    if (m && !m.image && !m.text.trim()) deleteMessage(i);
+  }
+
+  function reorder(from: number, gap: number) {
+    const next = value.slice();
+    const [item] = next.splice(from, 1);
+    if (!item) return;
+    const target = from < gap ? gap - 1 : gap;
+    next.splice(target, 0, item);
+    setMessages(next);
+  }
+
+  function onFiles(files: FileList | null) {
+    const images = Array.from(files ?? []).filter((f) =>
+      f.type.startsWith("image/"),
+    );
+    for (const file of images) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === "string") addImage(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  function resetDrag() {
+    setDragIndex(null);
+    setDropGap(null);
   }
 
   return (
@@ -93,21 +132,70 @@ export function ChatEditor({ value, onChange }: EditorProps<ChatMessage[]>) {
       className="flex h-full min-h-0 flex-col bg-background"
       style={{ ["--imessage-bg" as string]: "var(--background)" }}
     >
-      <div ref={scrollRef} className="flex-1 overflow-y-auto">
+      <div
+        ref={scrollRef}
+        className={cn(
+          "flex-1 overflow-y-auto transition-shadow",
+          fileOver && "ring-2 ring-inset ring-[#007AFF]",
+        )}
+        onDragOver={(e) => {
+          if (Array.from(e.dataTransfer.types).includes("Files")) {
+            e.preventDefault();
+            setFileOver(true);
+          }
+        }}
+        onDragLeave={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node))
+            setFileOver(false);
+        }}
+        onDrop={(e) => {
+          if (e.dataTransfer.files?.length) {
+            e.preventDefault();
+            onFiles(e.dataTransfer.files);
+          }
+          setFileOver(false);
+        }}
+      >
+        {fileOver && (
+          <div className="pointer-events-none sticky top-0 z-10 flex items-center justify-center gap-1.5 bg-[#007AFF]/10 py-1.5 text-[11px] font-medium text-[#007AFF]">
+            Drop photo to add it to the conversation
+          </div>
+        )}
         {value.length === 0 ? (
           <EmptyState />
         ) : (
-          <div className="space-y-2 px-5 py-6">
+          <div
+            className="px-3 py-5"
+            onDragLeave={(e) => {
+              // Only clear when truly leaving the list, not on child enter.
+              if (!e.currentTarget.contains(e.relatedTarget as Node))
+                setDropGap(null);
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              if (dragIndex !== null && dropGap !== null)
+                reorder(dragIndex, dropGap);
+              resetDrag();
+            }}
+          >
             {value.map((m, i) => (
-              <BubbleRow
-                key={i}
-                msg={m}
-                flashing={flashedIndex === i}
-                onText={(text) => patchMessage(i, { text })}
-                onFlip={() => flipSide(i)}
-                onDelete={() => deleteMessage(i)}
-              />
+              <div key={i}>
+                <DropLine active={dropGap === i} />
+                <BubbleRow
+                  msg={m}
+                  index={i}
+                  dragging={dragIndex === i}
+                  onText={(text) => patchMessage(i, { text })}
+                  onBlurEmpty={() => pruneIfEmpty(i)}
+                  onFlip={() => flipSide(i)}
+                  onDelete={() => deleteMessage(i)}
+                  onDragStart={() => setDragIndex(i)}
+                  onDragEnd={resetDrag}
+                  onHoverGap={(gap) => setDropGap(gap)}
+                />
+              </div>
             ))}
+            <DropLine active={dropGap === value.length} />
           </div>
         )}
       </div>
@@ -117,8 +205,20 @@ export function ChatEditor({ value, onChange }: EditorProps<ChatMessage[]>) {
         nextSide={nextSide}
         onDraftChange={setDraft}
         onSend={() => addMessage(draft)}
+        onPickFiles={onFiles}
       />
     </div>
+  );
+}
+
+function DropLine({ active }: { active: boolean }) {
+  return (
+    <div
+      className={cn(
+        "mx-2 my-1 h-0.5 rounded-full transition-all duration-100",
+        active ? "bg-[#007AFF]" : "bg-transparent",
+      )}
+    />
   );
 }
 
@@ -135,7 +235,7 @@ function EmptyState() {
       <div>
         <p className="text-sm font-medium">No messages yet</p>
         <p className="mt-1 text-[12px] text-muted-foreground">
-          Type below. Tap a bubble to flip its side.
+          Type below or attach a photo. Drag the handle to reorder.
         </p>
       </div>
     </div>
@@ -144,20 +244,60 @@ function EmptyState() {
 
 function BubbleRow({
   msg,
-  flashing,
+  index,
+  dragging,
   onText,
+  onBlurEmpty,
   onFlip,
   onDelete,
+  onDragStart,
+  onDragEnd,
+  onHoverGap,
 }: {
   msg: ChatMessage;
-  flashing: boolean;
+  index: number;
+  dragging: boolean;
   onText: (t: string) => void;
+  onBlurEmpty: () => void;
   onFlip: () => void;
   onDelete: () => void;
+  onDragStart: () => void;
+  onDragEnd: () => void;
+  onHoverGap: (gap: number) => void;
 }) {
   const isRight = msg.side === "right";
   return (
-    <div className="group flex w-full items-center gap-2">
+    <div
+      className={cn(
+        "group flex w-full items-center gap-1.5 transition-opacity",
+        dragging && "opacity-40",
+      )}
+      onDragOver={(e) => {
+        // Reordering is in progress (a row sets dataTransfer); pick the gap by
+        // which half of this row the cursor is over.
+        e.preventDefault();
+        const r = e.currentTarget.getBoundingClientRect();
+        const before = e.clientY < r.top + r.height / 2;
+        onHoverGap(before ? index : index + 1);
+      }}
+    >
+      {/* Drag handle — only this initiates the native drag, so the textarea
+          stays freely editable. */}
+      <button
+        type="button"
+        draggable
+        onDragStart={(e) => {
+          e.dataTransfer.effectAllowed = "move";
+          e.dataTransfer.setData("text/plain", String(index));
+          onDragStart();
+        }}
+        onDragEnd={onDragEnd}
+        title="Drag to reorder"
+        className="flex size-7 shrink-0 cursor-grab items-center justify-center rounded-md text-muted-foreground/50 opacity-0 transition-opacity hover:bg-muted hover:text-muted-foreground active:cursor-grabbing group-hover:opacity-100"
+      >
+        <HugeiconsIcon icon={DragDropVerticalIcon} size={16} />
+      </button>
+
       <div
         className="transition-[flex-grow] duration-300 ease-out"
         style={{ flexGrow: isRight ? 1 : 0, flexShrink: 0, flexBasis: 0 }}
@@ -166,13 +306,17 @@ function BubbleRow({
 
       {isRight && <DeleteAction onDelete={onDelete} />}
 
-      <BubbleBody
-        msg={msg}
-        isRight={isRight}
-        flashing={flashing}
-        onText={onText}
-        onFlip={onFlip}
-      />
+      {msg.image ? (
+        <ImageBubbleEditor src={msg.image} isRight={isRight} onFlip={onFlip} />
+      ) : (
+        <BubbleBody
+          msg={msg}
+          isRight={isRight}
+          onText={onText}
+          onBlurEmpty={onBlurEmpty}
+          onFlip={onFlip}
+        />
+      )}
 
       {!isRight && <DeleteAction onDelete={onDelete} />}
 
@@ -185,17 +329,47 @@ function BubbleRow({
   );
 }
 
+function ImageBubbleEditor({
+  src,
+  isRight,
+  onFlip,
+}: {
+  src: string;
+  isRight: boolean;
+  onFlip: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onFlip}
+      title="Tap to flip side"
+      className={cn(
+        "block max-w-[60%] cursor-pointer overflow-hidden rounded-2xl border shadow-sm transition-transform hover:scale-[1.02]",
+        isRight ? "border-[#007AFF]/30" : "border-border",
+      )}
+    >
+      {/* biome-ignore lint/a11y/useAltText: editor preview only */}
+      {/* eslint-disable-next-line @remotion/warn-native-media-tag */}
+      <img
+        src={src}
+        alt=""
+        className="block h-auto max-h-40 w-full object-cover"
+      />
+    </button>
+  );
+}
+
 function BubbleBody({
   msg,
   isRight,
-  flashing,
   onText,
+  onBlurEmpty,
   onFlip,
 }: {
   msg: ChatMessage;
   isRight: boolean;
-  flashing: boolean;
   onText: (t: string) => void;
+  onBlurEmpty: () => void;
   onFlip: () => void;
 }) {
   return (
@@ -214,15 +388,12 @@ function BubbleBody({
       title="Tap to flip side"
       className={`imessage-bubble ${
         isRight ? "imessage-from-me" : "imessage-from-them"
-      } max-w-[78%] cursor-pointer px-4 py-2 transition-[transform,box-shadow] duration-300 ease-out ${
-        flashing
-          ? "ring-2 ring-offset-4 ring-offset-background ring-foreground scale-[1.04]"
-          : ""
-      }`}
+      } max-w-[78%] cursor-pointer px-4 py-2`}
     >
       <textarea
         value={msg.text}
         onChange={(e) => onText(e.target.value)}
+        onBlur={onBlurEmpty}
         onClick={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
         rows={1}
@@ -264,16 +435,39 @@ function Composer({
   nextSide,
   onDraftChange,
   onSend,
+  onPickFiles,
 }: {
   draft: string;
   nextSide: ChatMessage["side"];
   onDraftChange: (v: string) => void;
   onSend: () => void;
+  onPickFiles: (files: FileList | null) => void;
 }) {
   const canSend = draft.trim().length > 0;
   return (
     <div className="shrink-0 border-t border-border bg-background px-5 py-4">
       <div className="flex items-center gap-2">
+        {/* The file <input> itself is the click target — stretched over the
+            icon at opacity 0 — so the native picker always opens (no label
+            forwarding or programmatic .click() that can silently no-op). */}
+        <div className="relative flex size-10 shrink-0 items-center justify-center rounded-full border border-border bg-background transition-colors hover:bg-muted">
+          <HugeiconsIcon
+            icon={ImageAdd02Icon}
+            size={18}
+            className="pointer-events-none"
+          />
+          <input
+            type="file"
+            accept="image/*"
+            aria-label="Attach photo"
+            title="Attach photo"
+            onChange={(e) => {
+              onPickFiles(e.target.files);
+              e.target.value = "";
+            }}
+            className="absolute inset-0 cursor-pointer opacity-0"
+          />
+        </div>
         <input
           value={draft}
           onChange={(e) => onDraftChange(e.target.value)}

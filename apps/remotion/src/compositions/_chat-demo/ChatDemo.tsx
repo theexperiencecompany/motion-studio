@@ -1,10 +1,20 @@
 "use client";
 
 import { cn } from "@workspace/ui/lib/utils";
-import { Img, spring, staticFile, useVideoConfig } from "remotion";
+import { useId, useLayoutEffect, useState } from "react";
+import {
+  continueRender,
+  delayRender,
+  Img,
+  spring,
+  staticFile,
+  useVideoConfig,
+} from "remotion";
 import { proxyExternalImg } from "../../proxy-image";
 import { snap } from "../../snap";
 import { useDesignFrame } from "../../use-design-frame";
+import { Keyboard } from "./Keyboard";
+import { GlassStage, LiquidGlass } from "./LiquidGlass";
 
 // Remotion's bundle server only serves public/ assets through `staticFile()`
 // — literal "/foo.png" strings fail with 404 inside `remotion render`. This
@@ -84,6 +94,8 @@ export interface ChatMessageItem {
   id?: string | number;
   from?: "me" | "them";
   text?: string;
+  /** Photo attachment (data URL or asset path) — renders an image bubble. */
+  image?: string;
   time?: string;
   author?: string;
   authorColor?: string;
@@ -146,6 +158,20 @@ export interface ChatDemoProps {
   showComposer?: boolean;
   theme?: "light" | "dark";
   className?: string;
+  /** iMessage only: custom wallpaper behind the conversation. */
+  backgroundImage?: string;
+  /** iMessage only: render composer / buttons / incoming bubbles as WebGL liquid glass. */
+  liquidGlass?: boolean;
+  /** iMessage only: show the on-screen keyboard typing out outgoing messages. */
+  showKeyboard?: boolean;
+  /** iMessage only: text currently shown in the composer (drives "typing"). */
+  composerText?: string;
+  /** iMessage only: key currently pressed on the keyboard (lowercased / " "). */
+  pressedKey?: string | null;
+  /** iMessage only: 0→1 press-pop progress for the active key. */
+  pressT?: number;
+  /** iMessage only: 0→1 keyboard slide-up progress. */
+  keyboardOpen?: number;
 }
 
 const DEFAULT_AVATAR = "/gaia-glow.png";
@@ -166,6 +192,13 @@ export function ChatDemo({
   showComposer = true,
   theme,
   className,
+  backgroundImage,
+  liquidGlass,
+  showKeyboard,
+  composerText,
+  pressedKey,
+  pressT,
+  keyboardOpen,
 }: ChatDemoProps) {
   switch (platform) {
     case "imessage":
@@ -177,6 +210,14 @@ export function ChatDemo({
           headerAvatar={headerAvatar ?? DEFAULT_AVATAR}
           showComposer={showComposer}
           className={className}
+          backgroundImage={backgroundImage}
+          liquidGlass={liquidGlass}
+          theme={theme}
+          showKeyboard={showKeyboard}
+          composerText={composerText}
+          pressedKey={pressedKey}
+          pressT={pressT}
+          keyboardOpen={keyboardOpen}
         />
       );
     case "whatsapp":
@@ -244,6 +285,8 @@ interface CurvedBubbleProps {
   /** Inline meta (time / ticks) shown at bottom-right of the bubble */
   meta?: React.ReactNode;
   maxWidthPct?: number;
+  /** Render the bubble as frosted glass (translucent fill + backdrop blur). */
+  frosted?: boolean;
 }
 
 function CurvedBubble({
@@ -255,44 +298,69 @@ function CurvedBubble({
   children,
   meta,
   maxWidthPct = 100,
+  frosted = false,
 }: CurvedBubbleProps) {
   const isMe = from === "me";
+  const innerStyle: React.CSSProperties = {
+    color,
+    padding: "7px 13px 8px",
+    borderRadius: 18,
+    fontSize: 15.5,
+    lineHeight: "20px",
+    letterSpacing: "-0.01em",
+    wordBreak: "break-word",
+    position: "relative",
+    whiteSpace: "pre-wrap",
+  };
+  const inner = (
+    <>
+      {children}
+      {meta && (
+        <span
+          style={{
+            display: "inline-block",
+            verticalAlign: "bottom",
+            marginLeft: 6,
+            marginRight: -2,
+            marginBottom: -1,
+            fontSize: 11,
+            lineHeight: "14px",
+            letterSpacing: "-0.01em",
+            whiteSpace: "nowrap",
+            opacity: 0.95,
+          }}
+        >
+          {meta}
+        </span>
+      )}
+    </>
+  );
+
+  // Frosted (glossy) incoming bubble — rendered through the WebGL canvas so the
+  // blur is reliable and the tail is part of the SAME shape (no DOM seam).
+  if (frosted) {
+    return (
+      <div className="relative" style={{ maxWidth: `${maxWidthPct}%` }}>
+        <LiquidGlass
+          radius={18}
+          frost
+          tail={tail ? (isMe ? "right" : "left") : null}
+          style={innerStyle}
+          glassStyle={{
+            background,
+            backdropFilter: "blur(18px)",
+            WebkitBackdropFilter: "blur(18px)",
+          }}
+        >
+          {inner}
+        </LiquidGlass>
+      </div>
+    );
+  }
+
   return (
     <div className="relative" style={{ maxWidth: `${maxWidthPct}%` }}>
-      <div
-        style={{
-          background,
-          color,
-          padding: "7px 13px 8px",
-          borderRadius: 18,
-          fontSize: 15.5,
-          lineHeight: "20px",
-          letterSpacing: "-0.01em",
-          wordBreak: "break-word",
-          position: "relative",
-          whiteSpace: "pre-wrap",
-        }}
-      >
-        {children}
-        {meta && (
-          <span
-            style={{
-              display: "inline-block",
-              verticalAlign: "bottom",
-              marginLeft: 6,
-              marginRight: -2,
-              marginBottom: -1,
-              fontSize: 11,
-              lineHeight: "14px",
-              letterSpacing: "-0.01em",
-              whiteSpace: "nowrap",
-              opacity: 0.95,
-            }}
-          >
-            {meta}
-          </span>
-        )}
-      </div>
+      <div style={{ ...innerStyle, background }}>{inner}</div>
       {tail && (
         <span
           aria-hidden="true"
@@ -307,6 +375,121 @@ function CurvedBubble({
           }}
         />
       )}
+    </div>
+  );
+}
+
+/**
+ * Measure an image's natural aspect ratio (w / h). Blocks the render (via
+ * delayRender) until the bitmap loads so `remotion render` waits for the real
+ * dimensions instead of capturing a default-sized box. Returns null until known.
+ */
+function useImageAspect(src: string | undefined): number | null {
+  const [aspect, setAspect] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    if (!src) {
+      setAspect(null);
+      return;
+    }
+    const handle = delayRender(`img-aspect:${src.slice(0, 48)}`);
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    let done = false;
+    const finish = (a: number) => {
+      if (done) return;
+      done = true;
+      setAspect(a);
+      continueRender(handle);
+    };
+    img.onload = () =>
+      finish((img.naturalWidth || 1) / (img.naturalHeight || 1));
+    img.onerror = () => finish(0.72);
+    img.src = src;
+    return () => {
+      if (!done) {
+        done = true;
+        continueRender(handle);
+      }
+    };
+  }, [src]);
+  return aspect;
+}
+
+/**
+ * iMessage photo bubble. The photo is masked into ONE continuous silhouette —
+ * a rounded rectangle whose bottom corner extends into the curved tail — using
+ * a single `clip-path` with two sub-paths (rounded body + tail) on a single
+ * element. Doing it as one shape (instead of a rounded body div + a separate
+ * tail) is what makes the tail actually read: the body's corner radius no
+ * longer cuts away the spot the tail attaches to, so the photo flows straight
+ * out into the wick. `drop-shadow` (not box-shadow) follows the clipped shape.
+ */
+function ImageBubble({
+  src,
+  from,
+  tail,
+}: {
+  src: string;
+  from: "me" | "them";
+  tail: boolean;
+}) {
+  const isMe = from === "me";
+  const resolved = asset(src) ?? src;
+  const aspect = useImageAspect(resolved);
+
+  const W = 210; // body width (design px)
+  const overhang = 7; // how far the tail pokes past the body
+  const r = 18; // body corner radius
+  const boxW = W + (tail ? overhang : 0);
+  const a = aspect ?? 0.72;
+  const H = Math.round(Math.min(320, Math.max(130, boxW / a)));
+
+  // Body sits flush to the tail side; the tail's overhang is the extra width.
+  const bx = tail && !isMe ? overhang : 0;
+  const ty = H - 18;
+
+  const body = `M ${bx + r} 0 H ${bx + W - r} A ${r} ${r} 0 0 1 ${bx + W} ${r} V ${H - r} A ${r} ${r} 0 0 1 ${bx + W - r} ${H} H ${bx + r} A ${r} ${r} 0 0 1 ${bx} ${H - r} V ${r} A ${r} ${r} 0 0 1 ${bx + r} 0 Z`;
+
+  // Tail sub-path, wound the SAME direction as the body so nonzero fill unions
+  // them cleanly (no notch). Geometry mirrors the text-bubble tails.
+  const tx = isMe ? bx + W - 13 : 0;
+  const tailPath = isMe
+    ? `M ${tx} ${ty} L ${tx} ${ty + 2} A 16 16 0 0 0 ${tx + 16} ${ty + 18} L ${tx + 20} ${ty + 18} L ${tx + 20} ${ty + 17.54} A 10 10 0 0 1 ${tx + 13} ${ty + 8} L ${tx + 13} ${ty} Z`
+    : `M ${tx + 20} ${ty} L ${tx + 20} ${ty + 2} A 16 16 0 0 1 ${tx + 4} ${ty + 18} L ${tx} ${ty + 18} L ${tx} ${ty + 17.54} A 10 10 0 0 0 ${tx + 7} ${ty + 8} L ${tx + 7} ${ty} Z`;
+
+  // Union the body + tail via an SVG <clipPath>: SVG clip children always union
+  // (no winding/fill-rule gotcha that left a white notch where the two shapes
+  // overlapped with a CSS path()).
+  const clipId = useId().replace(/[^a-zA-Z0-9_-]/g, "");
+
+  return (
+    <div style={{ width: boxW, height: H }}>
+      <svg
+        width="0"
+        height="0"
+        aria-hidden="true"
+        style={{ position: "absolute", width: 0, height: 0 }}
+      >
+        <defs>
+          <clipPath id={clipId} clipPathUnits="userSpaceOnUse">
+            <path d={body} />
+            {tail && <path d={tailPath} />}
+          </clipPath>
+        </defs>
+      </svg>
+      <div
+        style={{
+          width: boxW,
+          height: H,
+          backgroundImage: `url('${resolved}')`,
+          backgroundSize: `${boxW}px ${H}px`,
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "0 0",
+          clipPath: `url(#${clipId})`,
+          WebkitClipPath: `url(#${clipId})`,
+          filter: "drop-shadow(0 1px 1.5px rgba(0,0,0,0.22))",
+        }}
+      />
     </div>
   );
 }
@@ -331,9 +514,13 @@ function curvedThread(messages: ChatMessageItem[]): CurvedThread[] {
  * iMessage
  * ========================================================================= */
 
+// Exact iMessage bubble palette (iOS).
+//  • Sent (blue) — same gradient in light & dark, white text.
+//  • Received (gray) — Apple uses #E9E9EB in light, #3B3B3D in dark.
 const IMESSAGE_GRADIENT = "linear-gradient(180deg, #309BFE 0%, #027BFF 100%)";
-const IMESSAGE_THEM_BG = "#E9E9EB";
 const IMESSAGE_TAIL_ME_COLOR = "#0E89FF";
+const IMESSAGE_THEM_BG_LIGHT = "#E9E9EB";
+const IMESSAGE_THEM_BG_DARK = "#3B3B3D";
 
 function IMessageDemo({
   messages,
@@ -342,6 +529,14 @@ function IMessageDemo({
   headerAvatar,
   showComposer,
   className,
+  backgroundImage,
+  liquidGlass,
+  theme = "light",
+  showKeyboard = false,
+  composerText = "",
+  pressedKey = null,
+  pressT = 0,
+  keyboardOpen = 1,
 }: {
   messages: ChatMessageItem[];
   title?: string;
@@ -349,179 +544,451 @@ function IMessageDemo({
   headerAvatar?: string;
   showComposer: boolean;
   className?: string;
+  backgroundImage?: string;
+  liquidGlass?: boolean;
+  theme?: "light" | "dark";
+  showKeyboard?: boolean;
+  composerText?: string;
+  pressedKey?: string | null;
+  pressT?: number;
+  keyboardOpen?: number;
 }) {
   const grouped = curvedThread(messages);
+  const hasBg = !!backgroundImage;
+  // Glass runs with or without a wallpaper. With one it refracts the image;
+  // without, it refracts the solid sheet and draws a self-defining adaptive
+  // edge so the buttons/composer still read as liquid glass.
+  const glassOn = !!liquidGlass;
+  const dark = theme === "dark";
+
+  // The chat sheet (when there's no wallpaper) follows the appearance.
+  const sheetBg = dark ? "#000000" : "#ffffff";
+  // Chrome text/icons go light over a wallpaper OR in dark mode.
+  const lightUI = hasBg || dark;
+  const headerText = lightUI ? "#ffffff" : "#000000";
+  // Received bubbles use Apple's exact grays per appearance; sent stays blue.
+  const themText = dark ? "#ffffff" : "#000000";
+  const themBubbleBg = dark ? IMESSAGE_THEM_BG_DARK : IMESSAGE_THEM_BG_LIGHT;
+  // The header/composer strips must NOT paint an opaque sheet color over the
+  // WebGL glass canvas, or the glass chrome (buttons, name chip, composer pill)
+  // is buried and only the bare icons show. Whenever glass is on we keep the
+  // strips transparent so the canvas — drawn over the GlassStage's own solid
+  // backdrop (sheetBg) — shows through. Only the plain, non-glass mode paints
+  // the sheet color here.
+  const chromeBg = hasBg || glassOn ? "transparent" : sheetBg;
+  const chipBg = hasBg
+    ? "rgba(120,120,128,0.42)"
+    : dark
+      ? "rgba(120,120,128,0.32)"
+      : "#E9E9EB";
+  // Fallback look for the glass chrome (back/FaceTime/plus buttons + name
+  // chip) when WebGL glass is off — a CSS frosted pill so the non-glass mode
+  // still reads as iOS glass instead of a flat gray blob over the wallpaper.
+  const chromeGlassStyle: React.CSSProperties = hasBg
+    ? {
+        background: chipBg,
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+      }
+    : { background: chipBg };
+  // Back/FaceTime icons go white whenever the surface behind them is dark — a
+  // wallpaper or dark appearance — so they read on the translucent glass. On a
+  // plain light sheet they stay the iOS blue accent (white would vanish).
+  const iconColor = lightUI ? "#ffffff" : "#0a84ff";
+  const groupTimeColor = lightUI
+    ? "rgba(255,255,255,0.85)"
+    : "rgba(60,60,67,0.6)";
+
   return (
-    <div
-      className={cn("flex h-full flex-col", className)}
-      style={{ background: "#ffffff", fontFamily: SF_STACK, color: "#000" }}
+    <GlassStage
+      enabled={glassOn}
+      bgImage={backgroundImage}
+      bgColor={sheetBg}
+      className={cn("h-full", className)}
+      style={{ fontFamily: SF_STACK }}
     >
-      <div
-        className="flex shrink-0 flex-col items-center justify-center"
-        style={{ background: "#ffffff", padding: "2px 16px 10px" }}
-      >
+      <div className="flex h-full flex-col">
+        {/* Header — back chevron + avatar/name chip + FaceTime, glass chrome */}
         <div
-          className="overflow-hidden rounded-full"
-          style={{ width: 54, height: 54, marginBottom: 5 }}
+          className="relative flex shrink-0 flex-col items-center justify-center"
+          style={{ background: chromeBg, padding: "6px 16px 12px" }}
         >
-          <Img
-            src={asset(headerAvatar) ?? ""}
-            crossOrigin="anonymous"
-            alt=""
-            style={{ width: 54, height: 54, objectFit: "cover" }}
-          />
-        </div>
-        <div
-          className="flex items-center"
-          style={{ fontSize: 14, color: "#000", fontWeight: 600, gap: 3 }}
-        >
-          <span style={{ letterSpacing: "-0.01em" }}>{title ?? "GAIA"}</span>
-          <svg width="5" height="8" viewBox="0 0 7 11" fill="none" aria-hidden>
-            <path
-              d="M1 1l4.5 4.5L1 10"
-              stroke="rgba(60,60,67,0.28)"
-              strokeWidth="1.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </div>
-        {subtitle && (
-          <span
-            style={{ fontSize: 11, color: "rgba(60,60,67,0.55)", marginTop: 2 }}
-          >
-            {subtitle}
-          </span>
-        )}
-      </div>
-
-      <div
-        className="flex flex-1 flex-col overflow-y-auto px-3 pb-3"
-        style={{ scrollbarWidth: "none", gap: 8 }}
-      >
-        {grouped.map((group, gi) => {
-          const groupTime = group.items[0]?.time;
-          return (
-            <div key={gi} className="flex flex-col" style={{ gap: 8 }}>
-              {groupTime && (
-                <div
-                  className="self-center text-center"
-                  style={{
-                    fontSize: 11,
-                    color: "rgba(60,60,67,0.6)",
-                    fontWeight: 500,
-                    letterSpacing: "-0.01em",
-                    marginTop: gi === 0 ? 4 : 6,
-                  }}
-                >
-                  {groupTime}
-                </div>
-              )}
-              <div
-                className={cn(
-                  "flex flex-col",
-                  group.from === "me" ? "items-end" : "items-start",
-                )}
-                style={{ gap: 2 }}
-              >
-                {group.items.map((m, i) => {
-                  const isLast = i === group.items.length - 1;
-                  const isMe = group.from === "me";
-                  return (
-                    <BubbleEnter
-                      key={m.id ?? `${gi}-${i}`}
-                      enterFrames={m.enterFrames}
-                      from={group.from}
-                    >
-                      <CurvedBubble
-                        from={group.from}
-                        tail={isLast}
-                        background={isMe ? IMESSAGE_GRADIENT : IMESSAGE_THEM_BG}
-                        tailColor={
-                          isMe ? IMESSAGE_TAIL_ME_COLOR : IMESSAGE_THEM_BG
-                        }
-                        color={isMe ? "#fff" : "#000"}
-                      >
-                        {m.typing ? (
-                          <TypingDots
-                            color={isMe ? "rgba(255,255,255,0.9)" : "#8e8e93"}
-                          />
-                        ) : (
-                          m.text
-                        )}
-                      </CurvedBubble>
-                    </BubbleEnter>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {showComposer && (
-        <div
-          className="flex shrink-0 items-end gap-2 px-2 pt-2 pb-1"
-          style={{ background: "#ffffff" }}
-        >
-          <button
-            type="button"
-            aria-label="More"
-            className="flex shrink-0 cursor-pointer items-center justify-center rounded-full transition-[filter,background] duration-150 hover:brightness-95 active:brightness-90"
-            style={{
-              width: 30,
-              height: 30,
-              background: "#E9E9EB",
-              color: "rgba(60,60,67,0.7)",
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden>
-              <path
-                d="M7 1v12M1 7h12"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-              />
-            </svg>
-          </button>
-          <div
-            className="flex flex-1 items-center justify-between"
-            style={{
-              border: "1px solid rgba(60,60,67,0.18)",
-              borderRadius: 18,
-              padding: "5px 8px 5px 12px",
-              background: "#fff",
-              minHeight: 32,
-            }}
-          >
-            <input
-              type="text"
-              placeholder="iMessage"
-              className="chat-demo-input min-w-0 flex-1 border-0 bg-transparent p-0 outline-none placeholder:text-[rgba(60,60,67,0.5)]"
+          <div style={{ position: "absolute", left: 12, top: 8 }}>
+            <LiquidGlass
+              radius={20}
               style={{
-                fontSize: 15,
-                color: "#000",
-                letterSpacing: "-0.01em",
-                fontFamily: "inherit",
+                width: 40,
+                height: 40,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: iconColor,
               }}
-            />
-            <button
-              type="button"
-              aria-label="Audio"
-              className="ml-2 flex cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-black/[0.06]"
-              style={{ color: "rgba(60,60,67,0.7)", width: 22, height: 22 }}
+              glassStyle={chromeGlassStyle}
             >
-              <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
+              <svg
+                width="13"
+                height="22"
+                viewBox="0 0 12 20"
+                fill="none"
+                aria-hidden
+              >
                 <path
-                  d="M8 1.5a2 2 0 0 0-2 2v4a2 2 0 0 0 4 0v-4a2 2 0 0 0-2-2Zm4 6a4 4 0 0 1-8 0H3a5 5 0 0 0 4.5 5V14h1v-1.5A5 5 0 0 0 13 7.5h-1Z"
+                  d="M9 2 2 10l7 8"
+                  stroke="currentColor"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </LiquidGlass>
+          </div>
+
+          <div style={{ position: "absolute", right: 12, top: 8 }}>
+            <LiquidGlass
+              radius={20}
+              style={{
+                width: 40,
+                height: 40,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: iconColor,
+              }}
+              glassStyle={chromeGlassStyle}
+            >
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden
+              >
+                <rect
+                  x="2.5"
+                  y="6.5"
+                  width="12"
+                  height="11"
+                  rx="3"
+                  fill="currentColor"
+                />
+                <path
+                  d="M15 10.2l5.2-3.1c.5-.3 1.1.06 1.1.64v8.5c0 .58-.6.94-1.1.64L15 13.8z"
                   fill="currentColor"
                 />
               </svg>
-            </button>
+            </LiquidGlass>
           </div>
+
+          <div
+            className="overflow-hidden rounded-full"
+            style={{
+              width: 54,
+              height: 54,
+              marginBottom: -7,
+              position: "relative",
+              zIndex: 1,
+            }}
+          >
+            <Img
+              src={asset(headerAvatar) ?? ""}
+              crossOrigin="anonymous"
+              alt=""
+              style={{ width: 54, height: 54, objectFit: "cover" }}
+            />
+          </div>
+
+          <LiquidGlass
+            radius={19}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+              padding: "11px 14px 8px",
+              color: headerText,
+              fontSize: 13,
+              fontWeight: 600,
+              position: "relative",
+              zIndex: 0,
+            }}
+            glassStyle={chromeGlassStyle}
+          >
+            <span style={{ letterSpacing: "-0.01em", lineHeight: 1 }}>
+              {title ?? "GAIA"}
+            </span>
+            <svg
+              width="5"
+              height="8"
+              viewBox="0 0 7 11"
+              fill="none"
+              aria-hidden
+              style={{ display: "block", flexShrink: 0 }}
+            >
+              <path
+                d="M1 1l4.5 4.5L1 10"
+                stroke={lightUI ? "#B0B0B6" : "#8E8E93"}
+                strokeWidth="1.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </LiquidGlass>
+
+          {subtitle && (
+            <span
+              style={{
+                fontSize: 11,
+                color: hasBg ? "rgba(255,255,255,0.7)" : "rgba(60,60,67,0.55)",
+                marginTop: 3,
+              }}
+            >
+              {subtitle}
+            </span>
+          )}
         </div>
-      )}
-    </div>
+
+        <div
+          className="flex flex-1 flex-col overflow-y-auto px-3 pb-3"
+          style={{
+            scrollbarWidth: "none",
+            gap: 8,
+            // Always anchor the thread to the bottom, like real iMessage: the
+            // newest message sits just above the composer and older ones scroll
+            // up off the top as the conversation grows. This is what keeps a
+            // long conversation "auto-scrolled" to the latest bubble (and stops
+            // a final photo/message from overflowing below the visible area).
+            justifyContent: "flex-end",
+          }}
+        >
+          {grouped.map((group, gi) => {
+            const groupTime = group.items[0]?.time;
+            return (
+              <div key={gi} className="flex flex-col" style={{ gap: 8 }}>
+                {groupTime && (
+                  <div
+                    className="self-center text-center"
+                    style={{
+                      fontSize: 11,
+                      color: groupTimeColor,
+                      fontWeight: 500,
+                      letterSpacing: "-0.01em",
+                      marginTop: gi === 0 ? 4 : 6,
+                    }}
+                  >
+                    {groupTime}
+                  </div>
+                )}
+                <div
+                  className={cn(
+                    "flex flex-col",
+                    group.from === "me" ? "items-end" : "items-start",
+                  )}
+                  style={{ gap: 2 }}
+                >
+                  {group.items.map((m, i) => {
+                    const isLast = i === group.items.length - 1;
+                    const isMe = group.from === "me";
+                    return (
+                      <BubbleEnter
+                        key={m.id ?? `${gi}-${i}`}
+                        enterFrames={m.enterFrames}
+                        from={group.from}
+                      >
+                        {m.image && !m.typing ? (
+                          <ImageBubble
+                            src={m.image}
+                            from={group.from}
+                            tail={isLast}
+                          />
+                        ) : (
+                          <CurvedBubble
+                            from={group.from}
+                            tail={isLast}
+                            background={isMe ? IMESSAGE_GRADIENT : themBubbleBg}
+                            tailColor={
+                              isMe ? IMESSAGE_TAIL_ME_COLOR : themBubbleBg
+                            }
+                            color={isMe ? "#fff" : themText}
+                          >
+                            {m.typing ? (
+                              <TypingDots
+                                color={
+                                  isMe ? "rgba(255,255,255,0.9)" : "#8e8e93"
+                                }
+                              />
+                            ) : (
+                              m.text
+                            )}
+                          </CurvedBubble>
+                        )}
+                      </BubbleEnter>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {(showComposer || showKeyboard) && (
+          <div
+            className="flex shrink-0 items-end gap-2.5 px-4 pt-2 pb-1.5"
+            style={{ background: chromeBg }}
+          >
+            <LiquidGlass
+              radius={18}
+              style={{
+                width: 36,
+                height: 36,
+                flexShrink: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: lightUI ? "#ffffff" : "rgba(60,60,67,0.7)",
+              }}
+              glassStyle={chromeGlassStyle}
+            >
+              <svg width="17" height="17" viewBox="0 0 14 14" aria-hidden>
+                <path
+                  d="M7 1v12M1 7h12"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </LiquidGlass>
+            <LiquidGlass
+              radius={18}
+              style={{
+                display: "flex",
+                flex: 1,
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "0 8px 0 14px",
+                // Fixed height (radius 18 = a perfect pill) so the composer
+                // doesn't grow/round-shift when the taller send button appears.
+                height: 36,
+              }}
+              glassStyle={
+                hasBg
+                  ? {
+                      background: "rgba(40,40,44,0.45)",
+                      border: "1px solid rgba(255,255,255,0.18)",
+                      backdropFilter: "blur(20px)",
+                      WebkitBackdropFilter: "blur(20px)",
+                    }
+                  : dark
+                    ? {
+                        background: "#1C1C1E",
+                        border: "1px solid rgba(255,255,255,0.16)",
+                      }
+                    : {
+                        background: "#fff",
+                        border: "1px solid rgba(60,60,67,0.18)",
+                      }
+              }
+            >
+              <div
+                className="min-w-0 flex-1 overflow-hidden whitespace-nowrap"
+                style={{
+                  fontSize: 15,
+                  letterSpacing: "-0.01em",
+                  lineHeight: "20px",
+                  textAlign: "left",
+                }}
+              >
+                {composerText ? (
+                  <span style={{ color: lightUI ? "#ffffff" : "#000" }}>
+                    {composerText}
+                    <span
+                      aria-hidden
+                      style={{
+                        display: "inline-block",
+                        width: 2,
+                        height: 17,
+                        marginLeft: 1,
+                        marginBottom: -3,
+                        background: "#0a84ff",
+                        borderRadius: 1,
+                      }}
+                    />
+                  </span>
+                ) : (
+                  <span
+                    style={{
+                      color: lightUI
+                        ? "rgba(255,255,255,0.7)"
+                        : "rgba(60,60,67,0.5)",
+                    }}
+                  >
+                    iMessage
+                  </span>
+                )}
+              </div>
+              {composerText ? (
+                <button
+                  type="button"
+                  aria-label="Send"
+                  className="ml-2 flex shrink-0 cursor-pointer items-center justify-center rounded-full"
+                  style={{ width: 26, height: 26, background: "#0a84ff" }}
+                >
+                  <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden>
+                    <path
+                      d="M8 13V3M8 3 3.5 7.5M8 3l4.5 4.5"
+                      stroke="#fff"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      fill="none"
+                    />
+                  </svg>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  aria-label="Audio"
+                  className="ml-2 flex cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-black/[0.06]"
+                  style={{
+                    color: lightUI
+                      ? "rgba(255,255,255,0.85)"
+                      : "rgba(60,60,67,0.7)",
+                    width: 22,
+                    height: 22,
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
+                    <path
+                      d="M8 1.5a2 2 0 0 0-2 2v4a2 2 0 0 0 4 0v-4a2 2 0 0 0-2-2Zm4 6a4 4 0 0 1-8 0H3a5 5 0 0 0 4.5 5V14h1v-1.5A5 5 0 0 0 13 7.5h-1Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                </button>
+              )}
+            </LiquidGlass>
+          </div>
+        )}
+
+        {showKeyboard && (
+          <div
+            style={{
+              flexShrink: 0,
+              // Clip the slide-up at the bottom/sides, but allow the key-press
+              // pop balloon to overflow upward into the composer area.
+              clipPath: "inset(-160px 0 0 0)",
+            }}
+          >
+            <div
+              style={{
+                transform: `translateY(${(1 - keyboardOpen) * 100}%)`,
+                willChange: "transform",
+              }}
+            >
+              <Keyboard theme={theme} pressedKey={pressedKey} pressT={pressT} />
+            </div>
+          </div>
+        )}
+      </div>
+    </GlassStage>
   );
 }
 

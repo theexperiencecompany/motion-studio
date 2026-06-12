@@ -2,49 +2,13 @@
 
 import { Player } from "@remotion/player";
 import { renderMediaOnWeb } from "@remotion/web-renderer";
-import type { ClipStyle } from "@workspace/compositions/clip-style";
 import { componentsById } from "@workspace/compositions/components";
 import { FieldsRenderer } from "@workspace/compositions/editors";
+import { compositionsById } from "@workspace/compositions/registry";
 import type { AnyCompositionInfo } from "@workspace/compositions/schema";
 import { Button } from "@workspace/ui/components/button";
-import { useMemo, useReducer, useState } from "react";
-import { ClipStyleSection } from "@/features/studio/components/clip-style-section";
+import { useEffect, useMemo, useState } from "react";
 import { downloadMp4Blob } from "@/features/studio/lib/local-export";
-
-// The three render fields are one export operation — they move together as
-// the in-browser render starts, reports progress, fails, or settles.
-type ExportState = {
-  rendering: boolean;
-  progress: number;
-  error: string | null;
-};
-
-type ExportAction =
-  | { type: "start" }
-  | { type: "progress"; progress: number }
-  | { type: "error"; error: string }
-  | { type: "settled" };
-
-const INITIAL_EXPORT: ExportState = {
-  rendering: false,
-  progress: 0,
-  error: null,
-};
-
-function exportReducer(state: ExportState, action: ExportAction): ExportState {
-  switch (action.type) {
-    case "start":
-      return { rendering: true, progress: 0, error: null };
-    case "progress":
-      return { ...state, progress: action.progress };
-    case "error":
-      return { ...state, error: action.error };
-    case "settled":
-      return { ...state, rendering: false };
-    default:
-      return state;
-  }
-}
 
 export function EditorView({
   info,
@@ -55,33 +19,45 @@ export function EditorView({
   const [props, setProps] = useState<Record<string, unknown>>(
     () => structuredClone(info.defaultProps) as Record<string, unknown>,
   );
-  const [clipStyle, setClipStyle] = useState<ClipStyle>({});
-  const [exportState, dispatchExport] = useReducer(
-    exportReducer,
-    INITIAL_EXPORT,
+  const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+
+  const playerProps = useMemo(() => props, [props]);
+
+  // The server strips `calculateMetadata` (it's a function), so recompute the
+  // duration here from the full client-side registry entry — otherwise a
+  // composition whose length depends on its props (e.g. a chat that grows with
+  // its messages) would be clipped to the static default and its last bubble
+  // would never render.
+  const calculateMetadata = compositionsById[info.id]?.calculateMetadata;
+  const [durationInFrames, setDurationInFrames] = useState(
+    info.durationInFrames,
   );
-  const { rendering, progress, error } = exportState;
+  useEffect(() => {
+    if (!calculateMetadata) {
+      setDurationInFrames(info.durationInFrames);
+      return;
+    }
+    let cancelled = false;
+    Promise.resolve(calculateMetadata({ props }))
+      .then((meta) => {
+        if (!cancelled && meta?.durationInFrames) {
+          setDurationInFrames(meta.durationInFrames);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [calculateMetadata, props, info.durationInFrames]);
 
-  // Brand-locked compositions hardcode their authentic look — don't pass
-  // clipStyle through (matches Project.tsx behavior in the Studio).
-  // Curated themes apply regardless of lock; forwarded as `clipTheme`.
-  const isLocked = info.brandMode === "locked";
-  const playerProps = useMemo(() => {
-    const themeId = clipStyle.theme;
-    const themeProps =
-      themeId && info.themes?.some((t) => t.id === themeId)
-        ? { clipTheme: themeId }
-        : {};
-    return isLocked
-      ? { ...props, ...themeProps }
-      : { ...props, clipStyle, ...themeProps };
-  }, [props, clipStyle, isLocked, info.themes]);
-
-  async function handleDownload(format: "mp4" | "webm") {
+  async function handleDownload() {
     if (!Component) return;
-    dispatchExport({ type: "start" });
+    setLoading(true);
+    setProgress(0);
+    setError(null);
     try {
-      const isWebm = format === "webm";
       const result = await renderMediaOnWeb({
         composition: {
           id: info.id,
@@ -89,34 +65,26 @@ export function EditorView({
           width: info.width,
           height: info.height,
           fps: info.fps,
-          durationInFrames: info.durationInFrames,
+          durationInFrames,
         },
-        inputProps: playerProps,
-        // WebM + VP9 carries an alpha channel — pair it with a transparent
-        // clip background (Style → Background = transparent) to drop the
-        // result straight into another video editor.
-        container: isWebm ? "webm" : "mp4",
-        videoCodec: isWebm ? "vp9" : "h264",
+        inputProps: props,
+        container: "mp4",
+        videoCodec: "h264",
         hardwareAcceleration: "prefer-hardware",
-        // MP4/h264 path: tight keyframe interval + heavy bitrate eliminate
-        // at-rest text shimmer. VP9 doesn't have the same drift behavior,
-        // so we let the encoder pick a sensible interval.
+        // Eliminate h264's at-rest "ever so slight" shimmer on text by
+        // forcing every frame to be a keyframe (no inter-frame prediction
+        // drift) and giving the encoder enough bitrate that text edges
+        // stay deterministic frame-to-frame.
         videoBitrate: 50_000_000,
-        ...(isWebm
-          ? {}
-          : { keyframeIntervalInSeconds: 1 / Math.max(1, info.fps) }),
-        onProgress: ({ progress: p }) =>
-          dispatchExport({ type: "progress", progress: p }),
+        keyframeIntervalInSeconds: 1 / Math.max(1, info.fps),
+        onProgress: ({ progress: p }) => setProgress(p),
       });
       const blob = await result.getBlob();
-      downloadMp4Blob(blob, `${info.id}.${format}`);
+      downloadMp4Blob(blob, `${info.id}.mp4`);
     } catch (e) {
-      dispatchExport({
-        type: "error",
-        error: e instanceof Error ? e.message : "Unknown error",
-      });
+      setError(e instanceof Error ? e.message : "Unknown error");
     } finally {
-      dispatchExport({ type: "settled" });
+      setLoading(false);
     }
   }
 
@@ -137,57 +105,30 @@ export function EditorView({
             value={props}
             onChange={setProps}
           />
-          {(!isLocked || Boolean(info.themes?.length)) && (
-            <div className="border-t border-border">
-              <div className="px-5 pt-4 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                Style
-              </div>
-              <ClipStyleSection
-                style={clipStyle}
-                onPatch={(patch) =>
-                  setClipStyle((prev) => ({ ...prev, ...patch }))
-                }
-                onReset={() => setClipStyle({})}
-                themes={info.themes}
-                locked={isLocked}
-              />
-            </div>
-          )}
         </div>
-        <div className="shrink-0 space-y-2 border-t border-border p-4">
+        <div className="shrink-0 border-t border-border p-4">
           <Button
             className="w-full"
-            onClick={() => handleDownload("mp4")}
-            disabled={rendering}
+            onClick={handleDownload}
+            disabled={loading}
           >
-            {rendering
+            {loading
               ? `Rendering… ${Math.round(progress * 100)}%`
               : "Download MP4"}
           </Button>
-          {!isLocked && (
-            <Button
-              className="w-full"
-              variant="outline"
-              onClick={() => handleDownload("webm")}
-              disabled={rendering}
-              title="Exports WebM/VP9 with alpha — set Background to transparent in the Style section first."
-            >
-              Download WebM (transparent)
-            </Button>
-          )}
           {error && <p className="mt-2 text-[12px] text-red-500">{error}</p>}
         </div>
       </aside>
 
-      <div className="flex items-center justify-center bg-muted/20 p-6 lg:min-h-0">
+      <div className="flex items-center justify-center bg-muted/20 p-4 lg:min-h-0">
         <div
-          className="w-full max-w-5xl overflow-hidden rounded-lg border border-border bg-background shadow-sm"
+          className="max-h-full w-full max-w-[1600px] overflow-hidden rounded-lg border border-border bg-background shadow-sm"
           style={{ aspectRatio: `${info.width} / ${info.height}` }}
         >
           <Player
             component={Component}
             inputProps={playerProps}
-            durationInFrames={info.durationInFrames}
+            durationInFrames={durationInFrames}
             fps={info.fps}
             compositionWidth={info.width}
             compositionHeight={info.height}

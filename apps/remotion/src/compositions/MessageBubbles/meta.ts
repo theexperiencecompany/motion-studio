@@ -23,6 +23,10 @@ export const messageBubblesDefaultProps: MessageBubblesProps = {
   ],
   orientation: "landscape",
   scale: 2,
+  backgroundImage: "",
+  liquidGlass: true,
+  theme: "light",
+  showKeyboard: false,
 };
 
 export const messageBubblesInfo: CompositionInfo<MessageBubblesProps> = {
@@ -51,6 +55,23 @@ export const messageBubblesInfo: CompositionInfo<MessageBubblesProps> = {
   fields: [
     { kind: "text", key: "contactName", label: "Contact name" },
     { kind: "text", key: "contactAvatar", label: "Avatar URL" },
+    {
+      kind: "image",
+      key: "backgroundImage",
+      label: "Background wallpaper",
+      placeholder: "images/... or https://...",
+    },
+    { kind: "switch", key: "liquidGlass", label: "Liquid glass (WebGL)" },
+    { kind: "switch", key: "showKeyboard", label: "Keyboard (typing)" },
+    {
+      kind: "select",
+      key: "theme",
+      label: "Appearance",
+      options: [
+        { value: "light", label: "Light" },
+        { value: "dark", label: "Dark" },
+      ],
+    },
     { kind: "chat", key: "messages", label: "Messages" },
     {
       kind: "select",
@@ -69,4 +90,20 @@ export const messageBubblesInfo: CompositionInfo<MessageBubblesProps> = {
       max: 3,
     },
   ],
+  // Grow the video to fit the conversation: the last bubble lands at
+  // delay + typingFrames, so end there plus a ~1.2s hold. Without this, adding
+  // messages past the default ~11s (e.g. a final photo) would be cut off and
+  // never appear.
+  calculateMetadata: ({ props }) => {
+    const msgs = Array.isArray(props.messages) ? props.messages : [];
+    let lastEnd = 0;
+    for (const m of msgs) {
+      const end = (m.delay ?? 0) + (m.typingFrames ?? 0);
+      if (end > lastEnd) lastEnd = end;
+    }
+    const HOLD = Math.round(MESSAGE_BUBBLES_FPS * 1.2);
+    return {
+      durationInFrames: Math.max(MESSAGE_BUBBLES_DURATION, lastEnd + HOLD),
+    };
+  },
 };

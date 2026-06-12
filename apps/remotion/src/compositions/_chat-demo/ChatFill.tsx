@@ -18,6 +18,13 @@ type Props = {
    */
   chromeColor?: string;
   /**
+   * Color for the BOTTOM safe-area bar only (defaults to `chromeColor`). Lets a
+   * composition with an on-screen keyboard tint just the home-indicator strip
+   * to the keyboard color so it reads as one continuous surface, while the top
+   * bar stays the header/backdrop color.
+   */
+  bottomChromeColor?: string;
+  /**
    * Landscape (default): fills the parent with the chat scaled up for
    * standalone viewing. Portrait: renders the chat inside a centered
    * phone-aspect column (9:19.5) sized to the parent's height so it
@@ -32,18 +39,22 @@ type Props = {
   children: ReactNode;
 };
 
-// 9:19.5 — modern iPhone screen aspect ratio.
-const PORTRAIT_ASPECT = "9 / 19.5";
+// Matches PhoneFrame's inner screen aspect (724×1524) so the chat fills the
+// device edge-to-edge with no side bars when wrapped in PhoneFrame. Visually
+// identical to a 9:19.5 phone for standalone portrait use.
+const PORTRAIT_ASPECT = "724 / 1524";
 
 export function ChatFill({
   backdrop,
   scale = 1.6,
   chromeColor,
+  bottomChromeColor,
   orientation = "landscape",
   children,
 }: Props) {
   const safe = useSafeArea();
   const padColor = chromeColor ?? backdrop ?? "#000";
+  const bottomPadColor = bottomChromeColor ?? padColor;
 
   // Auto-portrait when nested inside a device frame (PhoneFrame provides a
   // non-default SafeAreaContext). Landscape chat inside a phone always looks
@@ -80,7 +91,13 @@ export function ChatFill({
             {children}
           </div>
           {safe.bottom > 0 && (
-            <div style={{ flexShrink: 0, height: safe.bottom }} />
+            <div
+              style={{
+                flexShrink: 0,
+                height: safe.bottom,
+                background: bottomPadColor,
+              }}
+            />
           )}
         </div>
       </AbsoluteFill>
