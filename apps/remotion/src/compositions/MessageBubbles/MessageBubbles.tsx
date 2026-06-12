@@ -20,6 +20,8 @@ export type MessageBubblesProps = {
   liquidAmount?: number;
   /** Light or dark iMessage appearance (uses Apple's exact bubble grays). */
   theme?: "light" | "dark";
+  /** Timestamp shown beside "Read" under the last sent bubble (e.g. "9:41 AM"). */
+  readReceiptTime?: string;
   /** Show the on-screen keyboard typing out outgoing messages in real time. */
   showKeyboard?: boolean;
 };
@@ -129,6 +131,7 @@ export const MessageBubbles: React.FC<MessageBubblesProps> = ({
   liquidGlass = true,
   liquidAmount = 0,
   theme = "dark",
+  readReceiptTime = "",
   showKeyboard = false,
 }) => {
   const frame = useDesignFrame();
@@ -177,6 +180,7 @@ export const MessageBubbles: React.FC<MessageBubblesProps> = ({
         backgroundImage={backgroundImage}
         liquidGlass={liquidGlass}
         glassParams={glassParams}
+        readReceiptTime={readReceiptTime}
         theme={theme}
         showKeyboard={showKeyboard}
         composerText={composerText}

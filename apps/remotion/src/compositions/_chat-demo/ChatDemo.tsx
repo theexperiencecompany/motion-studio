@@ -5,6 +5,7 @@ import { useId, useLayoutEffect, useState } from "react";
 import {
   continueRender,
   delayRender,
+  Easing,
   Img,
   interpolate,
   spring,
@@ -152,12 +153,15 @@ function BubbleEnter({
   );
 }
 
-// iMessage read receipt — sits under the last outgoing bubble. It fades in
-// once that bubble has landed ("Delivered"), then flips to "Read" a beat later
-// (the recipient "seeing" it). `enterFrames` is frames-since-visible for that
-// message, so the receipt stays in lockstep with the bubble's own timeline.
+// iMessage read receipt — sits under the last outgoing bubble. It eases in
+// once that bubble has landed ("Delivered"), then gently crossfades to
+// "Read <time>" a beat later (the recipient "seeing" it): Delivered fades up
+// and out while Read fades up from just below, so the swap is smooth instead
+// of a hard text cut. `enterFrames` is frames-since-visible for that message,
+// keeping the receipt in lockstep with the bubble's own timeline.
 const RECEIPT_FADE_AT = 14;
-const RECEIPT_READ_AT = 40;
+const RECEIPT_READ_AT = 42;
+const RECEIPT_READ_DUR = 16;
 
 function ReadReceipt({
   enterFrames,
@@ -170,27 +174,69 @@ function ReadReceipt({
 }) {
   const appear = interpolate(
     enterFrames,
-    [RECEIPT_FADE_AT, RECEIPT_FADE_AT + 8],
+    [RECEIPT_FADE_AT, RECEIPT_FADE_AT + 10],
     [0, 1],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: Easing.out(Easing.cubic),
+    },
   );
   if (appear <= 0.001) return null;
-  const read = enterFrames >= RECEIPT_READ_AT;
+  // 0 → 1 as the message goes Delivered → Read, eased for a soft handoff.
+  const readP = interpolate(
+    enterFrames,
+    [RECEIPT_READ_AT, RECEIPT_READ_AT + RECEIPT_READ_DUR],
+    [0, 1],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: Easing.inOut(Easing.cubic),
+    },
+  );
+
+  const layer: React.CSSProperties = {
+    position: "absolute",
+    right: 0,
+    top: 0,
+    whiteSpace: "nowrap",
+    fontSize: 9.5,
+    lineHeight: "11px",
+    letterSpacing: "-0.01em",
+    color,
+    fontWeight: 400,
+  };
+
   return (
     <div
       style={{
-        fontSize: 11,
-        lineHeight: 1,
-        color,
+        position: "relative",
+        height: 11,
+        minWidth: 48,
+        marginTop: 2,
+        marginRight: 3,
         opacity: appear,
-        marginTop: 3,
-        marginRight: 4,
-        letterSpacing: "-0.01em",
-        fontWeight: 400,
       }}
     >
-      <span style={{ fontWeight: 600 }}>{read ? "Read" : "Delivered"}</span>
-      {read && time ? ` ${time}` : ""}
+      <div
+        style={{
+          ...layer,
+          opacity: 1 - readP,
+          transform: `translateY(${readP * -2}px)`,
+        }}
+      >
+        <span style={{ fontWeight: 500 }}>Delivered</span>
+      </div>
+      <div
+        style={{
+          ...layer,
+          opacity: readP,
+          transform: `translateY(${(1 - readP) * 2}px)`,
+        }}
+      >
+        <span style={{ fontWeight: 500 }}>Read</span>
+        {time ? <span> {time}</span> : null}
+      </div>
     </div>
   );
 }
@@ -210,6 +256,8 @@ export interface ChatDemoProps {
   liquidGlass?: boolean;
   /** iMessage only: override the WebGL glass params (refraction strength etc). */
   glassParams?: Partial<GlassParams>;
+  /** iMessage only: timestamp shown next to "Read" under the last sent bubble. */
+  readReceiptTime?: string;
   /** iMessage only: show the on-screen keyboard typing out outgoing messages. */
   showKeyboard?: boolean;
   /** iMessage only: text currently shown in the composer (drives "typing"). */
@@ -243,6 +291,7 @@ export function ChatDemo({
   backgroundImage,
   liquidGlass,
   glassParams,
+  readReceiptTime,
   showKeyboard,
   composerText,
   pressedKey,
@@ -262,6 +311,7 @@ export function ChatDemo({
           backgroundImage={backgroundImage}
           liquidGlass={liquidGlass}
           glassParams={glassParams}
+          readReceiptTime={readReceiptTime}
           theme={theme}
           showKeyboard={showKeyboard}
           composerText={composerText}
@@ -582,6 +632,7 @@ function IMessageDemo({
   backgroundImage,
   liquidGlass,
   glassParams,
+  readReceiptTime,
   theme = "light",
   showKeyboard = false,
   composerText = "",
@@ -598,6 +649,7 @@ function IMessageDemo({
   backgroundImage?: string;
   liquidGlass?: boolean;
   glassParams?: Partial<GlassParams>;
+  readReceiptTime?: string;
   theme?: "light" | "dark";
   showKeyboard?: boolean;
   composerText?: string;
@@ -650,9 +702,7 @@ function IMessageDemo({
   const groupTimeColor = lightUI
     ? "rgba(255,255,255,0.85)"
     : "rgba(60,60,67,0.6)";
-  const receiptColor = lightUI
-    ? "rgba(235,235,245,0.6)"
-    : "rgba(60,60,67,0.55)";
+  const receiptColor = lightUI ? "rgba(235,235,245,0.5)" : "rgba(60,60,67,0.5)";
 
   return (
     <GlassStage
@@ -889,7 +939,7 @@ function IMessageDemo({
                         <ReadReceipt
                           enterFrames={last.enterFrames ?? 0}
                           color={receiptColor}
-                          time={last.time}
+                          time={readReceiptTime}
                         />
                       );
                     })()}

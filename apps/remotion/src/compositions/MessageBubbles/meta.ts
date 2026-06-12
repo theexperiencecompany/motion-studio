@@ -27,6 +27,7 @@ export const messageBubblesDefaultProps: MessageBubblesProps = {
   liquidGlass: true,
   liquidAmount: 0,
   theme: "dark",
+  readReceiptTime: "9:41 AM",
   showKeyboard: false,
 };
 
@@ -72,6 +73,7 @@ export const messageBubblesInfo: CompositionInfo<MessageBubblesProps> = {
       step: 1,
     },
     { kind: "switch", key: "showKeyboard", label: "Keyboard (typing)" },
+    { kind: "text", key: "readReceiptTime", label: "Read receipt time" },
     {
       kind: "select",
       key: "theme",
