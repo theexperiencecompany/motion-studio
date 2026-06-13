@@ -23,7 +23,7 @@ import { type GlassParams, GlassStage, LiquidGlass } from "./LiquidGlass";
 // helper resolves bare paths, and routes absolute http(s) URLs through the
 // `/api/img/<encoded>` proxy so the export canvas stays untainted when the
 // scenario references third-party avatars.
-function asset(src: string | undefined): string | undefined {
+export function asset(src: string | undefined): string | undefined {
   if (!src) return src;
   if (/^(data:|blob:)/i.test(src)) return src;
   if (/^https?:/i.test(src)) return proxyExternalImg(src);
@@ -116,7 +116,7 @@ export interface ChatMessageItem {
   revealFrames?: number;
 }
 
-function BubbleEnter({
+export function BubbleEnter({
   enterFrames,
   from,
   children,
@@ -177,7 +177,7 @@ const clamp01 = (x: number) => (x < 0 ? 0 : x > 1 ? 1 : x);
  * keyboard/glass measurement); until known the row renders at natural size,
  * which lasts a frame and is imperceptible.
  */
-function BubbleReveal({
+export function BubbleReveal({
   revealFrames,
   from,
   children,
@@ -250,7 +250,7 @@ function BubbleReveal({
  * so the dots → message morph grows from the body's footprint while the puff
  * circles simply fade.
  */
-function TypingBubble({
+export function TypingBubble({
   from,
   background,
   tailColor,
@@ -315,7 +315,7 @@ function TypingBubble({
  * against the same max width as a settled bubble — and the dots pill is the
  * same surface we fade out, measured from its own node.
  */
-function DotsToMessage({
+export function DotsToMessage({
   from,
   tail,
   background,
@@ -325,6 +325,8 @@ function DotsToMessage({
   text,
   typing,
   revealFrames,
+  topGrouped = false,
+  bottomGrouped = false,
 }: {
   from: "me" | "them";
   tail: boolean;
@@ -336,6 +338,10 @@ function DotsToMessage({
   typing: boolean;
   /** Frames since the dots swapped to the message; undefined = no morph. */
   revealFrames?: number;
+  /** iMessage grouping — flatten the tail-side top/bottom corner when stacked
+   *  against a same-sender bubble (see CurvedBubble). */
+  topGrouped?: boolean;
+  bottomGrouped?: boolean;
 }) {
   const textRef = useRef<HTMLDivElement>(null);
   const dotsRef = useRef<HTMLDivElement>(null);
@@ -384,6 +390,8 @@ function DotsToMessage({
       background={background}
       tailColor={tailColor}
       color={color}
+      topGrouped={topGrouped}
+      bottomGrouped={bottomGrouped}
     >
       {text}
     </CurvedBubble>
@@ -485,7 +493,7 @@ const RECEIPT_FADE_AT = 14;
 const RECEIPT_READ_AT = 42;
 const RECEIPT_READ_DUR = 16;
 
-function ReadReceipt({
+export function ReadReceipt({
   enterFrames,
   color,
   time,
@@ -606,7 +614,7 @@ export interface ChatDemoProps {
 
 const DEFAULT_AVATAR = "/gaia-glow.png";
 
-const SF_STACK =
+export const SF_STACK =
   '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
 const SLACK_STACK =
   '"Slack-Lato", "Lato", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
@@ -725,7 +733,19 @@ interface CurvedBubbleProps {
   maxWidthPct?: number;
   /** Render the bubble as frosted glass (translucent fill + backdrop blur). */
   frosted?: boolean;
+  /** iMessage grouping: this bubble has a same-sender bubble directly ABOVE it,
+   *  so flatten its top corner on the tail side to stack flush. */
+  topGrouped?: boolean;
+  /** Same, but a same-sender bubble directly BELOW — flatten the bottom corner
+   *  on the tail side. */
+  bottomGrouped?: boolean;
 }
+
+// Corner radii: full rounded corner vs the small "grouped" corner used where
+// consecutive same-sender bubbles stack against each other (the iMessage pillar
+// look). Only the tail side flattens; the opposite side stays fully rounded.
+const BUBBLE_R = 18;
+const BUBBLE_R_GROUPED = 6;
 
 function CurvedBubble({
   from,
@@ -737,8 +757,22 @@ function CurvedBubble({
   meta,
   maxWidthPct = 100,
   frosted = false,
+  topGrouped = false,
+  bottomGrouped = false,
 }: CurvedBubbleProps) {
   const isMe = from === "me";
+  const topTail = topGrouped ? BUBBLE_R_GROUPED : BUBBLE_R;
+  const botTail = bottomGrouped ? BUBBLE_R_GROUPED : BUBBLE_R;
+  // Flatten only the corners on the tail side (right for me, left for them).
+  const groupedRadii: React.CSSProperties = isMe
+    ? {
+        borderTopRightRadius: topTail,
+        borderBottomRightRadius: botTail,
+      }
+    : {
+        borderTopLeftRadius: topTail,
+        borderBottomLeftRadius: botTail,
+      };
   const innerStyle: React.CSSProperties = {
     color,
     padding: "5px 13px 6px",
@@ -798,7 +832,7 @@ function CurvedBubble({
 
   return (
     <div className="relative" style={{ maxWidth: `${maxWidthPct}%` }}>
-      <div style={{ ...innerStyle, background }}>{inner}</div>
+      <div style={{ ...innerStyle, ...groupedRadii, background }}>{inner}</div>
       {tail && (
         <span
           aria-hidden="true"
@@ -862,7 +896,7 @@ function useImageAspect(src: string | undefined): number | null {
  * longer cuts away the spot the tail attaches to, so the photo flows straight
  * out into the wick. `drop-shadow` (not box-shadow) follows the clipped shape.
  */
-function ImageBubble({
+export function ImageBubble({
   src,
   from,
   tail,
@@ -937,7 +971,7 @@ type CurvedThread = {
   items: ChatMessageItem[];
 };
 
-function curvedThread(messages: ChatMessageItem[]): CurvedThread[] {
+export function curvedThread(messages: ChatMessageItem[]): CurvedThread[] {
   const out: CurvedThread[] = [];
   for (const m of messages) {
     const from = m.from ?? "them";
@@ -955,10 +989,10 @@ function curvedThread(messages: ChatMessageItem[]): CurvedThread[] {
 // iMessage bubble palette.
 //  • Sent — solid blue, white text.
 //  • Received — #E9E9EB in light, #2a272a in dark.
-const IMESSAGE_GRADIENT = "#2d90fa";
-const IMESSAGE_TAIL_ME_COLOR = "#2d90fa";
-const IMESSAGE_THEM_BG_LIGHT = "#E9E9EB";
-const IMESSAGE_THEM_BG_DARK = "#2a272a";
+export const IMESSAGE_GRADIENT = "#2d90fa";
+export const IMESSAGE_TAIL_ME_COLOR = "#2d90fa";
+export const IMESSAGE_THEM_BG_LIGHT = "#E9E9EB";
+export const IMESSAGE_THEM_BG_DARK = "#2a272a";
 
 function IMessageDemo({
   messages,

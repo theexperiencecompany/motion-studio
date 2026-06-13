@@ -11,12 +11,23 @@ import {
 } from "remotion";
 import type { ChatMessage } from "../../editors/types";
 import { useDesignFrame } from "../../use-design-frame";
-import { ChatDemo, type ChatMessageItem } from "../_chat-demo/ChatDemo";
+import type { ChatMessageItem } from "../_chat-demo/ChatDemo";
 import { ChatFill } from "../_chat-demo/ChatFill";
 import { KEYBOARD_BG } from "../_chat-demo/Keyboard";
+import { IMessageChat } from "./IMessageChat";
 
 /** iMessage send/receive sound — played as each bubble lands. */
 const MESSAGE_SFX = "sounds/message_bubble/message.mp3";
+
+/**
+ * Logical width (px) the whole chat is laid out at before being uniformly
+ * scaled to fill the canvas (see ChatFill's `designWidth`). 402 ≈ an iPhone's
+ * logical width; nudged slightly below that so bubbles/header read a touch
+ * bigger than dead-natural without the "too big" overshoot of going much
+ * smaller. Spacing/density is tuned via the thread gaps in IMessageChat, NOT by
+ * changing this much further. `scale` is a fine zoom on top (1 = this fit).
+ */
+const PHONE_DESIGN_WIDTH = 384;
 
 /**
  * Prefetch the SFX once into a cached (blob) source and block the render until
@@ -46,16 +57,13 @@ function useCachedSfx(path: string): string {
 export type MessageBubblesProps = {
   contactName: string;
   contactAvatar?: string;
+  /** Unread count shown as a pill beside the back chevron. 0 hides it. */
+  unreadCount?: number;
   messages: ChatMessage[];
   orientation?: "landscape" | "portrait";
   scale?: number;
   /** Custom wallpaper behind the conversation (static path or http URL). */
   backgroundImage?: string;
-  /** Render incoming bubbles, composer, and buttons as WebGL liquid glass. */
-  liquidGlass?: boolean;
-  /** How much "liquid" the glass has (0–100): drives refraction strength,
-   *  bezel, and rim highlight. Higher = more pronounced lensing. */
-  liquidAmount?: number;
   /** Light or dark iMessage appearance (uses Apple's exact bubble grays). */
   theme?: "light" | "dark";
   /** Show the on-screen keyboard typing out outgoing messages in real time. */
@@ -71,6 +79,10 @@ type ChatState = {
   composerText: string;
   pressedKey: string | null;
   pressT: number;
+  /** When an outgoing PHOTO is being "sent" via the iMessage attachment picker
+   *  (keyboard on), this drives the + → menu → Photos → grid → tap animation in
+   *  place of the keyboard. Null the rest of the time. */
+  attachment: { image: string; t: number } | null;
 };
 
 /**
@@ -90,16 +102,54 @@ function buildChatState(
   let composerText = "";
   let pressedKey: string | null = null;
   let pressT = 0;
+  let attachment: { image: string; t: number } | null = null;
 
   for (let i = 0; i < messages.length; i++) {
     const m = messages[i]!;
     // Never render an empty bubble — a message with no text and no image is
     // dropped from the video entirely.
     if (!m.image && !m.text.trim()) continue;
+    // History: already on screen from the start — settled, no typing/pop-in,
+    // never keyboard-typed. Skips all the timing logic below.
+    if (m.history) {
+      items.push({
+        id: i,
+        from: m.side === "right" ? "me" : "them",
+        text: m.text,
+        image: m.image,
+        time: m.time,
+        typing: false,
+        enterFrames: 999,
+      });
+      continue;
+    }
     if (frame < m.delay) continue;
     const local = frame - m.delay;
     const isOutgoing = m.side === "right";
     const inTyping = local < m.typingFrames;
+
+    // Outgoing PHOTO with the keyboard on → play the attachment-picker flow in
+    // place of typing (+ → menu → Photos → grid → tap). The bubble isn't in the
+    // thread during the flow; it lands once the flow (typingFrames window) ends.
+    if (keyboardOn && isOutgoing && m.image) {
+      if (inTyping) {
+        attachment = {
+          image: m.image,
+          t: Math.min(1, m.typingFrames > 0 ? local / m.typingFrames : 1),
+        };
+        continue;
+      }
+      items.push({
+        id: i,
+        from: "me",
+        text: m.text,
+        image: m.image,
+        time: m.time,
+        typing: false,
+        enterFrames: local - m.typingFrames,
+      });
+      continue;
+    }
 
     // Images can't be "typed" on the keyboard — they always send as a bubble.
     if (keyboardOn && isOutgoing && !m.image) {
@@ -138,6 +188,7 @@ function buildChatState(
         from: "me",
         text: m.text,
         image: m.image,
+        time: m.time,
         typing: false,
         enterFrames: local - m.typingFrames,
       });
@@ -149,6 +200,7 @@ function buildChatState(
       from: isOutgoing ? "me" : "them",
       text: m.text,
       image: m.image,
+      time: m.time,
       typing: inTyping,
       enterFrames: local,
       // Drives the dots → message morph (bubble inflates from the tail and the
@@ -158,18 +210,17 @@ function buildChatState(
     });
   }
 
-  return { items, composerText, pressedKey, pressT };
+  return { items, composerText, pressedKey, pressT, attachment };
 }
 
 export const MessageBubbles: React.FC<MessageBubblesProps> = ({
   contactName,
-  contactAvatar = "https://avatars.githubusercontent.com/aryanranderiya?s=200",
+  contactAvatar = "🤠",
+  unreadCount = 12,
   messages,
   orientation = "landscape",
   scale = 2,
   backgroundImage,
-  liquidGlass = true,
-  liquidAmount = 0,
   theme = "dark",
   showKeyboard = false,
 }) => {
@@ -192,16 +243,14 @@ export const MessageBubbles: React.FC<MessageBubblesProps> = ({
   const sfxCues = useMemo(
     () =>
       messages
-        .filter((m) => m.image || m.text.trim())
+        // History bubbles are already on screen — they never "land", so no SFX.
+        .filter((m) => !m.history && (m.image || m.text.trim()))
         .map((m) => Math.max(0, Math.round(m.delay + m.typingFrames))),
     [messages],
   );
   const sfxSrc = useCachedSfx(MESSAGE_SFX);
-  const { items, composerText, pressedKey, pressT } = buildChatState(
-    messages,
-    frame,
-    showKeyboard,
-  );
+  const { items, composerText, pressedKey, pressT, attachment } =
+    buildChatState(messages, frame, showKeyboard);
 
   // Keyboard slides up at the very start, before the first message lands.
   const keyboardOpen = showKeyboard
@@ -215,16 +264,6 @@ export const MessageBubbles: React.FC<MessageBubblesProps> = ({
 
   const backdrop = backgroundImage || theme === "dark" ? "#000000" : "#ffffff";
 
-  // Map the 0–100 "liquid amount" slider to the glass refraction params.
-  // Low = subtle/flat & clean; high = pronounced lensing. Defaults (~55) land
-  // near the shader's natural look.
-  const a = Math.min(1, Math.max(0, liquidAmount / 100));
-  const glassParams = {
-    thickness: 10 + a * 42,
-    bezel: 12 + a * 16,
-    specular: 0.12 + a * 0.4,
-  };
-
   return (
     <>
       {sfxCues.map((from, i) => (
@@ -237,22 +276,22 @@ export const MessageBubbles: React.FC<MessageBubblesProps> = ({
         chromeColor={backdrop}
         bottomChromeColor={showKeyboard ? KEYBOARD_BG[theme] : undefined}
         scale={scale}
+        designWidth={PHONE_DESIGN_WIDTH}
         orientation={orientation}
       >
-        <ChatDemo
-          platform="imessage"
+        <IMessageChat
           title={contactName}
           headerAvatar={contactAvatar}
+          unreadCount={unreadCount}
           messages={items}
           backgroundImage={backgroundImage}
-          liquidGlass={liquidGlass}
-          glassParams={glassParams}
           readReceiptTime={readReceiptTime}
           theme={theme}
           showKeyboard={showKeyboard}
           composerText={composerText}
           pressedKey={pressedKey}
           pressT={pressT}
+          attachment={attachment}
           keyboardOpen={keyboardOpen}
         />
       </ChatFill>

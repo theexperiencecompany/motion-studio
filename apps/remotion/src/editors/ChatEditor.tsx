@@ -2,6 +2,8 @@
 
 import {
   BubbleChatIcon,
+  CalendarAdd01Icon,
+  Clock01Icon,
   Delete02Icon,
   DragDropVerticalIcon,
   ImageAdd02Icon,
@@ -181,14 +183,31 @@ export function ChatEditor({ value, onChange }: EditorProps<ChatMessage[]>) {
             {value.map((m, i) => (
               <div key={i}>
                 <DropLine active={dropGap === i} />
+                {m.time != null && (
+                  <DayDivider
+                    value={m.time}
+                    onChange={(t) => patchMessage(i, { time: t })}
+                    onRemove={() => patchMessage(i, { time: undefined })}
+                  />
+                )}
                 <BubbleRow
                   msg={m}
                   index={i}
                   dragging={dragIndex === i}
+                  hasDivider={m.time != null}
+                  isHistory={!!m.history}
                   onText={(text) => patchMessage(i, { text })}
                   onBlurEmpty={() => pruneIfEmpty(i)}
                   onFlip={() => flipSide(i)}
                   onDelete={() => deleteMessage(i)}
+                  onToggleDivider={() =>
+                    patchMessage(i, {
+                      time: m.time != null ? undefined : "Today",
+                    })
+                  }
+                  onToggleHistory={() =>
+                    patchMessage(i, { history: m.history ? undefined : true })
+                  }
                   onDragStart={() => setDragIndex(i)}
                   onDragEnd={resetDrag}
                   onHoverGap={(gap) => setDropGap(gap)}
@@ -246,10 +265,14 @@ function BubbleRow({
   msg,
   index,
   dragging,
+  hasDivider,
+  isHistory,
   onText,
   onBlurEmpty,
   onFlip,
   onDelete,
+  onToggleDivider,
+  onToggleHistory,
   onDragStart,
   onDragEnd,
   onHoverGap,
@@ -257,10 +280,14 @@ function BubbleRow({
   msg: ChatMessage;
   index: number;
   dragging: boolean;
+  hasDivider: boolean;
+  isHistory: boolean;
   onText: (t: string) => void;
   onBlurEmpty: () => void;
   onFlip: () => void;
   onDelete: () => void;
+  onToggleDivider: () => void;
+  onToggleHistory: () => void;
   onDragStart: () => void;
   onDragEnd: () => void;
   onHoverGap: (gap: number) => void;
@@ -304,7 +331,15 @@ function BubbleRow({
         aria-hidden
       />
 
-      {isRight && <DeleteAction onDelete={onDelete} />}
+      {isRight && (
+        <RowActions
+          hasDivider={hasDivider}
+          isHistory={isHistory}
+          onToggleDivider={onToggleDivider}
+          onToggleHistory={onToggleHistory}
+          onDelete={onDelete}
+        />
+      )}
 
       {msg.image ? (
         <ImageBubbleEditor src={msg.image} isRight={isRight} onFlip={onFlip} />
@@ -318,7 +353,15 @@ function BubbleRow({
         />
       )}
 
-      {!isRight && <DeleteAction onDelete={onDelete} />}
+      {!isRight && (
+        <RowActions
+          hasDivider={hasDivider}
+          isHistory={isHistory}
+          onToggleDivider={onToggleDivider}
+          onToggleHistory={onToggleHistory}
+          onDelete={onDelete}
+        />
+      )}
 
       <div
         className="transition-[flex-grow] duration-300 ease-out"
@@ -414,9 +457,62 @@ function BubbleBody({
   );
 }
 
-function DeleteAction({ onDelete }: { onDelete: () => void }) {
+function RowActions({
+  hasDivider,
+  isHistory,
+  onToggleDivider,
+  onToggleHistory,
+  onDelete,
+}: {
+  hasDivider: boolean;
+  isHistory: boolean;
+  onToggleDivider: () => void;
+  onToggleHistory: () => void;
+  onDelete: () => void;
+}) {
   return (
-    <div className="flex shrink-0 items-center opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+    <div
+      className={cn(
+        "flex shrink-0 items-center gap-1 transition-opacity duration-150",
+        // Keep the cluster visible when a divider/history is active so it's
+        // clear which message owns it; otherwise reveal on row hover.
+        hasDivider || isHistory
+          ? "opacity-100"
+          : "opacity-0 group-hover:opacity-100",
+      )}
+    >
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={onToggleHistory}
+        title={
+          isHistory
+            ? "Animate this message in (remove from history)"
+            : "Mark as already on screen (history)"
+        }
+        className={cn(
+          "size-8 rounded-full shadow-sm",
+          isHistory
+            ? "border-amber-500/40 bg-amber-500/10 text-amber-600"
+            : "hover:bg-muted",
+        )}
+      >
+        <HugeiconsIcon icon={Clock01Icon} size={15} />
+      </Button>
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={onToggleDivider}
+        title={hasDivider ? "Remove day divider" : "Add day divider above"}
+        className={cn(
+          "size-8 rounded-full shadow-sm",
+          hasDivider
+            ? "border-[#007AFF]/40 bg-[#007AFF]/10 text-[#007AFF]"
+            : "hover:bg-muted",
+        )}
+      >
+        <HugeiconsIcon icon={CalendarAdd01Icon} size={15} />
+      </Button>
       <Button
         variant="outline"
         size="icon"
@@ -426,6 +522,37 @@ function DeleteAction({ onDelete }: { onDelete: () => void }) {
       >
         <HugeiconsIcon icon={Delete02Icon} size={15} />
       </Button>
+    </div>
+  );
+}
+
+/** Editable "Today"/date divider chip shown above the message that owns it. */
+function DayDivider({
+  value,
+  onChange,
+  onRemove,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="group/divider flex items-center justify-center gap-1.5 py-2">
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Today"
+        className="max-w-[180px] rounded-md bg-muted px-2.5 py-1 text-center text-[11px] font-medium text-muted-foreground outline-none focus:ring-1 focus:ring-foreground/20"
+        style={{ fieldSizing: "content" } as React.CSSProperties}
+      />
+      <button
+        type="button"
+        onClick={onRemove}
+        title="Remove divider"
+        className="flex size-5 items-center justify-center rounded-full text-muted-foreground/50 opacity-0 transition-opacity hover:bg-muted hover:text-red-500 group-hover/divider:opacity-100"
+      >
+        <HugeiconsIcon icon={Delete02Icon} size={12} />
+      </button>
     </div>
   );
 }

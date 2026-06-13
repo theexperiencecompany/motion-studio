@@ -1,7 +1,8 @@
 "use client";
-import type { ReactNode } from "react";
+import { type ReactNode, useLayoutEffect, useRef, useState } from "react";
 import { AbsoluteFill } from "remotion";
 import { useSafeArea } from "../../safe-area";
+import { useDesignFrame } from "../../use-design-frame";
 
 type Orientation = "landscape" | "portrait";
 
@@ -36,8 +37,70 @@ type Props = {
    * mis-positions everything.
    */
   orientation?: Orientation;
+  /**
+   * Fixed iPhone-logical layout width (px) to render the chat at before
+   * uniformly scaling it to fill the canvas. When set, every element — bubbles,
+   * header, composer, keyboard — keeps authentic iOS proportions relative to one
+   * another regardless of canvas size, and `scale` becomes a fine zoom
+   * multiplier (1 = natural fit-to-width). Without it, ChatFill keeps the legacy
+   * behaviour where `scale` is a raw transform multiplier (used by the other
+   * chat compositions, which are tuned to it — don't change those).
+   */
+  designWidth?: number;
   children: ReactNode;
 };
+
+/**
+ * Lay children out at a fixed `designWidth` and uniformly scale the whole unit
+ * to fill the parent. This keeps fixed-px elements (bubbles, header, composer)
+ * in true iOS proportion to the width-responsive keyboard at any canvas size —
+ * instead of the keyboard ballooning while the bubbles stay tiny on a wide
+ * canvas. `zoom` is an extra multiplier (1 = natural fit-to-width).
+ */
+function ScaledToDesignWidth({
+  designWidth,
+  zoom,
+  children,
+}: {
+  designWidth: number;
+  zoom: number;
+  children: ReactNode;
+}) {
+  // Re-measure each frame (cheap, stable) — same approach as Keyboard, so it
+  // settles correctly under @remotion/web-renderer headless export too.
+  const frame = useDesignFrame();
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState({ w: 0, h: 0 });
+  useLayoutEffect(() => {
+    if (wrapRef.current) {
+      const w = wrapRef.current.clientWidth;
+      const h = wrapRef.current.clientHeight;
+      if (w > 0 && h > 0) setSize({ w, h });
+    }
+  }, [frame]);
+
+  const s = size.w > 0 ? (size.w / designWidth) * zoom : zoom;
+  return (
+    <div
+      ref={wrapRef}
+      style={{ position: "absolute", inset: 0, overflow: "hidden" }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: designWidth,
+          height: size.h > 0 ? size.h / s : "100%",
+          transform: `scale(${s})`,
+          transformOrigin: "top left",
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
 
 // Matches PhoneFrame's inner screen aspect (724×1524) so the chat fills the
 // device edge-to-edge with no side bars when wrapped in PhoneFrame. Visually
@@ -50,6 +113,7 @@ export function ChatFill({
   chromeColor,
   bottomChromeColor,
   orientation = "landscape",
+  designWidth,
   children,
 }: Props) {
   const safe = useSafeArea();
@@ -88,7 +152,13 @@ export function ChatFill({
         >
           {safe.top > 0 && <div style={{ flexShrink: 0, height: safe.top }} />}
           <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
-            {children}
+            {designWidth ? (
+              <ScaledToDesignWidth designWidth={designWidth} zoom={scale}>
+                {children}
+              </ScaledToDesignWidth>
+            ) : (
+              children
+            )}
           </div>
           {safe.bottom > 0 && (
             <div
@@ -100,6 +170,21 @@ export function ChatFill({
             />
           )}
         </div>
+      </AbsoluteFill>
+    );
+  }
+
+  // Standalone, design-width mode: lay the chat out at a fixed iPhone-logical
+  // width and uniformly scale it to fill the canvas, so bubbles + keyboard keep
+  // real iOS proportions (see ScaledToDesignWidth). `scale` is a zoom multiplier.
+  if (designWidth) {
+    return (
+      <AbsoluteFill
+        style={{ background: backdrop ?? "#000", overflow: "hidden" }}
+      >
+        <ScaledToDesignWidth designWidth={designWidth} zoom={scale}>
+          {children}
+        </ScaledToDesignWidth>
       </AbsoluteFill>
     );
   }

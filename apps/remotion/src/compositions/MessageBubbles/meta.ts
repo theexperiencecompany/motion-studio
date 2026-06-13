@@ -3,29 +3,101 @@ import type { MessageBubblesProps } from "./MessageBubbles";
 
 export const MESSAGE_BUBBLES_DURATION = 660;
 export const MESSAGE_BUBBLES_FPS = 60;
-export const MESSAGE_BUBBLES_WIDTH = 1280;
-export const MESSAGE_BUBBLES_HEIGHT = 720;
+// Full-HD base resolution so the export is crisp at full-screen (TikTok/Reels
+// are 1080×1920). The whole chat is vector/text + a designWidth scale, so the
+// higher canvas just renders sharper — no layout change. Was 1280×720, which
+// looked soft when baked to video even though the live DOM preview was crisp.
+export const MESSAGE_BUBBLES_WIDTH = 1920;
+export const MESSAGE_BUBBLES_HEIGHT = 1080;
 
 export const messageBubblesDefaultProps: MessageBubblesProps = {
   contactName: "sanku",
-  contactAvatar: "https://avatars.githubusercontent.com/aryanranderiya?s=200",
+  contactAvatar: "🤠",
+  unreadCount: 12,
   messages: [
-    { text: "hey, you up?", side: "left", typingFrames: 50, delay: 30 },
-    { text: "yeah whats up", side: "right", typingFrames: 55, delay: 150 },
-    { text: "wanna grab food?", side: "right", typingFrames: 55, delay: 270 },
-    { text: "always 🍕", side: "left", typingFrames: 50, delay: 400 },
-    { text: "on my way ❤️", side: "right", typingFrames: 55, delay: 530 },
-    { text: "wait where r u?", side: "left", typingFrames: 50, delay: 670 },
-    { text: "almost there 🚗", side: "right", typingFrames: 55, delay: 800 },
-    { text: "okok i see you 👀", side: "left", typingFrames: 50, delay: 930 },
-    { text: "🏃💨", side: "right", typingFrames: 40, delay: 1050 },
-    { text: "you're the best 😭", side: "left", typingFrames: 50, delay: 1170 },
+    // Older conversation — already ON SCREEN from frame 0 (history), no typing
+    // animation. This is the context the new chat starts from.
+    {
+      text: "morning dad 👋",
+      side: "right",
+      typingFrames: 0,
+      delay: 0,
+      history: true,
+    },
+    {
+      text: "morning kiddo 🙂",
+      side: "left",
+      typingFrames: 0,
+      delay: 0,
+      history: true,
+    },
+    {
+      text: "did you feed the cat?",
+      side: "left",
+      typingFrames: 0,
+      delay: 0,
+      history: true,
+    },
+    {
+      text: "yes he was starving lol",
+      side: "right",
+      typingFrames: 0,
+      delay: 0,
+      history: true,
+    },
+    {
+      text: "Good. He looked hungry.",
+      side: "left",
+      typingFrames: 0,
+      delay: 0,
+      history: true,
+    },
+    {
+      text: "he always looks hungry",
+      side: "right",
+      typingFrames: 0,
+      delay: 0,
+      history: true,
+    },
+    // … then the NEW conversation animates in under a "Today" divider.
+    {
+      text: "Uhh dad i forgot my lunch",
+      side: "right",
+      typingFrames: 55,
+      delay: 40,
+      time: "Today",
+    },
+    {
+      text: "i left it on the counter",
+      side: "right",
+      typingFrames: 55,
+      delay: 200,
+    },
+    { text: "again?? 🙄", side: "left", typingFrames: 45, delay: 360 },
+    {
+      text: "can you bring it pls",
+      side: "right",
+      typingFrames: 55,
+      delay: 500,
+    },
+    { text: "pleaseee 🥺", side: "right", typingFrames: 45, delay: 640 },
+    { text: "fine, on my way 🚗", side: "left", typingFrames: 55, delay: 790 },
+    // Outgoing PHOTO — with the keyboard on, this plays the iMessage attachment
+    // picker (+ → Photos → grid → tap) over the long typingFrames window, then
+    // sends as a photo bubble. (Demo image; swap for any photo.)
+    {
+      text: "",
+      side: "right",
+      image: "images/imessage-wallpaper.jpg",
+      // Long window so the picker flow (+ → menu → Photos → grid → tap) plays at
+      // a relaxed pace and the menu card lingers, rather than snapping past.
+      typingFrames: 270,
+      delay: 940,
+    },
   ],
   orientation: "portrait",
-  scale: 2,
+  scale: 1,
   backgroundImage: "",
-  liquidGlass: true,
-  liquidAmount: 0,
   theme: "dark",
   showKeyboard: true,
 };
@@ -45,24 +117,27 @@ export const messageBubblesInfo: CompositionInfo<MessageBubblesProps> = {
   phoneFitMode: "cover",
   // Curated skins — first entry is the default look. Locked compositions
   // still get the Theme picker (themes are hand-built, not free recoloring).
-  themes: [
-    { id: "imessage", label: "iMessage" },
-    {
-      id: "glass",
-      label: "Liquid Glass",
-      description: "Frosted translucent bubbles over a vivid gradient",
-    },
-  ],
+  themes: [{ id: "imessage", label: "iMessage" }],
   fields: [
     { kind: "text", key: "contactName", label: "Contact name" },
-    { kind: "text", key: "contactAvatar", label: "Avatar URL" },
+    {
+      kind: "text",
+      key: "contactAvatar",
+      label: "Avatar (emoji or image URL)",
+    },
+    {
+      kind: "number",
+      key: "unreadCount",
+      label: "Unread count (0 = hide)",
+      min: 0,
+      max: 9999,
+    },
     {
       kind: "image",
       key: "backgroundImage",
       label: "Background wallpaper",
       placeholder: "images/... or https://...",
     },
-    { kind: "switch", key: "liquidGlass", label: "Liquid glass (WebGL)" },
     { kind: "switch", key: "showKeyboard", label: "Keyboard (typing)" },
     {
       kind: "select",
@@ -86,7 +161,7 @@ export const messageBubblesInfo: CompositionInfo<MessageBubblesProps> = {
     {
       kind: "number",
       key: "scale",
-      label: "UI scale (landscape)",
+      label: "Zoom (1 = phone fit)",
       min: 0.5,
       max: 3,
     },
