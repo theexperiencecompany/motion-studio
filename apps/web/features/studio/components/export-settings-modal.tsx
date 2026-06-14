@@ -31,6 +31,13 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onStart: (options: ExportOptions) => void;
+  /**
+   * Optional WYSIWYG render path — runs through real headless Chromium on the
+   * server (`/api/render`), so `backdrop-filter` glass / WebGL match the Player
+   * exactly. When provided, an "exact" button is shown alongside the in-browser
+   * one. Ignores the preset/fps options (server render uses its own settings).
+   */
+  onStartServer?: () => void;
   initialOptions?: ExportOptions;
   project: Project;
   projectWidth: number;
@@ -111,6 +118,7 @@ export function ExportSettingsModal({
   open,
   onOpenChange,
   onStart,
+  onStartServer,
   initialOptions,
   project,
   projectWidth,
@@ -316,6 +324,19 @@ export function ExportSettingsModal({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
+          {onStartServer && (
+            <Button
+              variant="secondary"
+              onClick={() => {
+                onStartServer();
+                onOpenChange(false);
+              }}
+              disabled={zip.busy}
+              title="Render on the server via real Chromium — pixel-identical to the preview (glass, blur, WebGL). Slower."
+            >
+              Render exact (Chromium)
+            </Button>
+          )}
           <Button
             onClick={() => {
               onStart(options);

@@ -114,6 +114,7 @@ export function Builder() {
   const {
     state: exportState,
     start: startExport,
+    startServer: startServerExport,
     reset: resetExport,
     cancel: cancelExport,
     download: downloadExport,
@@ -221,6 +222,11 @@ export function Builder() {
           canExport={hasClips}
           canSave={hasClips}
           fps={project.fps}
+          width={project.width}
+          height={project.height}
+          onChangeFormat={(width, height) =>
+            dispatch({ type: "SET_PROJECT_FORMAT", width, height })
+          }
           projectDefaultTransition={project.defaultTransition}
           onUpdateProjectTransition={(transition) =>
             dispatch({ type: "UPDATE_PROJECT_TRANSITION", transition })
@@ -484,6 +490,7 @@ export function Builder() {
           open={exportSettingsOpen}
           onOpenChange={setExportSettingsOpen}
           onStart={handleStartExport}
+          onStartServer={() => startServerExport(project)}
           project={project}
           projectWidth={project.width}
           projectHeight={project.height}

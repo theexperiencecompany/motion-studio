@@ -30,6 +30,7 @@
     "@next/mdx": "^16.2.5",
     "@remotion/bundler": "4.0.459",
     "@remotion/player": "4.0.459",
+    "@remotion/renderer": "4.0.459",
     "@remotion/tailwind-v4": "4.0.459",
     "@remotion/web-renderer": "4.0.459",
     "@tanstack/react-query": "^5.100.9",

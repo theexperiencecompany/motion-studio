@@ -6,6 +6,11 @@ const nextConfig = {
   transpilePackages: ["@workspace/ui", "@workspace/compositions"],
   serverExternalPackages: [
     "@remotion/bundler",
+    // @remotion/renderer is a native Node package: it require()s
+    // platform-specific compositor binaries at runtime. Bundling it makes
+    // Turbopack try (and fail) to resolve every platform's binary statically,
+    // so it must be externalized and loaded from node_modules at runtime.
+    "@remotion/renderer",
     "@remotion/tailwind-v4",
     "@tailwindcss/webpack",
     "@tailwindcss/node",

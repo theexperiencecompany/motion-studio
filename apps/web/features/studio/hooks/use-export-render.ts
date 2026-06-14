@@ -11,6 +11,7 @@ import {
   isLocalExportSupported,
   renderProjectLocally,
 } from "../lib/local-export";
+import { renderProjectOnServer } from "../lib/server-export";
 
 export type ExportPhase = "idle" | "starting" | "rendering" | "done" | "error";
 
@@ -185,6 +186,91 @@ export function useExportRender() {
     [],
   );
 
+  /**
+   * Exact (WYSIWYG) export via the `/api/render` endpoint — real headless
+   * Chromium, so `backdrop-filter` glass / WebGL survive. The endpoint returns
+   * the whole MP4 at once, so there's no incremental progress: we sit in an
+   * indeterminate "starting" phase (the overlay shows a pulsing bar) until the
+   * blob arrives.
+   */
+  const startServer = useCallback(async (project: Project) => {
+    const myGeneration = ++generationRef.current;
+    if (blobUrlRef.current) {
+      URL.revokeObjectURL(blobUrlRef.current);
+      blobUrlRef.current = null;
+    }
+    const controller = new AbortController();
+    controllerRef.current = controller;
+
+    console.info("[export-hook] startServer", {
+      width: project.width,
+      height: project.height,
+      fps: project.fps,
+      clips: project.clips?.length,
+    });
+
+    const startedAt = Date.now();
+    // Indeterminate: keep phase "starting" (pulsing bar) for the whole render.
+    setState({
+      ...INITIAL_STATE,
+      phase: "starting",
+      errorStack: null,
+      startedAt,
+    });
+
+    try {
+      const { blob, filename } = await renderProjectOnServer({
+        project,
+        signal: controller.signal,
+      });
+
+      if (generationRef.current !== myGeneration) return;
+
+      const url = URL.createObjectURL(blob);
+      blobUrlRef.current = url;
+
+      const finishedAt = Date.now();
+      console.info(
+        "[export-hook] server done",
+        blob.size,
+        "bytes in",
+        ((finishedAt - startedAt) / 1000).toFixed(2),
+        "s",
+      );
+      setState({
+        phase: "done",
+        progress: 1,
+        error: null,
+        errorStack: null,
+        blobUrl: url,
+        filename,
+        startedAt,
+        finishedAt,
+      });
+    } catch (e) {
+      if (generationRef.current !== myGeneration) return;
+      const err = e instanceof Error ? e : new Error(String(e));
+      if (err.name === "AbortError") {
+        console.info("[export-hook] server cancelled");
+        setState(INITIAL_STATE);
+        return;
+      }
+      console.error("[export-hook] server failed", e);
+      setState({
+        ...INITIAL_STATE,
+        phase: "error",
+        error: err.message || "Server render failed",
+        errorStack: err.stack ?? null,
+        startedAt,
+        finishedAt: Date.now(),
+      });
+    } finally {
+      if (controllerRef.current === controller) {
+        controllerRef.current = null;
+      }
+    }
+  }, []);
+
   useEffect(
     () => () => {
       controllerRef.current?.abort();
@@ -204,5 +290,5 @@ export function useExportRender() {
       .catch((err) => console.error("[export-hook] download failed", err));
   }, [state.filename]);
 
-  return { state, start, reset, cancel, download };
+  return { state, start, startServer, reset, cancel, download };
 }

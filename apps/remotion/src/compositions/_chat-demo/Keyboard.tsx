@@ -169,6 +169,14 @@ export type KeyboardProps = {
   pressedKey?: string | null;
   /** 0→1 press animation progress for the pop balloon. */
   pressT?: number;
+  /**
+   * Container width in px the keyboard lays out into. When provided, the
+   * keyboard derives its scale from this number directly and does NOT measure
+   * the DOM — deterministic, so it can't wobble frame-to-frame ("shake") or
+   * read 0 on the first headless-export frame. Omit it (legacy callers like
+   * ChatDemo) to fall back to per-frame `clientWidth` measurement.
+   */
+  width?: number;
 };
 
 function ShiftIcon({ color }: { color: string }) {
@@ -266,20 +274,25 @@ export function Keyboard({
   theme = "light",
   pressedKey = null,
   pressT = 0,
+  width,
 }: KeyboardProps) {
   const frame = useDesignFrame();
   const wrapRef = useRef<HTMLDivElement>(null);
-  const [w, setW] = useState(KB_W);
+  const [measuredW, setMeasuredW] = useState(KB_W);
 
-  // Measure once per frame (cheap, stable) so the native-coord layer scales to
-  // whatever width the chat column gives us — same approach as LiquidGlass.
+  // Deterministic width supplied → never touch the DOM. Otherwise fall back to
+  // measuring `clientWidth` each frame (legacy callers).
+  const fixed = typeof width === "number" && width > 0;
+
   useLayoutEffect(() => {
+    if (fixed) return;
     if (wrapRef.current) {
       const cw = wrapRef.current.clientWidth;
-      if (cw > 0) setW(cw);
+      if (cw > 0) setMeasuredW(cw);
     }
-  }, [frame]);
+  }, [frame, fixed]);
 
+  const w = fixed ? width : measuredW;
   const scale = Math.max(0, w - KB_PAD_X * 2) / KB_W;
   const p = PALETTES[theme];
 
@@ -355,8 +368,11 @@ export function Keyboard({
             left: KB_PAD_X,
             width: KB_W,
             height: KB_H,
-            transform: `scale(${scale})`,
-            transformOrigin: "top left",
+            // `zoom` lays the keys out at full size (real layout) instead of
+            // painting the 402px grid small and stretching it with
+            // `transform: scale` — that stretch is what made the keyboard
+            // blurry and produced the moiré "ripple" in the MP4 export.
+            zoom: scale,
           }}
         >
           {KEYS.map((k, i) => {
@@ -380,8 +396,13 @@ export function Keyboard({
                   : k.label === "123"
                     ? 16
                     : 17;
-            // The pressed letter hides its own glyph — it now lives in the balloon.
-            const showGlyph = !(isPressed && balloon);
+            // The pressed letter hides its own glyph — it now lives in the
+            // balloon. But only hand it off ONCE the balloon is fully formed
+            // (pop >= 1); during the balloon's fade/scale-in (pop < 1) the key
+            // keeps its own crisp glyph. Otherwise the press-onset frames show a
+            // blank, half-ghosted key (letter already hidden, balloon not yet
+            // visible) — the "1–2 blurry frames" during the typing animation.
+            const showGlyph = !(isPressed && balloon && pop >= 1);
             let content: React.ReactNode = "";
             if (showGlyph) {
               if (isShift) content = <ShiftIcon color={p.fnText} />;

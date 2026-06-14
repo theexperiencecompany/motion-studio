@@ -62,6 +62,7 @@ export type StudioAction =
       type: "UPDATE_PROJECT_TRANSITION";
       transition: SceneTransition | undefined;
     }
+  | { type: "SET_PROJECT_FORMAT"; width: number; height: number }
   | { type: "SET_PROJECT_AUDIO"; audio: ProjectAudio }
   | { type: "UPDATE_PROJECT_AUDIO"; patch: Partial<ProjectAudio> }
   | { type: "CLEAR_PROJECT_AUDIO" }
@@ -197,6 +198,19 @@ export function studioReducer(
       return {
         ...state,
         project: { ...state.project, defaultTransition: action.transition },
+      };
+    }
+    case "SET_PROJECT_FORMAT": {
+      // Canvas aspect/size for the whole project (preview Player + export both
+      // read project.width/height). Switching to e.g. 9:16 lets portrait
+      // compositions fill the frame instead of being cropped by the 16:9 stage.
+      return {
+        ...state,
+        project: {
+          ...state.project,
+          width: action.width,
+          height: action.height,
+        },
       };
     }
     case "SET_PROJECT_AUDIO": {

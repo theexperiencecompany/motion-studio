@@ -293,6 +293,7 @@ export const MessageBubbles: React.FC<MessageBubblesProps> = ({
           pressT={pressT}
           attachment={attachment}
           keyboardOpen={keyboardOpen}
+          designWidth={PHONE_DESIGN_WIDTH}
         />
       </ChatFill>
     </>

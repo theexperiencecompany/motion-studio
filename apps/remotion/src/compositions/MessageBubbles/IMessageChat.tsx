@@ -95,6 +95,10 @@ export type IMessageChatProps = {
    *  tap animation over the keyboard). Null when not sending a photo. */
   attachment?: { image: string; t: number } | null;
   keyboardOpen?: number;
+  /** Logical layout width (px) of the chat column — the design width the chat
+   *  is laid out at. Passed to the keyboard so it derives its scale
+   *  deterministically instead of measuring the DOM each frame. */
+  designWidth?: number;
 };
 
 export function IMessageChat({
@@ -114,6 +118,7 @@ export function IMessageChat({
   pressT = 0,
   attachment = null,
   keyboardOpen = 1,
+  designWidth,
 }: IMessageChatProps) {
   const grouped = groupThread(messages);
   // Caret blink for the idle (placeholder) composer — a ~1s cycle: on, quick
@@ -763,7 +768,12 @@ export function IMessageChat({
                 willChange: "transform",
               }}
             >
-              <Keyboard theme={theme} pressedKey={pressedKey} pressT={pressT} />
+              <Keyboard
+                theme={theme}
+                pressedKey={pressedKey}
+                pressT={pressT}
+                width={designWidth}
+              />
               {/* When a photo is being sent, the attachment picker overlays the
                   keyboard slot (no layout jump): + menu → Photos → grid → tap. */}
               {attachment && (

@@ -10,15 +10,17 @@
     "cssVariables": true
   },
   "iconLibrary": "hugeicons",
-  "aliases": {
-    "components": "@/components",
-    "hooks": "@/hooks",
-    "lib": "@/lib",
-    "utils": "@workspace/ui/lib/utils",
-    "ui": "@workspace/ui/components"
-  },
   "rtl": true,
   "menuColor": "default",
   "menuAccent": "subtle",
-  "registries": {}
+  "aliases": {
+    "components": "@/components",
+    "utils": "@workspace/ui/lib/utils",
+    "ui": "@workspace/ui/components",
+    "lib": "@/lib",
+    "hooks": "@/hooks"
+  },
+  "registries": {
+    "@react-bits": "https://reactbits.dev/r/{name}.json"
+  }
 }

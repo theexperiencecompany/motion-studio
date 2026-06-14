@@ -1,29 +1,31 @@
 "use client";
 
 import { Player } from "@remotion/player";
-import { renderMediaOnWeb } from "@remotion/web-renderer";
-import { componentsById } from "@workspace/compositions/components";
+import { ProjectComposition } from "@workspace/compositions/compositions/Project/Project";
 import { FieldsRenderer } from "@workspace/compositions/editors";
+import { type Project, projectDuration } from "@workspace/compositions/project";
 import { compositionsById } from "@workspace/compositions/registry";
 import type { AnyCompositionInfo } from "@workspace/compositions/schema";
 import { Button } from "@workspace/ui/components/button";
 import { useEffect, useMemo, useState } from "react";
-import { downloadMp4Blob } from "@/features/studio/lib/local-export";
+import { ExportProgressOverlay } from "@/features/studio/components/export-progress-overlay";
+import { ExportSettingsModal } from "@/features/studio/components/export-settings-modal";
+import { useExportRender } from "@/features/studio/hooks/use-export-render";
 
 export function EditorView({
   info,
 }: {
   info: Omit<AnyCompositionInfo, "calculateMetadata">;
 }) {
-  const Component = componentsById[info.id];
   const [props, setProps] = useState<Record<string, unknown>>(
     () => structuredClone(info.defaultProps) as Record<string, unknown>,
   );
-  const [loading, setLoading] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [error, setError] = useState<string | null>(null);
 
-  const playerProps = useMemo(() => props, [props]);
+  // Same export path the studio uses: drives `@remotion/web-renderer` through
+  // `ProjectComposition`, owns the progress state machine, and feeds the
+  // shared ExportProgressOverlay card (progress bar, confetti, video preview).
+  const exporter = useExportRender();
+  const [showExportModal, setShowExportModal] = useState(false);
 
   // The server strips `calculateMetadata` (it's a function), so recompute the
   // duration here from the full client-side registry entry — otherwise a
@@ -66,50 +68,28 @@ export function EditorView({
     info.height,
   ]);
 
-  async function handleDownload() {
-    if (!Component) return;
-    setLoading(true);
-    setProgress(0);
-    setError(null);
-    try {
-      const result = await renderMediaOnWeb({
-        composition: {
+  // Wrap the single composition into a one-clip Project so the preview and the
+  // export both go through `ProjectComposition` — the exact same render tree
+  // (background fill, font-smoothing, theme/clipStyle forwarding, EffectsWrap)
+  // the studio uses. This is what makes the editor panel match the studio.
+  const project: Project = useMemo(
+    () => ({
+      fps: info.fps,
+      width: dims.width,
+      height: dims.height,
+      clips: [
+        {
           id: info.id,
-          component: Component as React.ComponentType<Record<string, unknown>>,
-          width: dims.width,
-          height: dims.height,
-          fps: info.fps,
+          compositionId: info.id,
+          props,
           durationInFrames,
         },
-        inputProps: props,
-        container: "mp4",
-        videoCodec: "h264",
-        // Let the browser pick a working encoder. Forcing "prefer-hardware"
-        // together with the very high bitrate below made hardware encoders
-        // reject the config outright (avc1.640029 @ 50 Mbps unsupported).
-        hardwareAcceleration: "no-preference",
-        // High bitrate keeps text edges crisp without shimmer, but 50 Mbps
-        // exceeds many encoders' limits — 16 Mbps is still visually lossless
-        // at 720p/1080p and is broadly supported.
-        videoBitrate: 16_000_000,
-        onProgress: ({ progress: p }) => setProgress(p),
-      });
-      const blob = await result.getBlob();
-      downloadMp4Blob(blob, `${info.id}.mp4`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Unknown error");
-    } finally {
-      setLoading(false);
-    }
-  }
+      ],
+    }),
+    [info.fps, info.id, dims.width, dims.height, props, durationInFrames],
+  );
 
-  if (!Component) {
-    return (
-      <div className="p-6 text-sm text-red-500">
-        No component registered for id &quot;{info.id}&quot;.
-      </div>
-    );
-  }
+  const totalDuration = useMemo(() => projectDuration(project), [project]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] lg:min-h-0 lg:flex-1">
@@ -124,14 +104,14 @@ export function EditorView({
         <div className="shrink-0 border-t border-border p-4">
           <Button
             className="w-full"
-            onClick={handleDownload}
-            disabled={loading}
+            onClick={() => setShowExportModal(true)}
+            disabled={
+              exporter.state.phase === "starting" ||
+              exporter.state.phase === "rendering"
+            }
           >
-            {loading
-              ? `Rendering… ${Math.round(progress * 100)}%`
-              : "Download MP4"}
+            Export video
           </Button>
-          {error && <p className="mt-2 text-[12px] text-red-500">{error}</p>}
         </div>
       </aside>
 
@@ -141,12 +121,12 @@ export function EditorView({
           style={{ aspectRatio: `${dims.width} / ${dims.height}` }}
         >
           <Player
-            component={Component}
-            inputProps={playerProps}
-            durationInFrames={durationInFrames}
-            fps={info.fps}
-            compositionWidth={dims.width}
-            compositionHeight={dims.height}
+            component={ProjectComposition}
+            inputProps={project}
+            durationInFrames={totalDuration}
+            fps={project.fps}
+            compositionWidth={project.width}
+            compositionHeight={project.height}
             style={{ width: "100%", height: "100%" }}
             controls
             loop
@@ -156,6 +136,26 @@ export function EditorView({
           />
         </div>
       </div>
+
+      <ExportSettingsModal
+        open={showExportModal}
+        onOpenChange={setShowExportModal}
+        onStart={(options) => exporter.start(project, options)}
+        onStartServer={() => exporter.startServer(project)}
+        project={project}
+        projectWidth={project.width}
+        projectHeight={project.height}
+        durationInFrames={totalDuration}
+        fps={project.fps}
+      />
+
+      <ExportProgressOverlay
+        state={exporter.state}
+        onClose={exporter.reset}
+        onCancel={exporter.cancel}
+        onDownload={exporter.download}
+        onRetry={() => exporter.start(project)}
+      />
     </div>
   );
 }

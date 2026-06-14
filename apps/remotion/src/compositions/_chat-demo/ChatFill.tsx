@@ -1,6 +1,6 @@
 "use client";
 import { type ReactNode, useLayoutEffect, useRef, useState } from "react";
-import { AbsoluteFill } from "remotion";
+import { AbsoluteFill, useVideoConfig } from "remotion";
 import { useSafeArea } from "../../safe-area";
 import { useDesignFrame } from "../../use-design-frame";
 
@@ -92,8 +92,51 @@ function ScaledToDesignWidth({
           left: 0,
           width: designWidth,
           height: size.h > 0 ? size.h / s : "100%",
-          transform: `scale(${s})`,
-          transformOrigin: "top left",
+          // `zoom` re-runs LAYOUT at the final pixel size, so text/keys/bubbles
+          // rasterize at full resolution — crisp in the @remotion/web-renderer
+          // export. (The old `transform: scale` painted at the small design
+          // size and bitmap-upscaled the result → the blur + keyboard moiré.)
+          zoom: s,
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Deterministic version of ScaledToDesignWidth for the STANDALONE design-width
+ * path (no device frame): the scale comes straight from the canvas size via
+ * `useVideoConfig()` instead of measuring `clientWidth` every frame. That
+ * removes the per-frame DOM read entirely — so the layout can't wobble
+ * frame-to-frame (the keyboard "shake"), and it can't read 0 on the first
+ * headless-export frame. Only safe here because this branch is never nested in
+ * a PhoneFrame, so useVideoConfig() reports the real output canvas.
+ */
+function ScaledToDesignWidthFixed({
+  designWidth,
+  zoom,
+  children,
+}: {
+  designWidth: number;
+  zoom: number;
+  children: ReactNode;
+}) {
+  const { width, height } = useVideoConfig();
+  const s = (width / designWidth) * zoom;
+  return (
+    <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: designWidth,
+          height: height / s,
+          // `zoom` re-runs layout at the final pixel size → crisp; see note in
+          // ScaledToDesignWidth above.
+          zoom: s,
         }}
       >
         {children}
@@ -182,9 +225,9 @@ export function ChatFill({
       <AbsoluteFill
         style={{ background: backdrop ?? "#000", overflow: "hidden" }}
       >
-        <ScaledToDesignWidth designWidth={designWidth} zoom={scale}>
+        <ScaledToDesignWidthFixed designWidth={designWidth} zoom={scale}>
           {children}
-        </ScaledToDesignWidth>
+        </ScaledToDesignWidthFixed>
       </AbsoluteFill>
     );
   }
