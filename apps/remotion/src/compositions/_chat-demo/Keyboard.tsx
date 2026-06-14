@@ -177,6 +177,12 @@ export type KeyboardProps = {
    * ChatDemo) to fall back to per-frame `clientWidth` measurement.
    */
   width?: number;
+  /**
+   * Font stack for the key labels. Defaults to the system SF stack; pass the
+   * bundled SF Pro Display stack so an export renders the real keys instead of
+   * a Linux fallback font.
+   */
+  fontFamily?: string;
 };
 
 function ShiftIcon({ color }: { color: string }) {
@@ -275,6 +281,7 @@ export function Keyboard({
   pressedKey = null,
   pressT = 0,
   width,
+  fontFamily = SF_STACK,
 }: KeyboardProps) {
   const frame = useDesignFrame();
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -331,7 +338,7 @@ export function Keyboard({
         width: "100%",
         height: KB_H * scale,
         position: "relative",
-        fontFamily: SF_STACK,
+        fontFamily,
       }}
     >
       {/* Keyboard panel surface — its own layer with generously rounded TOP

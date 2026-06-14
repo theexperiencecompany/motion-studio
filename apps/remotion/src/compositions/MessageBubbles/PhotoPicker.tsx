@@ -17,9 +17,7 @@
 
 import { Easing, Img, interpolate } from "remotion";
 import { asset } from "../_chat-demo/ChatDemo";
-
-const SF_STACK =
-  '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
+import { SF_PRO_STACK } from "../_chat-demo/sf-pro";
 
 const MENU_ITEMS = [
   { key: "halo", label: "Halo AI" },
@@ -139,7 +137,7 @@ export function PhotoPicker({
   const tiles = [image, ...FILLER_GRADIENTS];
 
   return (
-    <div style={{ position: "absolute", inset: 0, fontFamily: SF_STACK }}>
+    <div style={{ position: "absolute", inset: 0, fontFamily: SF_PRO_STACK }}>
       {/* Dim the whole screen behind the menu (messages + keyboard), like iOS
           when you tap +. It extends up into the message area (the keyboard slot
           allows the overflow) and fades out at the top so there's no hard edge —

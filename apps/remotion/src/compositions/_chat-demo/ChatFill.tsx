@@ -124,7 +124,11 @@ function ScaledToDesignWidthFixed({
   children: ReactNode;
 }) {
   const { width, height } = useVideoConfig();
-  const s = (width / designWidth) * zoom;
+  const raw = (width / designWidth) * zoom;
+  // Guard: a 0 / NaN scale (a 0 `scale` field value, or width not ready on the
+  // first render) must never reach `height / s` — that would be Infinity, which
+  // React rejects as a CSS height. Fall back to 1× until the scale is valid.
+  const s = Number.isFinite(raw) && raw > 0 ? raw : 1;
   return (
     <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
       <div

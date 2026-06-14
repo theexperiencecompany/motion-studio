@@ -32,12 +32,12 @@ import {
   IMESSAGE_THEM_BG_LIGHT,
   ImageBubble,
   ReadReceipt,
-  SF_STACK,
   TypingBubble,
 } from "../_chat-demo/ChatDemo";
 import { CssLiquidGlass } from "../_chat-demo/CssLiquidGlass";
 import { Keyboard } from "../_chat-demo/Keyboard";
 import { GlassStage } from "../_chat-demo/LiquidGlass";
+import { SF_PRO_STACK } from "../_chat-demo/sf-pro";
 import { PhotoPicker } from "./PhotoPicker";
 
 /** Shared horizontal inset for the thread AND the composer, so message bubbles
@@ -223,7 +223,7 @@ export function IMessageChat({
       bgImage={backgroundImage}
       bgColor={sheetBg}
       className={cn("h-full", className)}
-      style={{ fontFamily: SF_STACK }}
+      style={{ fontFamily: SF_PRO_STACK }}
     >
       <div className="relative flex h-full flex-col">
         {/* Header — back chevron + avatar/name chip + FaceTime, glass chrome.
@@ -773,6 +773,7 @@ export function IMessageChat({
                 pressedKey={pressedKey}
                 pressT={pressT}
                 width={designWidth}
+                fontFamily={SF_PRO_STACK}
               />
               {/* When a photo is being sent, the attachment picker overlays the
                   keyboard slot (no layout jump): + menu → Photos → grid → tap. */}
